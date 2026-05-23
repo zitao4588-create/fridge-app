@@ -501,3 +501,23 @@
   - 总数 0
   - 3 天内过期 0
   - 已过期 0
+
+## 2026-05-23 第二轮运行体检记录
+
+结果：
+
+- 静态检查、微信开发者工具 smoke test、完整 CloudBase 流程验收均通过。
+- 完整流程验收短暂创建了带 `自动化流程测试` 前缀的食品数据，并按 `_id` 清理完成。
+- 本轮没有发现阻塞 MVP 的运行问题。
+
+失败 / 未继续执行：
+
+- `npm prune --dry-run` 返回 `EPERM`：
+  - 目标路径：`/Users/qzt/Desktop/projects/fridge-app/node_modules/.package-lock.json`
+  - 原因：该命令即使带 `--dry-run` 仍尝试写入或删除 `node_modules` 内部文件，当前系统权限拒绝。
+  - 处理：本轮未申请继续清理 `node_modules`，只把它记录为低风险依赖目录治理项。
+
+后续注意：
+
+- `node_modules` 和 `dist` 都已被 `.gitignore` 忽略，不会进入 Git。
+- 依赖清理不影响当前小程序主线运行，建议后续单独确认旧 H5 是否还需要保留后再处理。

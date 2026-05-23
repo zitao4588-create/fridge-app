@@ -209,11 +209,28 @@
   - `_openid` 升序
   - `expireDate` 升序
   - `createdAt` 降序
+- 2026-05-23 第二轮运行体检通过：
+  - 小程序 JS、service、utils、云函数 `node --check` 全部通过
+  - `npm run lint` 通过
+  - `npm run build` 通过
+  - 15 个 JSON 文件可解析
+  - 7 个页面文件完整
+  - 微信开发者工具 smoke test 通过 17 项断言
+  - 完整 CloudBase 流程验收通过 12 项断言
+  - 本轮临时测试数据已清理
 
 ## 当前待办
 
 优先级高：
 
+- 真机预览完整核心流程：
+  - 首页是否稳定一屏显示
+  - 冰箱模板图片是否清晰
+  - 分区热区是否好点
+  - 图片内统计卡片是否遮挡关键结构
+  - 分区弹窗是否好用
+  - 添加页日期弹窗是否顺手
+  - 手动添加、编辑、搜索、删除、mock 解析保存是否和自动化结果一致
 - 真机预览添加页：
   - 品类按钮是否仍稳定三列
   - 生产日期弹窗是否顺手
@@ -298,3 +315,4 @@
 - 每次新增功能前先阅读 `PROJECT.md` 和 `PROJECT_CONTEXT.md`。
 - `miniprogram-automator` 仅作为临时测试工具安装在 `/private/tmp/fridge-automator`，不要写入项目依赖，除非后续明确要建立正式自动化测试。
 - `fridge-app` 已有独立 Git 仓库；后续每轮功能修改前后都先看 `git status`，避免把临时文件误纳入版本库。
+- `node_modules` 里有旧 H5 依赖残留的 extraneous 包，本轮未清理；后续如要处理，先确认是否仍保留旧 H5 兼容构建。

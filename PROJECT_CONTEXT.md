@@ -692,3 +692,61 @@ type FridgeItem = {
 
 - 完成第一次 Git 基线提交后，再进入第二轮运行体检。
 - 第二轮优先用微信开发者工具和真机预览确认首页、添加页、分区热区、CloudBase 写入和 mock 流程。
+
+## 2026-05-23 第二轮运行体检
+
+本轮完成：
+
+- 完成静态检查：
+  - 小程序 JS、service、utils、云函数 `node --check` 全部通过。
+  - `npm run lint` 通过。
+  - `npm run build` 通过；该命令仍是旧 Vite 兼容检查，不代表当前主线是 H5。
+- 完成小程序结构检查：
+  - 15 个 JSON 文件可解析。
+  - 7 个页面的 `js/json/wxml/wxss` 文件完整。
+  - `project.config.json` 中 `miniprogramRoot: "./"` 和 `cloudfunctionRoot: "cloudfunctions/"` 指向有效。
+- 完成微信开发者工具自动化 smoke test：
+  - 首页能加载当前冰箱模板。
+  - 分区热区和统计卡片数量与配置一致。
+  - 点击分区能打开分区面板。
+  - 添加页能接收分区传入的存放位置。
+  - 空表单校验能提示食品名称和过期日期。
+  - 解析确认页、日历页、菜谱页、我的页均可打开并初始化。
+  - 自动化截图：`/private/tmp/fridge-automator/current-smoke-index.png`
+- 完成完整 CloudBase 流程验收：
+  - 手动添加食品可以写入 CloudBase。
+  - 编辑食品后首页能显示新名称。
+  - 搜索结果能找到编辑后的食品。
+  - 删除食品后有正确提示。
+  - mock 解析确认保存后 `source` 为 `photo`。
+  - mock 解析确认保存后 `parseStatus` 为 `manual_confirmed`。
+  - 本轮临时测试数据已清理。
+
+本轮修改文件：
+
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮临时文件：
+
+- `/private/tmp/fridge-automator/current-smoke-check.js`
+- `/private/tmp/fridge-automator/current-smoke-index.png`
+- `/private/tmp/fridge-automator/full-flow-check.js`
+
+当前还没解决的问题：
+
+- 还没有做真机手动预览；模拟器和自动化已通过，但真实手机尺寸和触控手感仍需人工确认。
+- `node_modules` 里有旧 H5 依赖残留的 extraneous 包；不影响当前小程序运行，后续可单独做依赖清理。
+- 旧 React/Vite H5 文件仍保留，不是当前主线；后续是否归档或删除仍需单独确认。
+
+已尝试但失败的方案：
+
+- `npm prune --dry-run` 仍尝试写入 `node_modules/.package-lock.json`，因系统权限返回 `EPERM`，本轮未继续清理依赖目录。
+
+下一步建议：
+
+- 优先做真机预览，重点看首页一屏布局、冰箱图片清晰度、分区热区、统计卡片位置、添加页日期弹窗和按钮触控。
+- 真机确认后，再决定是否微调 `utils/constants.js` 中冰箱热区和门架 `markerPoint`。
+- 之后再单独评估旧 H5 文件和旧依赖目录是否逐个归档或清理。
