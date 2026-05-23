@@ -1,0 +1,72 @@
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+  margin-top: 32rpx;
+}
+
+.recipe-card {
+  padding: 28rpx;
+}
+
+.recipe-label {
+  display: block;
+  color: #0f766e;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.recipe-title {
+  display: block;
+  margin-top: 8rpx;
+  color: #0f172a;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.used-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 22rpx;
+}
+
+.used-chip {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #eef7f6;
+  color: #0f766e;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.steps-box {
+  margin-top: 24rpx;
+  padding: 22rpx;
+  border-radius: 18rpx;
+  background: #f8fafc;
+}
+
+.steps-title {
+  display: block;
+  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.step-line {
+  display: block;
+  margin-top: 8rpx;
+  color: #475569;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.reason {
+  display: block;
+  margin-top: 20rpx;
+  color: #64748b;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+

@@ -1,0 +1,26 @@
+<view class="page quick-page">
+  <view class="page-title">添加食品</view>
+  <view class="page-subtitle">选择一种录入方式，保存前都可以检查和修改。</view>
+
+  <view class="mock-notice card">
+    <text class="mock-title">第一阶段提示</text>
+    <text class="mock-desc">常用食品和常见饮品现在是示例预填，不是真实拍照识别或扫码识别。保存前请按包装信息核对。</text>
+  </view>
+
+  <view class="entry-list">
+    <button class="entry-card card" bindtap="handleManualAdd">
+      <text class="entry-title">手动添加</text>
+      <text class="entry-desc">填写名称、数量、品类、位置和过期日期</text>
+    </button>
+
+    <button class="entry-card card" bindtap="handleDairyPrefill">
+      <text class="entry-title">常用食品示例</text>
+      <text class="entry-desc">快速填入常见乳制品信息，确认后可修改保存</text>
+    </button>
+
+    <button class="entry-card card" bindtap="handleDrinkPrefill">
+      <text class="entry-title">常见饮品示例</text>
+      <text class="entry-desc">快速填入饮品信息，过期日期保存前可调整</text>
+    </button>
+  </view>
+</view>

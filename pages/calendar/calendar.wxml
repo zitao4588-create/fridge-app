@@ -1,0 +1,46 @@
+<view class="page calendar-page">
+  <view class="page-title">到期日历</view>
+  <view class="page-subtitle">查看每天有哪些食品到期。</view>
+
+  <view class="calendar-card card">
+    <view class="month-row">
+      <button class="month-button" bindtap="handlePrevMonth">上月</button>
+      <text class="month-title">{{monthTitle}}</text>
+      <button class="month-button" bindtap="handleNextMonth">下月</button>
+    </view>
+
+    <view class="week-grid">
+      <text wx:for="{{weekLabels}}" wx:key="*this">{{item}}</text>
+    </view>
+
+    <view class="day-grid">
+      <view
+        wx:for="{{days}}"
+        wx:key="date"
+        data-date="{{item.date}}"
+        bindtap="handleSelectDay"
+        class="day-cell {{item.inCurrentMonth ? '' : 'muted'}} {{item.selected ? 'selected' : ''}} {{item.hasEvents ? 'marked' : ''}}"
+      >
+        <text class="day-number">{{item.day}}</text>
+        <text wx:if="{{item.hasEvents}}" class="day-dot">{{item.eventCount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-head">
+    <text class="section-title">{{selectedDate}}</text>
+    <text class="section-count">{{selectedItems.length}} 项到期</text>
+  </view>
+
+  <view wx:if="{{selectedItems.length === 0}}" class="empty card">当天没有食品到期</view>
+  <view wx:else class="selected-list">
+    <view class="selected-item card" wx:for="{{selectedItems}}" wx:key="_id">
+      <view>
+        <text class="selected-name">{{item.name}}</text>
+        <text class="selected-meta">{{item.quantity}}{{item.unit}} · {{item.category}} · {{item.storageLocation}}</text>
+      </view>
+      <text class="status-chip {{item.statusClass}}">{{item.statusLabel}}</text>
+    </view>
+  </view>
+</view>
+

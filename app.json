@@ -1,0 +1,43 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/quick-add/quick-add",
+    "pages/calendar/calendar",
+    "pages/recipes/recipes",
+    "pages/profile/profile",
+    "pages/item-form/item-form",
+    "pages/parse-confirm/parse-confirm"
+  ],
+  "window": {
+    "navigationBarTitleText": "冰箱管家",
+    "navigationBarBackgroundColor": "#f7fbff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7fbff"
+  },
+  "tabBar": {
+    "color": "#64748b",
+    "selectedColor": "#0f766e",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "冰箱"
+      },
+      {
+        "pagePath": "pages/calendar/calendar",
+        "text": "日历"
+      },
+      {
+        "pagePath": "pages/recipes/recipes",
+        "text": "菜谱"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

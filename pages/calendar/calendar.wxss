@@ -1,0 +1,140 @@
+.calendar-card {
+  margin-top: 30rpx;
+  padding: 24rpx;
+}
+
+.month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.month-button {
+  width: 132rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  background: #eef7f6;
+  color: #0f766e;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.month-title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.week-grid,
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.week-grid {
+  margin-top: 28rpx;
+  color: #64748b;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.day-grid {
+  gap: 8rpx;
+  margin-top: 14rpx;
+}
+
+.day-cell {
+  position: relative;
+  min-height: 76rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.day-cell.muted {
+  color: #cbd5e1;
+}
+
+.day-cell.selected {
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.day-cell.marked:not(.selected) {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.day-number {
+  font-size: 26rpx;
+}
+
+.day-dot {
+  position: absolute;
+  right: 8rpx;
+  top: 6rpx;
+  min-width: 28rpx;
+  height: 28rpx;
+  border-radius: 999rpx;
+  background: #f97316;
+  color: #ffffff;
+  font-size: 18rpx;
+  line-height: 28rpx;
+  text-align: center;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 34rpx 2rpx 18rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.section-count {
+  color: #64748b;
+  font-size: 24rpx;
+}
+
+.selected-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 24rpx;
+}
+
+.selected-name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.selected-meta {
+  display: block;
+  margin-top: 8rpx;
+  color: #64748b;
+  font-size: 24rpx;
+}
+
+.status-chip {
+  flex-shrink: 0;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+

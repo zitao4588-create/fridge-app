@@ -1,0 +1,157 @@
+page {
+  min-height: 100vh;
+  background: #f7fbff;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+view,
+text,
+button,
+input,
+textarea,
+picker {
+  box-sizing: border-box;
+}
+
+button {
+  border-radius: 0;
+}
+
+button::after {
+  border: 0;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 32rpx 28rpx 48rpx;
+}
+
+.page-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #0f172a;
+}
+
+.page-subtitle {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.card {
+  border: 1rpx solid rgba(226, 232, 240, 0.9);
+  border-radius: 20rpx;
+  background: #ffffff;
+  box-shadow: 0 16rpx 44rpx rgba(15, 23, 42, 0.06);
+}
+
+.primary-button {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.secondary-button {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  background: #eef2f7;
+  color: #334155;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.danger-button {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  background: #fee2e2;
+  color: #be123c;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.field {
+  margin-bottom: 28rpx;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #334155;
+}
+
+.input,
+.textarea,
+.picker-field {
+  width: 100%;
+  min-height: 88rpx;
+  border: 1rpx solid #dbe4ef;
+  border-radius: 18rpx;
+  background: #ffffff;
+  padding: 0 24rpx;
+  font-size: 30rpx;
+  color: #0f172a;
+}
+
+.textarea {
+  min-height: 150rpx;
+  padding-top: 20rpx;
+  line-height: 1.5;
+}
+
+.picker-field {
+  display: flex;
+  align-items: center;
+}
+
+.muted-text {
+  color: #64748b;
+}
+
+.empty {
+  padding: 72rpx 32rpx;
+  text-align: center;
+  color: #64748b;
+}
+
+.status-overdue {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.status-critical {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.status-warning {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.status-soon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-normal {
+  background: #dcfce7;
+  color: #15803d;
+}
+

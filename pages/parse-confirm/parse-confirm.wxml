@@ -1,0 +1,86 @@
+<view class="page confirm-page">
+  <view class="page-title">确认食品信息</view>
+  <view class="page-subtitle">请核对信息，确认无误后保存。</view>
+
+  <view class="parse-card card">
+    <view>
+      <text class="parse-label">录入方式</text>
+      <text class="parse-value">{{sourceLabel}}</text>
+    </view>
+    <view>
+      <text class="parse-label">检查提示</text>
+      <text class="parse-value">{{confidenceText}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{lowConfidence}}" class="notice-card">
+    请重点检查名称、品类和过期日期。
+  </view>
+
+  <view wx:if="{{source !== 'manual'}}" class="mock-alert">
+    <text class="mock-alert-title">当前是示例预填</text>
+    <text class="mock-alert-desc">这一步还没有接入真实 OCR、扫码商品库或 AI 识别。请核对名称、数量、单位、生产日期和过期日期后再保存。</text>
+  </view>
+
+  <view class="form-card card">
+    <view class="field">
+      <text class="field-label">食品名称</text>
+      <input class="input" value="{{form.name}}" data-field="name" bindinput="handleInput" />
+    </view>
+
+    <view class="field">
+      <text class="field-label">品类</text>
+      <picker range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="handleCategoryChange">
+        <view class="picker-field">{{form.category}}</view>
+      </picker>
+    </view>
+
+    <view class="two-col">
+      <view class="field">
+        <text class="field-label">数量</text>
+        <input class="input" type="digit" value="{{form.quantity}}" bindinput="handleQuantityInput" />
+      </view>
+      <view class="field">
+        <text class="field-label">单位</text>
+        <picker range="{{unitOptions}}" value="{{unitIndex}}" bindchange="handleUnitChange">
+          <view class="picker-field">{{form.unit}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="field">
+      <text class="field-label">生产日期</text>
+      <picker mode="date" value="{{form.productionDate}}" bindchange="handleProductionDateChange">
+        <view class="picker-field">{{form.productionDate || '可选'}}</view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <text class="field-label">保质期天数</text>
+      <input class="input" type="number" value="{{form.shelfLifeDays}}" bindinput="handleShelfLifeInput" />
+    </view>
+
+    <view class="field">
+      <text class="field-label">过期日期</text>
+      <picker mode="date" value="{{form.expireDate}}" bindchange="handleExpireDateChange">
+        <view class="picker-field required-date">{{form.expireDate || '请选择过期日期'}}</view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <text class="field-label">存放位置</text>
+      <picker range="{{locationOptions}}" value="{{locationIndex}}" bindchange="handleLocationChange">
+        <view class="picker-field">{{form.storageLocation}}</view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <text class="field-label">备注</text>
+      <textarea class="textarea" value="{{form.note}}" data-field="note" bindinput="handleInput" />
+    </view>
+
+    <button class="primary-button" loading="{{saving}}" bindtap="handleConfirmSave">
+      确认保存
+    </button>
+  </view>
+</view>
