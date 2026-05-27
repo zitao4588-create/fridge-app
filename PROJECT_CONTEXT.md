@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-05-27
+最后更新：2026-05-28
 
 ## 当前项目目标
 
@@ -1380,3 +1380,69 @@ type FridgeItem = {
 - 不要再按 2026-05-25 的“四项临期统计卡必须保留”作为最新日历页目标；2026-05-27 已确认替换为三色库存统计。
 - 菜谱页当前不再展示 `每日微醺时刻` 和 `每日健康饮品` 入口。
 - 中医饮食建议只能作为生活化饮食灵感，不做诊断、治疗或医疗功效承诺。
+
+## 2026-05-28 GitHub 新仓库上传收尾
+
+本轮完成：
+
+- 重新检查当前最新代码库后，将项目上传到 GitHub 新仓库。
+- GitHub 仓库已创建为私有仓库：
+  - `https://github.com/zitao4588-create/fridge-app`
+- 本地 Git 远程已设置：
+  - `origin` -> `https://github.com/zitao4588-create/fridge-app.git`
+- 本地 `main` 已推送并跟踪 `origin/main`。
+- 上传前提交：
+  - `a985244 feat: update fridge app mvp`
+- 上传前将微信开发者工具预览产物加入 `.gitignore`：
+  - `preview-info.json`
+  - `preview-qrcode.png`
+- 预览二维码和预览信息文件未进入 Git 提交。
+
+本轮修改文件：
+
+- `.gitignore`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `git diff --check`
+- `node --check app.js`
+- `node --check pages/index/index.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check services/parseService.js`
+- `node --check services/recipeService.js`
+- `node --check services/zoneConfigService.js`
+- `npm run lint`
+- `npm run build`
+
+当前还没解决的问题：
+
+- Git 提交作者仍是本机默认值：`qzt <qzt@qztdeMacBook-Air.local>`；不影响当前上传，但后续建议配置正式 Git 用户名和邮箱。
+- GitHub 仓库当前为私有仓库；如果后续要公开，需要先确认 AppID、CloudBase 环境 ID 和项目文档中公开信息是否可接受。
+- 本轮只完成 GitHub 上传，没有做新的微信开发者工具真机预览。
+
+已尝试但失败 / 修正的方案：
+
+- 第一次 `gh auth login` 曾卡在交互流程，后改用设备验证码方式登录。
+- 旧 GitHub CLI token 已失效，第一次授权后仍被旧 token 影响；已先 `gh auth logout` 清除旧记录，再重新登录成功。
+- 普通沙盒下 `gh auth status` 显示 token 无效；通过联网授权检查确认 keyring 中的新 token 有效。
+- 普通沙盒下 `git add -A` 写入 `.git/index.lock` 失败，已通过受控权限暂存成功。
+
+下一步建议：
+
+- 后续每轮本地修改完成后，继续先跑 `git status`、必要检查，再提交并推送到 `origin/main`。
+- 建议配置正式 Git 作者信息，避免后续提交继续使用本机默认邮箱。
+- 保持仓库私有，除非明确决定公开项目。
+
+重要注意事项：
+
+- 不要把微信预览二维码、预览信息、本地私有配置、`.env`、`node_modules/`、`dist/` 上传到 GitHub。
+- GitHub 登录已恢复到账号 `zitao4588-create`；后续如果 token 过期，需要重新登录。

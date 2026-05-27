@@ -1,6 +1,6 @@
 # BUG_NOTES.md
 
-最后更新：2026-05-27
+最后更新：2026-05-28
 
 ## 本轮涉及的问题与处理
 
@@ -799,3 +799,83 @@
 
 - 对外描述时要明确：当前是 mock AI / 规则生成，不是真实模型调用。
 - 未来真实 AI 接入必须走云函数或服务端环境，不能把 API key 放小程序前端。
+
+## 2026-05-28 GitHub 上传过程问题记录
+
+### 1. GitHub CLI 旧 token 失效
+
+现象：
+
+- 执行 `gh auth status` 时提示账号 `zitao4588-create` 的 token 无效。
+- 第一次设备验证码授权完成后，普通状态检查仍然读到旧的无效 token。
+
+原因：
+
+- 本机 GitHub CLI 中已有旧登录记录，token 已过期或被撤销。
+- 新授权没有直接覆盖旧记录。
+
+处理：
+
+- 先执行 `gh auth logout --hostname github.com --user zitao4588-create` 清除旧登录记录。
+- 再用设备验证码方式重新登录 GitHub CLI。
+- 通过受控联网权限检查确认 keyring 中新 token 有效，权限包含 `repo`、`read:org`、`gist`。
+
+后续注意：
+
+- 如果后续 GitHub 操作再次提示 token 无效，先重新执行 `gh auth login -h github.com`。
+
+### 2. GitHub CLI 浏览器登录没有自动弹出
+
+现象：
+
+- 第一次执行 `gh auth login --web` 后，终端卡在交互流程，没有稳定显示后续验证码。
+- 用户没有看到浏览器登录页面。
+
+处理：
+
+- 改用 `gh auth login --web --clipboard` 获取设备验证码。
+- 手动打开 `https://github.com/login/device`。
+- 用户输入验证码并授权后完成登录。
+
+后续注意：
+
+- 以后在当前环境中登录 GitHub，优先用设备验证码方式，不依赖浏览器自动弹出。
+
+### 3. 普通沙盒下 `gh auth status` 误报无效
+
+现象：
+
+- 普通命令运行 `gh auth status` 显示 token 无效。
+- 受控联网权限下重新运行同一检查，显示登录有效。
+
+原因：
+
+- 普通沙盒网络受限，GitHub CLI 需要联网校验 token。
+
+处理：
+
+- 对必须联网的 GitHub 操作使用受控权限执行。
+
+后续注意：
+
+- GitHub 仓库创建、远程仓库查看和推送都属于联网操作，失败时先区分是真 token 问题还是网络权限问题。
+
+### 4. 普通沙盒下 `git add -A` 写入 Git 索引失败
+
+现象：
+
+- 执行 `git add -A` 时报错：
+  - `Unable to create '.git/index.lock': Operation not permitted`
+
+原因：
+
+- 当前环境对 `.git` 元数据写入存在权限限制。
+
+处理：
+
+- 通过受控权限重新执行 `git add -A` 后成功。
+- 后续 `git commit`、`gh repo create --push` 均完成。
+
+后续注意：
+
+- 如果后续 Git 操作涉及写入 `.git` 元数据时出现 `Operation not permitted`，优先按权限问题处理，不要误判为代码文件损坏。

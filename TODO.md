@@ -1,6 +1,6 @@
 # TODO.md
 
-最后更新：2026-05-27
+最后更新：2026-05-28
 
 ## 当前主线
 
@@ -592,3 +592,44 @@
 - 不恢复首页顶部三色统计卡。
 - 不恢复日历页常驻四项临期统计卡，除非用户重新要求。
 - 不接真实 AI、真实天气、真实联网搜索。
+
+## 2026-05-28 GitHub 上传收尾
+
+已完成：
+
+- 已创建 GitHub 私有仓库：
+  - `https://github.com/zitao4588-create/fridge-app`
+- 已把本地仓库 `origin` 指向：
+  - `https://github.com/zitao4588-create/fridge-app.git`
+- 已推送 `main` 分支到 GitHub，并设置本地 `main` 跟踪 `origin/main`。
+- 已提交上传前最新代码：
+  - `a985244 feat: update fridge app mvp`
+- 已把微信开发者工具预览产物加入 `.gitignore`：
+  - `preview-info.json`
+  - `preview-qrcode.png`
+- 已确认预览产物没有进入 Git 提交。
+
+本轮验证已通过：
+
+- `git diff --check`
+- 核心小程序 JS 和 service 的 `node --check`
+- `npm run lint`
+- `npm run build`
+- GitHub 仓库远程信息确认：
+  - 仓库：`zitao4588-create/fridge-app`
+  - 可见性：`PRIVATE`
+  - 默认分支：`main`
+
+当前待办：
+
+- 建议配置正式 Git 提交身份：
+  - `git config --global user.name "你的名字"`
+  - `git config --global user.email "你的 GitHub 邮箱"`
+- 后续每轮修改后继续提交并推送到 `origin/main`。
+- 如果未来要公开仓库，先复查 AppID、CloudBase 环境 ID、项目文档和截图资源是否适合公开。
+
+注意事项：
+
+- 仓库当前保持私有。
+- 不要上传 `.env`、`project.private.config.json`、`node_modules/`、`dist/`、微信预览二维码和本地临时文件。
+- GitHub CLI 已重新登录账号 `zitao4588-create`；如果后续 token 失效，重新执行 `gh auth login -h github.com`。
