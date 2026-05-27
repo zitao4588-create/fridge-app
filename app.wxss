@@ -1,7 +1,13 @@
+@import "styles/tokens.wxss";
+@import "styles/components.wxss";
+@import "styles/fridge-theme.wxss";
+
 page {
   min-height: 100vh;
-  background: #f7fbff;
-  color: #0f172a;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(221, 248, 232, 0.72), rgba(221, 248, 232, 0) 260rpx),
+    linear-gradient(180deg, var(--color-bg-soft, #f7fff6) 0%, var(--color-bg, #fff9ed) 58%, #ffffff 100%);
+  color: var(--color-text-main, #24352f);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -28,24 +34,24 @@ button::after {
 }
 
 .page-title {
-  font-size: 44rpx;
-  font-weight: 700;
+  font-size: 42rpx;
+  font-weight: 900;
   letter-spacing: 0;
-  color: #0f172a;
+  color: var(--color-text-title, #24352f);
 }
 
 .page-subtitle {
   margin-top: 10rpx;
   font-size: 26rpx;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--color-text-sub, #778781);
 }
 
 .card {
-  border: 1rpx solid rgba(226, 232, 240, 0.9);
-  border-radius: 20rpx;
-  background: #ffffff;
-  box-shadow: 0 16rpx 44rpx rgba(15, 23, 42, 0.06);
+  border: 2rpx solid var(--color-line, rgba(88, 201, 139, 0.13));
+  border-radius: var(--radius-lg, 36rpx);
+  background: var(--color-surface, rgba(255, 255, 255, 0.9));
+  box-shadow: var(--shadow-card, 0 12rpx 30rpx rgba(80, 130, 100, 0.11));
 }
 
 .primary-button {
@@ -53,11 +59,12 @@ button::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18rpx;
-  background: #0f766e;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #73dca2 0%, #1f9f73 100%);
   color: #ffffff;
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: 900;
+  box-shadow: var(--shadow-button, 0 8rpx 18rpx rgba(88, 201, 139, 0.28));
 }
 
 .secondary-button {
@@ -65,11 +72,12 @@ button::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18rpx;
-  background: #eef2f7;
-  color: #334155;
+  border: 2rpx solid rgba(88, 201, 139, 0.22);
+  border-radius: 999rpx;
+  background: #ffffff;
+  color: #1f9f73;
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: 900;
 }
 
 .danger-button {
@@ -77,11 +85,12 @@ button::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18rpx;
-  background: #fee2e2;
-  color: #be123c;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #ff9b82 0%, #ff7d73 100%);
+  color: #ffffff;
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: 800;
+  box-shadow: 0 8rpx 20rpx rgba(255, 107, 107, 0.22);
 }
 
 .field {
@@ -92,8 +101,8 @@ button::after {
   display: block;
   margin-bottom: 12rpx;
   font-size: 26rpx;
-  font-weight: 600;
-  color: #334155;
+  font-weight: 900;
+  color: var(--color-text-title, #24352f);
 }
 
 .input,
@@ -101,12 +110,13 @@ button::after {
 .picker-field {
   width: 100%;
   min-height: 88rpx;
-  border: 1rpx solid #dbe4ef;
-  border-radius: 18rpx;
-  background: #ffffff;
+  border: 2rpx solid var(--color-line, rgba(88, 201, 139, 0.13));
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.9);
   padding: 0 24rpx;
   font-size: 30rpx;
-  color: #0f172a;
+  color: var(--color-text-title, #24352f);
+  box-shadow: inset 0 2rpx 8rpx rgba(80, 130, 100, 0.04);
 }
 
 .textarea {
@@ -121,37 +131,40 @@ button::after {
 }
 
 .muted-text {
-  color: #64748b;
+  color: #778781;
 }
 
 .empty {
   padding: 72rpx 32rpx;
+  border: 2rpx dashed rgba(88, 201, 139, 0.18);
+  border-radius: var(--radius-lg, 36rpx);
+  background: linear-gradient(180deg, #ffffff 0%, #fff8ea 100%);
   text-align: center;
-  color: #64748b;
+  color: var(--color-text-sub, #778781);
+  font-weight: 800;
 }
 
 .status-overdue {
-  background: #ffe4e6;
-  color: #be123c;
+  background: #ffe7e3;
+  color: #ff7d73;
 }
 
 .status-critical {
-  background: #ffedd5;
-  color: #c2410c;
+  background: #fff0d6;
+  color: #c97922;
 }
 
 .status-warning {
-  background: #fef3c7;
-  color: #a16207;
+  background: #fff0d6;
+  color: #c97922;
 }
 
 .status-soon {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #ddf3ff;
+  color: #3a91b6;
 }
 
 .status-normal {
-  background: #dcfce7;
-  color: #15803d;
+  background: #def7e9;
+  color: #1f9f73;
 }
-

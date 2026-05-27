@@ -1,17 +1,5 @@
 const itemService = require('../../services/itemService')
 const { getDaysUntil } = require('../../utils/date')
-const {
-  DEFAULT_FRIDGE_LAYOUT_KEY,
-  FRIDGE_LAYOUTS,
-} = require('../../utils/constants')
-
-const SELECTED_FRIDGE_LAYOUT_STORAGE_KEY = 'selectedFridgeLayoutKey'
-
-function getFridgeLayoutIndex(layoutKey) {
-  const index = FRIDGE_LAYOUTS.findIndex((layout) => layout.key === layoutKey)
-
-  return index >= 0 ? index : 0
-}
 
 Page({
   data: {
@@ -20,28 +8,10 @@ Page({
       expiringSoon: 0,
       overdue: 0,
     },
-    fridgeLayoutOptions: FRIDGE_LAYOUTS.map((layout) => layout.name),
-    fridgeLayoutIndex: getFridgeLayoutIndex(DEFAULT_FRIDGE_LAYOUT_KEY),
-    selectedFridgeLayout: FRIDGE_LAYOUTS[
-      getFridgeLayoutIndex(DEFAULT_FRIDGE_LAYOUT_KEY)
-    ],
   },
 
   onShow() {
-    this.loadFridgeLayout()
     this.loadStats()
-  },
-
-  loadFridgeLayout() {
-    const savedLayoutKey =
-      wx.getStorageSync(SELECTED_FRIDGE_LAYOUT_STORAGE_KEY) ||
-      DEFAULT_FRIDGE_LAYOUT_KEY
-    const fridgeLayoutIndex = getFridgeLayoutIndex(savedLayoutKey)
-
-    this.setData({
-      fridgeLayoutIndex,
-      selectedFridgeLayout: FRIDGE_LAYOUTS[fridgeLayoutIndex],
-    })
   },
 
   loadStats() {
@@ -68,36 +38,12 @@ Page({
       })
   },
 
-  handleFridgeLayoutChange(event) {
-    const fridgeLayoutIndex = Number(event.detail.value)
-    const selectedFridgeLayout = FRIDGE_LAYOUTS[fridgeLayoutIndex]
-
-    if (!selectedFridgeLayout) {
-      return
-    }
-
-    wx.setStorageSync(
-      SELECTED_FRIDGE_LAYOUT_STORAGE_KEY,
-      selectedFridgeLayout.key,
-    )
-
-    this.setData({
-      fridgeLayoutIndex,
-      selectedFridgeLayout,
-    })
-
-    wx.showToast({
-      title: '已更新冰箱类型',
-      icon: 'success',
-    })
-  },
-
   handleClearAll() {
     wx.showModal({
       title: '清空全部数据',
       content: '确定清空当前账号下的全部食品记录吗？此操作不可恢复。',
       confirmText: '清空',
-      confirmColor: '#be123c',
+      confirmColor: '#d95d55',
       success: (res) => {
         if (!res.confirm) {
           return

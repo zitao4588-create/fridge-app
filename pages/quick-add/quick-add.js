@@ -1,45 +1,79 @@
 const parseService = require('../../services/parseService')
 
 Page({
-  handleManualAdd() {
+  navigateToSingleConfirm(result) {
+    const cacheKey = parseService.saveTempParsePayload(result, 'single')
+
     wx.navigateTo({
-      url: '/pages/item-form/item-form',
+      url: `/pages/parse-confirm/parse-confirm?cacheKey=${encodeURIComponent(
+        cacheKey,
+      )}`,
     })
   },
 
-  handleDairyPrefill() {
-    this.runParseTask('dairy')
+  navigateToBatchConfirm(result) {
+    const cacheKey = parseService.saveTempParsePayload(result, 'receipt')
+
+    wx.navigateTo({
+      url: `/pages/batch-parse-confirm/batch-parse-confirm?cacheKey=${encodeURIComponent(
+        cacheKey,
+      )}`,
+    })
   },
 
-  handleDrinkPrefill() {
-    this.runParseTask('drink')
-  },
-
-  runParseTask(type) {
+  runParseTask(task, onSuccess) {
     wx.showLoading({
-      title: '填入中',
+      title: '识别中',
     })
 
-    const task =
-      type === 'dairy'
-        ? parseService.getDairyPrefillResult()
-        : parseService.getDrinkPrefillResult()
-
-    task
+    task()
       .then((result) => {
         wx.hideLoading()
-        wx.navigateTo({
-          url: `/pages/parse-confirm/parse-confirm?data=${encodeURIComponent(
-            JSON.stringify(result),
-          )}`,
-        })
+        onSuccess(result)
       })
-      .catch(() => {
+      .catch((error) => {
         wx.hideLoading()
+
+        if (parseService.isCancelError(error)) {
+          return
+        }
+
         wx.showToast({
-          title: '填入失败',
+          title: '识别失败',
           icon: 'none',
         })
       })
+  },
+
+  handleFoodPhoto() {
+    this.runParseTask(
+      () => parseService.parseFoodPhoto(),
+      (result) => this.navigateToSingleConfirm(result),
+    )
+  },
+
+  handleManualSmart() {
+    this.navigateToSingleConfirm(parseService.createSmartManualResult())
+  },
+
+  handlePackageOrBarcode() {
+    wx.showActionSheet({
+      itemList: ['扫码条形码', '拍包装说明'],
+      success: (res) => {
+        const task =
+          res.tapIndex === 0
+            ? () => parseService.scanAndParseBarcode()
+            : () => parseService.parsePackagePhoto()
+
+        this.runParseTask(task, (result) => this.navigateToSingleConfirm(result))
+      },
+    })
+  },
+
+  handleReceiptPhoto() {
+    this.runParseTask(
+      () => parseService.parseReceiptPhoto(),
+      (result) => this.navigateToBatchConfirm(result),
+    )
   },
 })

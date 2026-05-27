@@ -1,54 +1,86 @@
 const itemService = require('../../services/itemService')
+const parseService = require('../../services/parseService')
+const zoneConfigService = require('../../services/zoneConfigService')
 const {
   CATEGORY_OPTIONS,
-  DEFAULT_FRIDGE_LAYOUT_KEY,
-  FRIDGE_LAYOUTS,
+  HOME_ZONE_DEFINITIONS,
 } = require('../../utils/constants')
 const { formatDate, getDaysUntil } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
 
-const SELECTED_FRIDGE_LAYOUT_STORAGE_KEY = 'selectedFridgeLayoutKey'
-
-function getFridgeLayoutIndex(layoutKey) {
-  const index = FRIDGE_LAYOUTS.findIndex((layout) => layout.key === layoutKey)
-
-  return index >= 0 ? index : 0
+const CATEGORY_THUMB_TEXT = {
+  蔬菜: '菜',
+  水果: '果',
+  肉蛋: '蛋',
+  乳制品: '奶',
+  饮料: '饮',
+  速冻: '冻',
+  调料: '调',
+  主食: '饭',
+  其他: '食',
 }
 
-function getSelectedFridgeLayout() {
-  const savedLayoutKey =
-    wx.getStorageSync(SELECTED_FRIDGE_LAYOUT_STORAGE_KEY) ||
-    DEFAULT_FRIDGE_LAYOUT_KEY
-  const currentLayoutIndex = getFridgeLayoutIndex(savedLayoutKey)
-
-  return FRIDGE_LAYOUTS[currentLayoutIndex]
+const CATEGORY_THUMB_CLASS = {
+  蔬菜: 'vegetable',
+  水果: 'fruit',
+  肉蛋: 'protein',
+  乳制品: 'dairy',
+  饮料: 'drink',
+  速冻: 'frozen',
+  调料: 'seasoning',
+  主食: 'staple',
+  其他: 'other',
 }
 
-function getHotAreaStyle(hotArea) {
-  return [
-    `left:${hotArea.left}%`,
-    `top:${hotArea.top}%`,
-    `width:${hotArea.width}%`,
-    `height:${hotArea.height}%`,
-  ].join(';')
-}
-
-function getMarkerStyle(zone) {
-  const shouldKeepCustomPoint = zone.location === '门架' && zone.markerPoint
-  const markerPoint = shouldKeepCustomPoint
-    ? zone.markerPoint
-    : {
-        left: zone.hotArea.left + zone.hotArea.width / 2,
-        top: zone.hotArea.top + zone.hotArea.height / 2,
-      }
-
-  return [`left:${markerPoint.left}%`, `top:${markerPoint.top}%`].join(';')
+function getZoneDefinition(key) {
+  return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
 }
 
 function getZoneItems(items, zone) {
   const locations = zone.locations || [zone.location]
 
   return items.filter((item) => locations.includes(item.storageLocation))
+}
+
+function getExpiryTone(expireDate) {
+  const days = getDaysUntil(expireDate)
+
+  if (days < 0) {
+    return {
+      className: 'danger',
+      label: '已过期',
+    }
+  }
+
+  if (days <= 3) {
+    return {
+      className: 'warning',
+      label: days === 0 ? '今天到期' : `${days}天内到期`,
+    }
+  }
+
+  return {
+    className: 'normal',
+    label: '正常',
+  }
+}
+
+function getFoodThumb(item) {
+  if (item.source === 'photo' && item.imageFileId) {
+    return {
+      type: 'image',
+      image: item.imageFileId,
+      text: '',
+      className: 'photo',
+    }
+  }
+
+  return {
+    type: 'local',
+    image: '',
+    text: CATEGORY_THUMB_TEXT[item.category] || CATEGORY_THUMB_TEXT.其他,
+    className: CATEGORY_THUMB_CLASS[item.category] || CATEGORY_THUMB_CLASS.其他,
+  }
 }
 
 function buildZoneCategoryGroups(items) {
@@ -124,6 +156,17 @@ function buildZonePanelData(zone, items, filterType = 'total') {
   }
 }
 
+function buildZoneConfigDraft(configZones) {
+  return zoneConfigService.sanitizeZones(configZones).map((zone) => {
+    const definition = getZoneDefinition(zone.key)
+
+    return {
+      ...definition,
+      enabled: zone.enabled !== false,
+    }
+  })
+}
+
 function getStatPanelItems(type, items) {
   if (type === 'expiring') {
     return items.filter((item) => {
@@ -191,14 +234,11 @@ function buildSearchPanelData(keyword, items) {
   }
 }
 
-function buildFridgeZones(items, layout) {
-  return layout.zones.map((zone) => {
+function buildHomeZones(items, configZones) {
+  return buildZoneConfigDraft(configZones)
+    .filter((zone) => zone.enabled)
+    .map((zone) => {
     const zoneItems = getZoneItems(items, zone)
-    const previewItems = zoneItems.slice(0, 4).map((item, index) => ({
-      id: item._id || `${zone.key}-${index}`,
-      name: item.name,
-      amountText: item.amountText || `${item.quantity || 1}${item.unit || '份'}`,
-    }))
     const expiringSoon = zoneItems.filter((item) => {
       const days = getDaysUntil(item.expireDate)
       return days >= 0 && days <= 3
@@ -215,13 +255,10 @@ function buildFridgeZones(items, layout) {
 
     return {
       ...zone,
-      hotAreaStyle: getHotAreaStyle(zone.hotArea),
-      markerStyle: getMarkerStyle(zone),
-      showMarker: true,
       itemCount: zoneItems.length,
       expiringSoon,
       overdue,
-      previewItems,
+      items: zoneItems,
       alertText,
       alertClass,
     }
@@ -231,12 +268,14 @@ function buildFridgeZones(items, layout) {
 Page({
   data: {
     loading: false,
+    zoneConfigLoaded: false,
+    zoneConfigId: '',
+    zoneConfigDraft: buildZoneConfigDraft([]),
+    zoneConfigPanelVisible: false,
+    zoneConfigDraggingIndex: -1,
+    zoneConfigSaving: false,
     allItems: [],
-    fridgeLayout: FRIDGE_LAYOUTS[getFridgeLayoutIndex(DEFAULT_FRIDGE_LAYOUT_KEY)],
-    fridgeZones: buildFridgeZones(
-      [],
-      FRIDGE_LAYOUTS[getFridgeLayoutIndex(DEFAULT_FRIDGE_LAYOUT_KEY)],
-    ),
+    homeZones: buildHomeZones([], []),
     stats: {
       total: 0,
       expiringSoon: 0,
@@ -257,14 +296,20 @@ Page({
     statPanelItems: [],
     statPanelEmptyTitle: '',
     statPanelEmptyDesc: '',
-  },
-
-  onLoad() {
-    this.syncFridgeLayout()
+    zoneAddPanelVisible: false,
+    selectedAddZone: null,
+    foodDetailVisible: false,
+    selectedFood: null,
   },
 
   onShow() {
-    this.syncFridgeLayout()
+    if (!this.data.zoneConfigLoaded) {
+      this.loadZoneConfig().finally(() => {
+        this.loadItems()
+      })
+      return
+    }
+
     this.loadItems()
   },
 
@@ -280,6 +325,20 @@ Page({
     })
   },
 
+  loadZoneConfig() {
+    return zoneConfigService.getZoneConfig().then((config) => {
+      const zoneConfigDraft = buildZoneConfigDraft(config.zones)
+
+      this.setData({
+        zoneConfigLoaded: true,
+        zoneConfigId: config._id || '',
+        zoneConfigDraft,
+        zoneConfigPanelVisible: !config.hasSavedConfig,
+        homeZones: buildHomeZones(this.data.allItems, zoneConfigDraft),
+      })
+    })
+  },
+
   loadItems() {
     this.setData({
       loading: true,
@@ -290,12 +349,12 @@ Page({
       .then((items) => {
         const decoratedItems = items.map((item) => this.decorateItem(item))
         const stats = this.buildStats(decoratedItems)
-        const fridgeZones = buildFridgeZones(
+        const homeZones = buildHomeZones(
           decoratedItems,
-          this.data.fridgeLayout,
+          this.data.zoneConfigDraft,
         )
         const selectedZone = this.data.selectedZone
-          ? fridgeZones.find((zone) => zone.key === this.data.selectedZone.key)
+          ? homeZones.find((zone) => zone.key === this.data.selectedZone.key)
           : null
         const zonePanelData = selectedZone
           ? buildZonePanelData(
@@ -313,7 +372,7 @@ Page({
         this.setData({
           allItems: decoratedItems,
           stats,
-          fridgeZones,
+          homeZones,
           loading: false,
           ...zonePanelData,
           ...statPanelData,
@@ -330,27 +389,10 @@ Page({
       })
   },
 
-  syncFridgeLayout() {
-    const fridgeLayout = getSelectedFridgeLayout()
-
-    if (this.data.fridgeLayout.key === fridgeLayout.key) {
-      return
-    }
-
-    this.setData({
-      fridgeLayout,
-      fridgeZones: buildFridgeZones(this.data.allItems, fridgeLayout),
-      zonePanelVisible: false,
-      selectedZone: null,
-      selectedZoneFilter: 'total',
-      selectedZoneFilterLabel: '全部食品',
-      selectedZoneItems: [],
-      selectedZoneGroups: [],
-    })
-  },
-
   decorateItem(item) {
     const status = getExpiryStatus(item.expireDate)
+    const tone = getExpiryTone(item.expireDate)
+    const thumb = getFoodThumb(item)
 
     return {
       ...item,
@@ -360,6 +402,12 @@ Page({
       statusLabel: status.label,
       statusHint: status.hint,
       statusClass: status.className,
+      visualStatusLabel: tone.label,
+      visualStatusClass: tone.className,
+      thumbType: thumb.type,
+      thumbImage: thumb.image,
+      thumbText: thumb.text,
+      thumbClass: thumb.className,
     }
   },
 
@@ -376,7 +424,18 @@ Page({
 
   handleZoneView(event) {
     const { key } = event.currentTarget.dataset
-    const zone = this.data.fridgeZones.find((item) => item.key === key)
+    const zone = this.data.homeZones.find((item) => item.key === key)
+
+    if (!zone) {
+      return
+    }
+
+    this.openZoneAddPanel(zone)
+  },
+
+  handleZoneStatTap(event) {
+    const { key, filter } = event.currentTarget.dataset
+    const zone = this.data.homeZones.find((item) => item.key === key)
 
     if (!zone) {
       return
@@ -384,8 +443,9 @@ Page({
 
     this.setData({
       zonePanelVisible: true,
+      zoneAddPanelVisible: false,
       statPanelVisible: false,
-      ...buildZonePanelData(zone, this.data.allItems, 'total'),
+      ...buildZonePanelData(zone, this.data.allItems, filter || 'total'),
     })
   },
 
@@ -421,6 +481,7 @@ Page({
     this.setData({
       statPanelVisible: true,
       zonePanelVisible: false,
+      zoneAddPanelVisible: false,
       ...buildStatPanelData(type || 'total', this.data.allItems),
     })
   },
@@ -455,9 +516,249 @@ Page({
     this.setData({
       statPanelVisible: true,
       zonePanelVisible: false,
+      zoneAddPanelVisible: false,
       searchKeyword: keyword,
       ...buildSearchPanelData(keyword, this.data.allItems),
     })
+  },
+
+  handleSmartAdd() {
+    wx.navigateTo({
+      url: '/pages/quick-add/quick-add',
+    })
+  },
+
+  handleKnownHint() {
+    this.showNotice('点分区右上角的加号，就能添加到指定位置')
+  },
+
+  handleOpenZoneConfig() {
+    this.setData({
+      zoneConfigPanelVisible: true,
+    })
+  },
+
+  handleCloseZoneConfig() {
+    if (!this.data.zoneConfigId) {
+      this.showNotice('请先保存一次分区配置')
+      return
+    }
+
+    this.setData({
+      zoneConfigPanelVisible: false,
+      zoneConfigDraggingIndex: -1,
+    })
+    this.zoneConfigDragState = null
+  },
+
+  handleShowZoneConfig(event) {
+    const index = Number(event.currentTarget.dataset.index)
+    const zoneConfigDraft = this.data.zoneConfigDraft.map((zone, zoneIndex) =>
+      zoneIndex === index
+        ? {
+            ...zone,
+            enabled: true,
+          }
+        : zone,
+    )
+
+    this.setData({
+      zoneConfigDraft,
+    })
+  },
+
+  handleDeleteZoneConfig(event) {
+    const index = Number(event.currentTarget.dataset.index)
+    const targetZone = this.data.zoneConfigDraft[index]
+
+    if (!targetZone || !targetZone.enabled) {
+      return
+    }
+
+    const enabledCount = this.data.zoneConfigDraft.filter(
+      (zone) => zone.enabled,
+    ).length
+
+    if (enabledCount <= 1) {
+      wx.showToast({
+        title: '至少保留一个分区',
+        icon: 'none',
+      })
+      return
+    }
+
+    const zoneConfigDraft = this.data.zoneConfigDraft.map((zone, zoneIndex) =>
+      zoneIndex === index
+        ? {
+            ...zone,
+            enabled: false,
+          }
+        : zone,
+    )
+
+    this.setData({
+      zoneConfigDraft,
+    })
+  },
+
+  handleZoneConfigDragStart(event) {
+    const index = Number(event.currentTarget.dataset.index)
+    const touch = event.touches && event.touches[0]
+
+    if (!touch || index < 0 || index >= this.data.zoneConfigDraft.length) {
+      return
+    }
+
+    this.zoneConfigDragState = {
+      index,
+      currentY: touch.clientY,
+    }
+
+    this.setData({
+      zoneConfigDraggingIndex: index,
+    })
+  },
+
+  handleZoneConfigDragMove(event) {
+    const dragState = this.zoneConfigDragState
+    const touch = event.touches && event.touches[0]
+
+    if (!dragState || !touch) {
+      return
+    }
+
+    const deltaY = touch.clientY - dragState.currentY
+    const threshold = 44
+
+    if (Math.abs(deltaY) < threshold) {
+      return
+    }
+
+    const direction = deltaY > 0 ? 1 : -1
+    const targetIndex = dragState.index + direction
+    const zoneConfigDraft = this.data.zoneConfigDraft.slice()
+
+    if (targetIndex < 0 || targetIndex >= zoneConfigDraft.length) {
+      dragState.currentY = touch.clientY
+      return
+    }
+
+    const current = zoneConfigDraft[dragState.index]
+
+    zoneConfigDraft[dragState.index] = zoneConfigDraft[targetIndex]
+    zoneConfigDraft[targetIndex] = current
+
+    dragState.index = targetIndex
+    dragState.currentY = touch.clientY
+
+    this.setData({
+      zoneConfigDraft,
+      zoneConfigDraggingIndex: targetIndex,
+    })
+  },
+
+  handleZoneConfigDragEnd() {
+    this.zoneConfigDragState = null
+    this.setData({
+      zoneConfigDraggingIndex: -1,
+    })
+  },
+
+  handleSaveZoneConfig() {
+    const enabledCount = this.data.zoneConfigDraft.filter(
+      (zone) => zone.enabled,
+    ).length
+
+    if (enabledCount === 0) {
+      wx.showToast({
+        title: '至少保留一个分区',
+        icon: 'none',
+      })
+      return
+    }
+
+    this.setData({
+      zoneConfigSaving: true,
+    })
+
+    zoneConfigService
+      .saveZoneConfig({
+        _id: this.data.zoneConfigId,
+        zones: this.data.zoneConfigDraft,
+      })
+      .then((config) => {
+        const zoneConfigDraft = buildZoneConfigDraft(config.zones)
+
+        this.setData({
+          zoneConfigId: config._id,
+          zoneConfigDraft,
+          zoneConfigPanelVisible: false,
+          zoneConfigSaving: false,
+          homeZones: buildHomeZones(this.data.allItems, zoneConfigDraft),
+        })
+      })
+      .catch(() => {
+        this.setData({
+          zoneConfigSaving: false,
+        })
+        wx.showToast({
+          title: '保存失败，请检查云集合',
+          icon: 'none',
+        })
+      })
+  },
+
+  openZoneAddPanel(zone) {
+    this.setData({
+      selectedAddZone: zone,
+      zoneAddPanelVisible: true,
+      zonePanelVisible: false,
+      statPanelVisible: false,
+    })
+  },
+
+  handleCloseZoneAddPanel() {
+    this.setData({
+      zoneAddPanelVisible: false,
+    })
+  },
+
+  navigateToSingleConfirm(result) {
+    const cacheKey = parseService.saveTempParsePayload(result, 'single')
+
+    wx.navigateTo({
+      url: `/pages/parse-confirm/parse-confirm?cacheKey=${encodeURIComponent(
+        cacheKey,
+      )}`,
+    })
+  },
+
+  runZoneParseTask(task) {
+    wx.showLoading({
+      title: '识别中',
+    })
+
+    task()
+      .then((result) => {
+        wx.hideLoading()
+        this.setData({
+          zonePanelVisible: false,
+          zoneAddPanelVisible: false,
+        })
+        this.navigateToSingleConfirm(result)
+      })
+      .catch((error) => {
+        wx.hideLoading()
+
+        if (parseService.isCancelError(error)) {
+          return
+        }
+
+        wx.showToast({
+          title: '识别失败',
+          icon: 'none',
+        })
+      })
   },
 
   handleZoneAdd(event) {
@@ -465,12 +766,47 @@ Page({
 
     this.setData({
       zonePanelVisible: false,
+      zoneAddPanelVisible: false,
     })
 
     wx.navigateTo({
       url: `/pages/item-form/item-form?storageLocation=${encodeURIComponent(
         location,
       )}`,
+    })
+  },
+
+  handleZonePhotoAdd(event) {
+    const { location } = event.currentTarget.dataset
+
+    this.runZoneParseTask(() =>
+      parseService.parseFoodPhoto({
+        preferredStorageLocation: location,
+      }),
+    )
+  },
+
+  handleZonePackageAdd(event) {
+    const { location } = event.currentTarget.dataset
+
+    wx.showActionSheet({
+      itemList: ['扫码条形码', '拍包装说明'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          this.runZoneParseTask(() =>
+            parseService.scanAndParseBarcode({
+              preferredStorageLocation: location,
+            }),
+          )
+          return
+        }
+
+        this.runZoneParseTask(() =>
+          parseService.parsePackagePhoto({
+            preferredStorageLocation: location,
+          }),
+        )
+      },
     })
   },
 
@@ -483,6 +819,44 @@ Page({
 
     wx.navigateTo({
       url: `/pages/item-form/item-form?id=${id}`,
+    })
+  },
+
+  handleFoodImageTap(event) {
+    const { id } = event.currentTarget.dataset
+    const selectedFood = this.data.allItems.find((item) => item._id === id)
+
+    if (!selectedFood) {
+      return
+    }
+
+    this.setData({
+      selectedFood,
+      foodDetailVisible: true,
+    })
+  },
+
+  handleCloseFoodDetail() {
+    this.setData({
+      foodDetailVisible: false,
+      selectedFood: null,
+    })
+  },
+
+  handleFoodDetailEdit() {
+    const food = this.data.selectedFood
+
+    if (!food) {
+      return
+    }
+
+    this.setData({
+      foodDetailVisible: false,
+      selectedFood: null,
+    })
+
+    wx.navigateTo({
+      url: `/pages/item-form/item-form?id=${food._id}`,
     })
   },
 
@@ -517,11 +891,25 @@ Page({
   handleDelete(event) {
     const { id, name } = event.currentTarget.dataset
 
+    this.confirmDeleteFood(id, name)
+  },
+
+  handleFoodDetailDelete() {
+    const food = this.data.selectedFood
+
+    if (!food) {
+      return
+    }
+
+    this.confirmDeleteFood(food._id, food.name)
+  },
+
+  confirmDeleteFood(id, name) {
     wx.showModal({
       title: '确认删除',
       content: `确定删除「${name}」吗？`,
       confirmText: '删除',
-      confirmColor: '#be123c',
+      confirmColor: '#d95d55',
       success: (res) => {
         if (!res.confirm) {
           return
@@ -536,6 +924,10 @@ Page({
           .then(() => {
             wx.hideLoading()
             this.showNotice(`已删除「${name}」`)
+            this.setData({
+              foodDetailVisible: false,
+              selectedFood: null,
+            })
             this.loadItems()
           })
           .catch(() => {

@@ -1,25 +1,25 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-05-23
+最后更新：2026-05-27
 
 ## 当前项目目标
 
 本项目当前主线已经从原来的 React/Vite H5，切换为微信小程序项目。
 
-项目名称暂定：冰箱管家  
+项目名称：冰箱雷达
 项目目录：`fridge-app`  
 产品方向：冰箱食品饮料库存管理
 
 当前阶段目标是完成第一阶段 MVP：
 
 - 用户可以手动添加冰箱食品饮料
-- 首页可以通过真实冰箱模板查看分区库存、过期状态、统计和搜索
+- 首页通过可 DIY 的分区货架查看库存、过期状态、统计和搜索
 - 支持编辑、删除食品
 - 数据保存到微信云开发 CloudBase 云数据库
 - 每条食品数据绑定当前用户 `_openid`
-- 日历页显示到期食品
-- 菜谱页基于临期食品返回本地规则推荐
-- 拍照录入和扫码录入先走 mock 解析，并必须经过确认页后保存
+- 日历页显示到期食品，并在日历下方直接承接临期 / 过期食材去化
+- 菜谱页固定为 AI 菜谱体验页，第一轮用 mock AI 结构，默认下方留白，用户点选入口后生成库存感知推荐
+- 拍食品、拍包装 / 条码、拍购物小票先走 mock 解析，并必须经过确认页后保存
 
 ## 当前技术栈
 
@@ -28,7 +28,7 @@
 - WXML
 - WXSS
 - 微信云开发 / CloudBase
-- 云数据库集合：`items`、`reminders`、`parseLogs`
+- 云数据库集合：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs`
 - 云函数：`getOpenId`、`parseFoodImage`、`parseBarcode`、`generateRecipes`、`sendExpiryReminders`
 
 当前不使用：
@@ -41,7 +41,7 @@
 - 登录页
 - 真实 OCR
 - 真实条形码商品库
-- 真实 AI API
+- 真实 AI API / 真实联网搜索 / 真实天气 API
 - 订阅消息真实推送
 
 ## 云开发配置
@@ -57,7 +57,9 @@
   - `items`
   - `reminders`
   - `parseLogs`
-- 集合权限已设置为：仅创建者可读写
+  - `fridgeZoneConfigs`
+- `items`、`reminders`、`parseLogs` 权限按仅创建者可读写使用
+- `fridgeZoneConfigs` 已创建，权限已在 CloudBase 控制台确认为“仅创建者可读写”
 
 ## 当前已完成功能
 
@@ -65,15 +67,46 @@
 
 - `pages/index`：首页冰箱分区视图、统计、搜索和弹窗清单
 - `pages/item-form`：添加 / 编辑食品
-- `pages/quick-add`：快速录入入口
-- `pages/parse-confirm`：解析结果确认页
-- `pages/calendar`：小程序内日历页
-- `pages/recipes`：今日菜谱推荐页
-- `pages/profile`：我的页
+- `pages/quick-add`：独立智能录入入口
+- `pages/parse-confirm`：单个解析结果确认页
+- `pages/batch-parse-confirm`：小票批量解析结果确认页
+- `pages/calendar`：小程序内日历页、临期去化卡片推荐
+- `pages/recipes`：AI 菜谱体验页
+
+说明：
+
+- `pages/profile` 文件暂时保留在目录中，但当前已不再注册为小程序页面，也不再出现在底部 Tab。
 
 ### 首页
 
-- 第一栏展示用户已选冰箱模板图，当前默认是“三门冰箱”
+- 首页当前已从冰箱实物图热区改为分区货架展示
+- 首页顶部展示全局三项统计和搜索框
+- 首页保留“确定放哪 / 不确定放哪”添加引导
+- 首页分区本身只作为“添加食材到该分区”的入口
+- 首页展示用户启用并排序后的标准分区：
+  - 冷藏区
+  - 冷冻区
+  - 门上储物格
+  - 果蔬抽屉
+  - 变温区
+- 每个分区显示标题、温度标签、`总 / 临 / 过` 统计、横向食品卡片和添加提示
+- 点击分区空白、标题或加号会弹出添加方式面板：
+  - 手动添加
+  - 拍食品
+  - 拍包装 / 条码
+- 点击分区 `总 / 临 / 过` 统计会打开当前分区对应清单
+- 点击食品图片会打开食品详情面板，可查看、编辑、删除
+- 食品卡片文字区按状态三色区分：正常绿色、临期黄色、已过期红色
+- 拍食品会上传照片到 CloudBase 云存储并保存 `imageFileId`，首页优先显示照片
+- 手动、条码、包装、小票来源使用本地图标缩略图，不接外部 AI 图片生成
+- 分区 DIY 配置保存到 `fridgeZoneConfigs`
+- 首次无配置时弹出分区 DIY 面板，可启用 / 隐藏和排序 5 个标准分区
+- 首页提供轻量“分区”入口用于重新配置
+- 已取消冰箱类型选择
+
+历史说明：
+
+- 第一栏曾固定展示默认冰箱模板图，默认是“三门冰箱”
 - 已接入 7 张冰箱结构模板图：
   - 法式多门
   - 十字门
@@ -92,8 +125,10 @@
 - 分区清单按品类展示当前分区食品
 - 分区清单内可直接编辑食品
 - 分区清单内可直接删除食品，删除前二次确认
-- 分区清单内可添加食品到当前分区
-- 首页不显示冰箱类型切换按钮，后续由首次设置或注册后选择冰箱类型
+- 分区清单内可手动添加食品到当前分区
+- 分区清单内可拍食品、拍包装 / 条码，并默认带入当前分区
+- 首页“我的冰箱”标题右侧提供“智能录入”入口，用于不预选分区的拍食品、拍包装 / 条码和小票批量录入
+- 首页已取消冰箱类型选择，固定使用默认“三门冰箱”模板
 - 底部全局统计：
   - 总食品数
   - 临期数量
@@ -141,22 +176,61 @@
 - 展示本月日历
 - 有食品到期的日期有标记
 - 点击日期展示当天到期食品
+- 日历功能下方新增“临期去化”
+- 临期去化展示今日到期、3 天内到期、7 天内到期、已过期数量
+- 临期统计卡片可点击查看对应清单，但卡片内不显示“查看清单”小字
+- 临期去化列出优先处理食材
+- 临期食品会直接生成 3 道优先消耗菜谱卡片
+- 去化菜谱卡片展示已有食材、缺少食材、可直接做 / 还差几样、建议优先用掉、耗时、难度和标签
+- 已过期食品只做安全检查和丢弃提醒，不默认推荐为可食用菜谱
 - 第一阶段不接系统日历
 
 ### 菜谱页
 
-- 根据库存和临期食品返回 3 个规则推荐
-- 优先使用 3 天内过期食品
-- 没有临期食品时基于现有库存推荐
-- 第一阶段不调用真实 AI API
+- 当前定位为 AI 菜谱体验页
+- 顶部使用“小光”健康 Tips 窗口，展示一句暖心建议和提醒日期、季节、天气、湿度
+- 提醒日期在卡片内显示为短日期，例如 `5月24日`，不显示年份
+- 第一轮使用 mock 日期、季节、天气、时间段和 AI 推荐结构
+- 进入菜谱页后，下方默认保持空白，不自动展示“临期去化攻略”
+- 用户点选“菜品盲盒”“我来选食材”“每日微醺时刻”“每日健康饮品”后，才在下方生成对应攻略内容
+- AI 推荐会读取冰箱库存，标记已有食材、缺少食材、可直接做 / 还差几样
+- 临期食材会被加权并显示“建议优先用掉”
+- 支持点击菜谱卡查看详情，展示食材匹配、步骤和安全提示
+- 支持“我来选食材”半屏弹窗，用户可从冰箱库存选择 1 到 5 个未过期食材后生成推荐
+- 支持“菜品盲盒”
+- 支持“每日微醺时刻”DIY 调酒推荐，并显示成年人和适量饮用提示
+- 支持“每日健康饮品”DIY 饮品推荐，不写医疗功效
+- 第一阶段不调用真实 AI API、真实天气 API 或真实联网搜索
 
-### 拍照 / 扫码 mock 流程
+### 智能录入 mock 流程
 
-- 拍照录入入口可返回 mock 解析结果
-- 扫码录入入口可返回 mock 解析结果
-- 解析结果进入 `pages/parse-confirm`
+- 拍食品入口会打开相机 / 相册，第一阶段返回 mock 食品解析结果
+- 拍包装入口会打开相机 / 相册，第一阶段返回 mock 包装说明解析结果
+- 扫码条形码入口会打开扫码能力，第一阶段返回 mock 商品解析结果
+- 拍购物小票入口会打开相机 / 相册，第一阶段返回多条 mock 食品解析结果
+- 单个解析结果进入 `pages/parse-confirm`
+- 小票批量解析结果进入 `pages/batch-parse-confirm`
+- 单品会显示推荐分区；从冰箱分区进入时默认使用当前分区，用户可采纳推荐分区
+- 小票批量确认页每条食品可单独勾选、修改名称、数量、单位、品类、过期日期和存放位置
 - 用户确认后才保存到 `items`
 - `parseLogs` 会记录解析日志
+
+### fridgeZoneConfigs
+
+用于保存首页分区 DIY 配置。
+
+```ts
+type FridgeZoneConfig = {
+  _id: string;
+  _openid: string;
+  zones: Array<{
+    key: "cold" | "freeze" | "door" | "produce" | "temp";
+    enabled: boolean;
+  }>;
+  createdAt: number;
+  updatedAt: number;
+};
+```
 
 ## 当前数据结构
 
@@ -175,7 +249,7 @@ type FridgeItem = {
   expireDate: string;
   storageLocation: "冷藏" | "变温" | "冷冻" | "门架" | "其他";
   note?: string;
-  source: "manual" | "photo" | "barcode";
+  source: "manual" | "photo" | "barcode" | "package" | "receipt";
   barcode?: string;
   imageFileId?: string;
   parseConfidence?: number;
@@ -192,7 +266,7 @@ type FridgeItem = {
 
 ### parseLogs
 
-用于记录拍照 / 扫码 mock 解析日志。
+用于记录拍食品、包装 / 条码、小票 mock 解析日志。
 
 ## service 层
 
@@ -207,6 +281,10 @@ type FridgeItem = {
 - `services/parseService.js`
   - `parseByPhoto`
   - `parseByBarcode`
+  - `parseFoodPhoto`
+  - `parsePackagePhoto`
+  - `scanAndParseBarcode`
+  - `parseReceiptPhoto`
   - `normalizeParseResult`
   - `calculateExpireDate`
 - `services/reminderService.js`
@@ -215,9 +293,12 @@ type FridgeItem = {
   - `getCalendarEvents`
   - `requestSubscribeMessage`
 - `services/recipeService.js`
+  - `getAIRecipeRecommendations`
+  - `getExpiryUsageRecommendations`
+  - `getBlindBoxRecommendation`
+  - `getMockRecommendationContext`
   - `getRecipeRecommendations`
   - `ruleBasedRecipes`
-  - `mockAIRecipes`
 
 页面不要直接堆复杂数据库逻辑，新增业务逻辑优先放到 service 层。
 
@@ -235,10 +316,171 @@ type FridgeItem = {
 
 - `parseFoodImage` 第一阶段返回 mock 图片解析结果
 - `parseBarcode` 第一阶段返回 mock 条形码解析结果
-- `generateRecipes` 第一阶段保留规则推荐结构
+- `generateRecipes` 第一阶段保留 mock AI 推荐结构，后续可替换真实 AI、天气和搜索
 - `sendExpiryReminders` 第一阶段只保留结构，不实际发送订阅消息
 
 ## 本轮完成内容
+
+### 2026-05-24 AI 菜谱与临期去化体验版
+
+- 日历页新增“临期去化”模块，放在日历功能下方
+- 临期去化展示今日到期、3 天内到期、7 天内到期和已过期数量
+- 临期统计卡片只显示数字和标题，不再显示“查看清单”小字；点击统计卡片仍可打开对应库存清单
+- 临期去化列出 7 天内优先处理食材
+- 临期去化直接生成 3 道优先消耗菜谱卡片
+- 去化菜谱卡片展示已有食材、缺少食材、可直接做 / 还差几样、建议优先用掉、耗时、难度和标签
+- 已过期食品不默认进入可食用菜谱，只展示安全检查和丢弃提醒
+- 菜谱页改为“AI 菜谱”
+- 菜谱页顶部新增“小光”健康 Tips 窗口，去掉绿色小字说明和搜索说明行
+- 菜谱页 Tips 日期卡片使用短日期，不显示年份
+- 菜谱页进入后下方默认空白，只有点选四个入口之一后才生成对应攻略内容
+- AI 菜谱页读取冰箱库存并标记已有食材、缺少食材、可直接做 / 还差几样
+- AI 菜谱页支持显示临期食材“建议优先用掉”
+- AI 菜谱页支持菜谱详情弹窗
+- AI 菜谱页支持“我来选食材”半屏弹窗，可选 1 到 5 个未过期库存食材重新生成推荐
+- AI 菜谱页支持“菜品盲盒”“每日微醺时刻”“每日健康饮品”
+- `services/recipeService.js` 扩展为统一推荐服务层，页面不直接堆复杂推荐逻辑
+- `cloudfunctions/generateRecipes` 调整为 mock AI 返回结构，预留未来真实 AI / 天气 / 搜索接入点
+- 本轮不新增数据库集合，不修改 `items` 数据结构，不接真实外部 API
+- `app.globalData.recipePrefillItemIds` 仍保留为后续跨页带入食材的预留缓存，但当前日历页不展示“生成 AI 菜谱”按钮
+
+本轮修改文件：
+
+- `app.js`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.js`
+- `pages/recipes/recipes.json`
+- `pages/recipes/recipes.wxml`
+- `pages/recipes/recipes.wxss`
+- `services/recipeService.js`
+- `cloudfunctions/generateRecipes/index.js`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `DECISIONS.md`
+- `BUG_NOTES.md`
+- `README.md`
+- `AGENTS.md`
+
+本轮验证：
+
+- `node --check app.js`
+- `node --check pages/index/index.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check services/itemService.js`
+- `node --check services/parseService.js`
+- `node --check services/reminderService.js`
+- `node --check services/recipeService.js`
+- `node --check utils/constants.js`
+- `node --check utils/date.js`
+- `node --check utils/status.js`
+- `node --check cloudfunctions/getOpenId/index.js`
+- `node --check cloudfunctions/parseFoodImage/index.js`
+- `node --check cloudfunctions/parseBarcode/index.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `node --check cloudfunctions/sendExpiryReminders/index.js`
+- 19 个严格 JSON 配置文件解析通过，`tsconfig*.json` 属于 JSONC，未按严格 JSON 解析
+- `git diff --check`
+- `services/recipeService.js` VM 抽样输出检查
+- `npm run lint`
+- `npm run build`
+
+当前还没解决的问题：
+
+- 本轮尚未跑微信开发者工具自动化 UI 断言。
+- 已生成真机预览二维码：`/private/tmp/fridge-app-preview-qrcode-20260524-calendar-recipe-v2.png`
+- 真机人工验收仍需用户扫描二维码后确认页面实际效果。
+- AI 菜谱仍是 mock 体验版，不是真实 AI、真实天气或真实联网搜索。
+- 菜谱库和盲盒卡池仍是小规模示例，需要后续继续扩充。
+
+已尝试但失败 / 修正的方案：
+
+- 直接用 `node -e "require('./services/recipeService')"` 抽样 service 失败，原因是旧 H5 `package.json` 使用 `"type": "module"`，直接 require 和微信小程序 CommonJS 运行环境不一致；已改用只读 VM 包装方式验证。
+- 首次严格 JSON 扫描把 `tsconfig*.json` 也纳入，因 JSONC 注释报错；已改为只检查小程序实际 JSON 配置和 package 文件。
+
+下一步建议：
+
+- 用微信开发者工具打开日历页和 AI 菜谱页，手动点一遍统计清单、“我来选食材”“菜品盲盒”“每日微醺”“健康饮品”。
+- 真机预览确认日历去化卡片密度、AI 菜谱默认空白状态、半屏弹窗高度、详情弹窗滚动和按钮触控。
+- 真机确认后再决定是否压缩 AI 菜谱卡片信息，或给“可直接做 / 缺 1 样”增加筛选。
+
+### 2026-05-24 拍照添加功能融合
+
+- 首页“我的冰箱”标题右侧新增“智能录入”入口，进入 `pages/quick-add`
+- 首页新增“确定放哪 / 不确定放哪”指示牌式入口：
+  - 确定放哪：提示用户直接点冰箱分区
+  - 不确定放哪：进入智能录入
+- 分区弹窗里的单一“添加食品”改为三种分区内入口：
+  - 手动添加：继续进入 `pages/item-form`，默认带入当前分区
+  - 拍食品：打开相机 / 相册后进入单品确认页
+  - 拍包装 / 条码：可选择扫码条形码或拍包装说明
+- `pages/quick-add` 改为独立智能录入页，支持手动输入、拍食品、拍包装 / 条码、拍购物小票
+- `pages/parse-confirm` 支持推荐分区展示和“采纳推荐”
+- 智能录入里的手动输入会根据食品名称和品类更新 mock 推荐分区
+- 新增 `pages/batch-parse-confirm`，用于小票多条食品批量确认和保存
+- 小票批量确认页支持：
+  - 每条食品勾选是否保存
+  - 修改名称、数量、单位、品类、过期日期、存放位置
+  - 查看推荐分区并一键采纳
+  - 一次保存选中的多条食品
+- `services/parseService.js` 扩展为：
+  - 调用相机 / 相册或扫码入口
+  - 返回拍食品、包装、条码、小票 mock 结果
+  - 生成推荐分区
+  - 使用临时缓存传递解析结果，避免 URL 携带大段 JSON
+- `source` 扩展为 `manual | photo | barcode | package | receipt`
+- 本轮验证通过：
+  - `node --check pages/index/index.js`
+  - `node --check pages/quick-add/quick-add.js`
+  - `node --check pages/parse-confirm/parse-confirm.js`
+  - `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+  - `node --check services/parseService.js`
+  - `npm run lint`
+  - `npm run build`
+
+### 2026-05-24 取消“我的”入口和冰箱类型选择
+
+本轮完成：
+
+- 底部 Tab 从 `冰箱 / 日历 / 菜谱 / 我的` 调整为 `冰箱 / 日历 / 菜谱`。
+- `app.json` 不再注册 `pages/profile/profile`，用户侧不再进入“我的”页。
+- 首页不再读取本地 `selectedFridgeLayoutKey`。
+- 首页固定使用 `DEFAULT_FRIDGE_LAYOUT_KEY` 对应的默认冰箱模板。
+- `pages/profile` 文件暂时保留，但已移除其中“冰箱类型”选择 UI 和相关读取 / 写入逻辑。
+- 本轮没有删除文件，避免扩大改动范围。
+
+本轮修改文件：
+
+- `app.json`
+- `pages/index/index.js`
+- `pages/profile/profile.wxml`
+- `pages/profile/profile.wxss`
+- `pages/profile/profile.js`
+
+本轮验证通过：
+
+- `node --check pages/index/index.js`
+- `node --check pages/profile/profile.js`
+- `app.json` JSON 解析检查
+- `npm run lint`
+- `npm run build`
+
+当前还没解决的问题：
+
+- `pages/profile` 相关文件仍保留在目录中，但当前不作为页面入口使用；后续如果确认彻底不需要，再按项目安全规则逐个文件处理。
+- 真机上仍建议重新编译确认底部 Tab 只剩 `冰箱 / 日历 / 菜谱`。
+
+下一步建议：
+
+- 真机预览确认三 Tab 底部导航是否更清爽。
+- 如果后续确实需要“设置”，不要恢复“我的”个人中心；建议单独做一个轻量设置入口，并只放必要功能。
+- 如果未来做多冰箱，再重新设计冰箱切换或冰箱管理，不沿用本轮已取消的单机冰箱类型选择。
 
 ### 2026-05-21 首页入口与一屏布局补充
 
@@ -299,8 +541,8 @@ type FridgeItem = {
 - 新增 7 张用户提供的冰箱模板图到 `images/fridges/`
 - 在 `utils/constants.js` 中配置冰箱类型、模板图片、分区热区和默认冰箱类型
 - 默认冰箱类型为 `three-door`，对应“三门冰箱”
-- 首页读取 `selectedFridgeLayoutKey`，用于后续首次设置或注册后选择冰箱类型
-- 首页不展示冰箱类型切换按钮；除非后续支持两个及以上冰箱，否则主页面不出现类型切换
+- 首页曾预留 `selectedFridgeLayoutKey` 作为冰箱类型选择缓存；该预留已在 2026-05-24 取消
+- 首页不展示冰箱类型切换按钮；当前固定使用默认“三门冰箱”模板
 - 每个冰箱分区支持：
   - 点击分区打开底部清单面板
   - 查看当前分区所有食品
@@ -396,26 +638,33 @@ type FridgeItem = {
 
 本轮主要涉及：
 
+- `app.json`
+- `pages/profile/profile.wxml`
+- `pages/profile/profile.wxss`
+- `pages/profile/profile.js`
 - `pages/index/index.js`
 - `pages/index/index.wxml`
 - `pages/index/index.wxss`
-- `pages/item-form/item-form.js`
+- `pages/quick-add/quick-add.js`
+- `pages/quick-add/quick-add.wxml`
+- `pages/quick-add/quick-add.wxss`
+- `pages/parse-confirm/parse-confirm.js`
+- `pages/parse-confirm/parse-confirm.wxml`
+- `pages/parse-confirm/parse-confirm.wxss`
+- `pages/batch-parse-confirm/batch-parse-confirm.js`
+- `pages/batch-parse-confirm/batch-parse-confirm.wxml`
+- `pages/batch-parse-confirm/batch-parse-confirm.wxss`
+- `pages/batch-parse-confirm/batch-parse-confirm.json`
+- `services/parseService.js`
 - `utils/constants.js`
-- `images/fridges/french-multi-door.jpg`
-- `images/fridges/cross-door.jpg`
-- `images/fridges/side-by-side.jpg`
-- `images/fridges/three-door.jpg`
-- `images/fridges/double-cold-freeze.jpg`
-- `images/fridges/double-freeze-cold.jpg`
-- `images/fridges/single-door.jpg`
 
 本轮文档收尾涉及：
 
 - `AGENTS.md`
 - `PROJECT_CONTEXT.md`
 - `TODO.md`
-- `BUG_NOTES.md`
 - `DECISIONS.md`
+- `README.md`
 
 此前小程序改造主要涉及：
 
@@ -501,16 +750,36 @@ type FridgeItem = {
   - `npm run build`
   - 微信开发者工具自动化尺寸断言：搜索按钮实际宽度从 `184px` 缩短到 `39px`
   - 微信开发者工具自动化断言：门架卡片继续显示且保留原位置，非门架卡片按分区中心计算
+- 2026-05-24 拍照添加功能融合已通过：
+  - `node --check pages/index/index.js`
+  - `node --check pages/quick-add/quick-add.js`
+  - `node --check pages/parse-confirm/parse-confirm.js`
+  - `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+  - `node --check services/parseService.js`
+  - `npm run lint`
+  - `npm run build`
+- 2026-05-24 AI 菜谱与临期去化最终 UI 调整已通过：
+  - `node --check pages/calendar/calendar.js`
+  - `node --check pages/recipes/recipes.js`
+  - `node --check services/recipeService.js`
+  - `node --check cloudfunctions/generateRecipes/index.js`
+  - `git diff --check`
+  - `npm run lint`
+  - `npm run build`
+  - 微信真机预览二维码已生成：`/private/tmp/fridge-app-preview-qrcode-20260524-calendar-recipe-v2.png`
 
 ## 当前还没解决的问题
 
-- 首页冰箱模板热区坐标是按当前图片百分比估算的，需要在微信开发者工具和真机上继续微调
-- 首页分区统计卡片已放大；非门架卡片自动居中，门架卡片保留 `markerPoint`，仍需要真机确认是否遮挡关键冰箱结构
-- “注册后选择冰箱类型”还没有做正式注册 / 首次设置流程，当前先通过本地 `selectedFridgeLayoutKey` 预留
-- 多冰箱管理还没做；后续如果一个用户有两个及以上冰箱，才建议在首页出现冰箱切换入口
+- 首页已改为分区 DIY 货架，不再使用冰箱模板热区作为当前主线
+- `fridgeZoneConfigs` 集合已创建，权限已在 CloudBase 控制台确认为“仅创建者可读写”
+- 临时云函数 `setupFridgeZoneConfigs` 只用于创建集合，当前仍留在云端；本轮在 CloudBase 控制台删除时连续失败，后续需要稍后重试或手动删除
+- 多冰箱管理还没做；后续如果一个用户有两个及以上冰箱，再单独设计冰箱切换入口
+- `pages/profile` 文件仍保留，但当前不注册页面、不出现在底部 Tab
 - 真实 OCR 未接入
 - 真实条形码商品库未接入
 - 真实 AI 菜谱推荐未接入
+- 拍食品、拍包装 / 条码、小票批量确认还需要在微信开发者工具和真机上完整复查相机、扫码、确认保存体验
+- 日历页临期去化卡片和 AI 菜谱四入口交互已生成预览二维码，但仍等待真机人工确认
 - 真实订阅消息提醒未接入
 - 旧 React/Vite 文件还保留在目录里，后续如果确认不再需要，可以手动逐个清理
 - 开发者工具服务端口为了本轮测试已开启，后续不用自动化时可以在微信开发者工具的安全设置里关闭
@@ -520,19 +789,21 @@ type FridgeItem = {
 
 优先建议：
 
-- 在微信开发者工具和真机上检查首页冰箱模板热区，逐个微调分区点击范围
-- 用真机重点复查放大后的分区统计卡片：非门架是否居中、门架是否仍在合适位置、是否遮挡冰箱结构
-- 做首次设置页或我的页设置项，让用户选择冰箱类型，并写入 `selectedFridgeLayoutKey`
-- 如果用户只有一个冰箱，首页继续不显示类型切换；只有多个冰箱时再做切换入口
+- 在微信开发者工具和真机上检查首页分区 DIY 货架、横向食品卡片和添加方式面板
+- 重点复查分区 `总 / 临 / 过` 统计是否好点、食品图片详情面板是否好用
+- 确认底部 Tab 是否只保留 `冰箱 / 日历 / 菜谱`，并观察是否比四 Tab 更清爽
+- 如果后续需要设置入口，优先做轻量设置，不恢复“我的”个人中心
+- 如果后续支持多个冰箱，再单独设计冰箱切换入口
 - 检查新增 `变温` 位置在首页分区、添加页、编辑页、日历页、菜谱页的实际展示是否顺畅
-- 用真机预览检查首页、添加页、分区统计点、底部 Tab 的实际触控体验
-- 给拍照 / 扫码 mock 流程增加更明显的“第一阶段 mock”提示
-- 优化我的页统计，让用户能快速看到库存规模和临期情况
-- 根据真机截图继续微调首页一屏布局、分区统计点大小和触控面积
+- 用真机预览检查首页、添加页、分区统计、底部 Tab 的实际触控体验
+- 用真机预览检查智能录入入口、分区内拍食品、拍包装 / 条码、小票批量保存流程
+- 用真机预览检查日历页临期去化卡片、统计清单弹窗和 AI 菜谱页默认空白状态
+- 用真机预览点选四个 AI 菜谱入口，确认下方攻略内容按入口生成且不自动显示临期去化
+- 根据真机截图继续微调首页货架布局、分区统计按钮大小和触控面积
 
 后续第二阶段：
 
-- 接入真实图片上传到云存储
+- 拍食品图片上传到 CloudBase 云存储已完成；后续完善图片压缩、云存储清理和真实识别
 - 接入 `parseFoodImage` 真实 OCR / AI 识别
 - 接入 `parseBarcode` 真实商品库或第三方接口
 - 接入订阅消息授权与定时提醒
@@ -711,7 +982,7 @@ type FridgeItem = {
   - 点击分区能打开分区面板。
   - 添加页能接收分区传入的存放位置。
   - 空表单校验能提示食品名称和过期日期。
-  - 解析确认页、日历页、菜谱页、我的页均可打开并初始化。
+  - 解析确认页、日历页、菜谱页等页面可打开并初始化；该记录来自当时版本，后续“我的”页入口已取消。
   - 自动化截图：`/private/tmp/fridge-automator/current-smoke-index.png`
 - 完成完整 CloudBase 流程验收：
   - 手动添加食品可以写入 CloudBase。
@@ -750,3 +1021,362 @@ type FridgeItem = {
 - 优先做真机预览，重点看首页一屏布局、冰箱图片清晰度、分区热区、统计卡片位置、添加页日期弹窗和按钮触控。
 - 真机确认后，再决定是否微调 `utils/constants.js` 中冰箱热区和门架 `markerPoint`。
 - 之后再单独评估旧 H5 文件和旧依赖目录是否逐个归档或清理。
+
+## 2026-05-24 首页分区 DIY 与集合创建
+
+本轮完成：
+
+- 首页从冰箱实物图热区改为分区货架展示。
+- 顶部显示全局三色统计卡和搜索框。
+- 保留“确定放哪 / 不确定放哪”添加引导。
+- 分区本身只作为添加入口，点击后弹出手动添加、拍食品、拍包装 / 条码。
+- 分区食品卡片支持横向滑动。
+- 点击食品图片打开详情面板，可编辑和删除。
+- 点击全局三色卡、分区 `总 / 临 / 过`、搜索确定仍打开对应清单。
+- 新增 `果蔬抽屉` 独立存放位置。
+- 新增 `services/zoneConfigService.js`，用于读取和保存首页分区 DIY 配置。
+- 新增 CloudBase 集合 `fridgeZoneConfigs`。
+- 拍食品流程会上传照片到 CloudBase 云存储并保存 `imageFileId`。
+
+本轮修改文件：
+
+- `pages/index/index.js`
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/parse-confirm/parse-confirm.wxml`
+- `pages/parse-confirm/parse-confirm.wxss`
+- `services/parseService.js`
+- `services/zoneConfigService.js`
+- `utils/constants.js`
+- `AGENTS.md`
+- `README.md`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/index/index.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `node --check services/parseService.js`
+- `node --check services/zoneConfigService.js`
+- `node --check utils/constants.js`
+- `npm run lint`
+- `npm run build`
+- 微信开发者工具自动化通过首页分区货架行为检查：
+  - 顶部统计存在
+  - 搜索框存在
+  - 添加引导保留
+  - DIY 分区生成
+  - 点击分区打开添加方式面板
+  - 点击分区不会打开查看清单
+  - 点击分区统计打开对应清单
+- CloudBase 集合创建结果：
+  - 集合名：`fridgeZoneConfigs`
+  - 临时云函数返回：`{"ok":true,"created":true,"message":"created"}`
+
+当前还没解决的问题：
+
+- 临时云函数 `setupFridgeZoneConfigs` 已部署到云端用于创建集合，当前仍留在云端。
+- 本轮已在 CloudBase 控制台尝试删除 `setupFridgeZoneConfigs`，但删除过程报 `socket hang up` / 卡在 99%，微信开发者工具 CLI 也没有删除云函数命令；后续需要稍后在控制台重试或手动删除。
+- 还没有真机预览新首页货架样式，仍需检查横向滑动、分区添加面板、食品详情面板和分区 DIY 面板手感。
+- `fridgeZoneConfigs` 集合权限已在 CloudBase 控制台确认为“仅创建者可读写”。
+
+下一步建议：
+
+- 真机预览新首页，重点看 5 个分区货架密度、横滑食品卡、三色信息区和添加方式面板。
+- 进入首页首次配置分区，保存后重进小程序确认云端配置能恢复。
+- 稍后到 CloudBase 控制台重试删除临时云函数 `setupFridgeZoneConfigs`。
+
+## 2026-05-24 UI 风格迁移收尾
+
+本轮完成：
+
+- 按“年轻可爱风 + 轻拟物冰箱风”完成整体视觉换肤。
+- 建立全局 UI 基础样式：
+  - `styles/tokens.wxss`
+  - `styles/components.wxss`
+  - `styles/fridge-theme.wxss`
+- `app.wxss` 引入全局 tokens 和通用视觉类，统一页面背景、卡片、按钮、输入框、状态色。
+- `app.json` 可见产品名、导航栏颜色和原生 TabBar 颜色已同步为“冰箱雷达”风格。
+- 首页分区外框升级为参考图方向的轻拟物冰箱内部效果：
+  - 冰蓝内胆
+  - 玻璃隔层
+  - 透明抽屉质感
+  - 软阴影和高光
+- 首页“我的冰箱”下方的小字说明已移除。
+- 添加 / 编辑页、智能录入页、单品识别确认页、小票批量确认页、日历页、菜谱页、保留的我的页均完成视觉统一。
+- 本轮没有新增页面、没有删除页面、没有修改接口、没有修改数据库集合、没有修改字段。
+- 当前最终不启用 custom TabBar，仍使用微信原生 TabBar，并通过浅薄荷底色和本地图标做轻量优化。
+
+本轮修改文件：
+
+- `app.json`
+- `app.wxss`
+- `styles/tokens.wxss`
+- `styles/components.wxss`
+- `styles/fridge-theme.wxss`
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/item-form/item-form.wxss`
+- `pages/quick-add/quick-add.wxss`
+- `pages/parse-confirm/parse-confirm.wxss`
+- `pages/batch-parse-confirm/batch-parse-confirm.wxss`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.wxss`
+- `pages/profile/profile.wxml`
+- `pages/profile/profile.wxss`
+
+本轮验证：
+
+- `node --check app.js`
+- `node --check pages/index/index.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check pages/profile/profile.js`
+- `node --check services/itemService.js`
+- `node --check services/parseService.js`
+- `node --check services/recipeService.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+- 微信开发者工具中确认首页、日历页、菜谱页可以打开并显示。
+
+当前还没解决的问题：
+
+- 微信开发者工具 Console 里仍有一条历史存在的 `Error: timeout`，页面未白屏，首页 / 日历 / 菜谱均能显示；后续如要排查，应单独定位开发者工具运行时或云开发调用超时来源。
+- `getSystemInfo` / HarmonyOS 相关提示是微信基础库警告，不是本轮 UI 改造问题。
+- 轻拟物样式使用了较多渐变、阴影和少量伪元素，仍需真机预览检查低端机性能和小屏溢出。
+- 当前只是原生 TabBar 轻量美化；微信原生 TabBar 的高度、圆角、底部安全区和悬浮胶囊效果无法用 WXSS 调整。如果要做参考图那种悬浮圆润底栏，需要单独确认后重新实现 custom TabBar。
+
+下一步建议：
+
+- 真机预览完整 UI，重点看首页冰箱分区框架、食品卡片横滑、底部弹窗、添加页表单、日历页临期去化、菜谱页四个入口。
+- 如果真机上底部原生 TabBar 视觉仍不够贴近参考图，需要先重新确认是否接受 custom TabBar，再单独评估实现。
+- 视觉稳定后再考虑低风险组件化，例如 `EmptyState`、`ExpiryBadge`，不要马上大规模抽组件。
+
+## 2026-05-24 默认 TabBar 回退与图标优化收尾
+
+本轮完成：
+
+- 根据用户反馈，不再使用 custom TabBar，当前 `app.json` 未启用 `"custom": true`。
+- 首页顶部导航已恢复为微信默认导航，不再使用 `navigationStyle: "custom"`。
+- 微信原生 TabBar 保留 `冰箱 / 日历 / 菜谱` 三个入口。
+- 原生 TabBar 增加本地图标资源：
+  - `images/tabbar/fridge.png`
+  - `images/tabbar/fridge-active.png`
+  - `images/tabbar/calendar.png`
+  - `images/tabbar/calendar-active.png`
+  - `images/tabbar/recipe.png`
+  - `images/tabbar/recipe-active.png`
+- 原生 TabBar 背景从奶油白调整为浅薄荷底色，选中态继续使用绿色。
+- 已删除三个 Tab 页面里用于 custom TabBar 选中态同步的 `getTabBar().setData(...)` 逻辑。
+- `custom-tab-bar/` 目录当前仍保留在工作区但未启用；后续是否删除需要单独确认，不能批量删除。
+
+本轮修改文件：
+
+- `app.json`
+- `pages/index/index.json`
+- `pages/index/index.js`
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.js`
+- `pages/recipes/recipes.wxss`
+- `images/tabbar/*.png`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/index/index.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+- 微信开发者工具中确认底部为微信原生 TabBar，并能显示本地图标。
+
+当前还没解决的问题：
+
+- 微信原生 TabBar 的高度、底部安全区、圆角、悬浮胶囊效果无法用 WXSS 调整。
+- 如果用户后续仍希望减少底部大白边或实现参考图那种悬浮圆润底栏，只能重新确认后再启用 custom TabBar。
+- `custom-tab-bar/` 目录未删除，避免违反项目“不要批量删除文件目录”的约束。
+
+下一步建议：
+
+- 真机预览底部 TabBar 图标清晰度、选中态颜色和文字可读性。
+- 如果原生 TabBar 仍不能满足审美要求，再单独讨论是否重新做 custom TabBar，并明确它会改变底部导航实现方式。
+
+## 2026-05-25 首页与日历页细节收尾
+
+本轮完成：
+
+- 首页顶部信息结构调整：
+  - 可见标题统一为“我的冰箱”。
+  - 原“冰箱雷达”和“我的冰箱”重复标题已收敛。
+  - 首页顺序保持为三色统计卡、搜索栏、添加引导、冰箱分区。
+- 首页分区交互调整：
+  - 分区添加只集中在每个分区右上角 `+`。
+  - 点击分区 `总 / 临 / 过` 统计只打开对应清单。
+  - 分区标题下方的小字说明已移除。
+  - 首页食品卡片下方的到期日期小字已移除。
+- 首页分区添加弹窗调整：
+  - 三个添加方式改为横版整行按钮。
+  - 按钮左右拉满，左侧图标、中间标题和单行说明、右侧箭头。
+  - 说明文字强制单行省略，避免跨行撑高。
+- 智能录入页调整：
+  - 删除“第一阶段提示”说明卡。
+  - 四个录入方式改为横版整行按钮。
+  - 按钮左右拉满，说明文字单行省略。
+- 首页分区管理弹窗调整：
+  - 右上角入口文案从“分区”改为“分区管理”。
+  - 分区排序改为按住左侧“拖动”区域单指上下拖动。
+  - 每个分区操作收敛为“显示”和“删除”两项。
+  - “删除”只表示从首页隐藏分区，不删除食品数据或数据库字段。
+  - 五个分区卡片全部直接展示，不再在弹窗内部滚动。
+  - 保存按钮下移并居中放置。
+- 日历页调整：
+  - 删除选中日期标题条，例如 `2026-05-27 / 1 项到期`。
+  - 保留临期统计卡：今日到期、3 天内、7 天内、已过期。
+  - 去掉临期统计卡右侧的浅绿色装饰遮挡。
+  - “上月 / 下月”从原生 `button` 改为普通 `view`，避免默认按钮样式遮挡月份。
+  - 月份栏稳定为三段布局：左“上月”、中间月份、右“下月”。
+
+本轮修改文件：
+
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/index/index.js`
+- `pages/quick-add/quick-add.wxml`
+- `pages/quick-add/quick-add.wxss`
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/index/index.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/calendar/calendar.js`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+
+当前还没解决的问题：
+
+- 本轮主要根据微信开发者工具截图调整视觉细节，没有做新的自动化截图比对。
+- 首页 `pages/index/index.wxss` 仍然很大，后续继续改首页时需要小步处理，避免继续叠覆盖样式。
+- 日历页月份栏这次经过多轮修正，当前截图反馈已确认正常，但后续类似调整应先使用更稳定的简单布局。
+
+本轮教训：
+
+- 不要在微信小程序里为了按钮间距轻易使用复杂绝对定位或挤压式 grid；尤其 `text` 和原生 `button` 容易受到小程序默认渲染影响。
+- 截图里用户圈出的是具体目标区域时，应先复述“删的是哪一块、保留的是哪一块”，再动代码。
+- 用户明确说“统计卡保留”后，应立即恢复被误删的统计卡，只删除遮挡装饰。
+- UI 微调不能只凭 CSS 直觉反复试，应优先采用简单、稳定、可解释的结构。
+
+## 2026-05-27 首页 / 日历 / AI 菜谱标注改造收尾
+
+说明：
+
+- 本节是 2026-05-27 的最新状态记录；如与 2026-05-25 的日历统计卡记录冲突，以本节为准。
+- 本轮仍保持微信小程序原生技术栈，不接登录、数据库重构、支付、Docker、独立后端、真实 OCR、真实 AI、真实天气或联网搜索。
+
+本轮完成：
+
+- 首页：
+  - 首页顶部三色统计卡已移出首页。
+  - 首页继续保留“我的冰箱”、搜索、添加引导和冰箱分区。
+  - 首页不再常驻展示 `库存 / 临期 / 过期` 三色统计。
+- 日历页：
+  - 日历面板下方新增从首页迁移来的三色统计卡：`库存 / 临期 / 过期`。
+  - 日历页原先常驻的 `今日到期 / 3 天内 / 7 天内 / 已过期` 四项统计卡已被三色库存统计替换。
+  - 三色统计卡点击后仍打开对应清单。
+  - 删除“优先处理”区块。
+  - `AI 去化推荐` 改为 `开饭雷达检测报告`。
+  - 去化菜谱卡片精简：删除小标签、右侧状态、AI 说明、底部标签行。
+  - 去化菜谱卡片可点击打开详情弹窗，展示食材匹配、推荐理由和做菜步骤。
+- AI 菜谱页：
+  - 顶部“小光”改为 2 × 2 字牌 `雷 / 达 / 建 / 议`。
+  - 顶部日期信息改为节气信息，下方显示 `当日 / 还差 X 天 / 已过 X 天`。
+  - 顶部饮食建议由 mock AI 提示词逻辑生成，结合中医饮食思路、当前节气、季节、气温和湿度。
+  - 删除 `每日微醺时刻`、`每日健康饮品` 两个入口。
+  - 保留 `菜谱盲盒` 和 `我来选食材` 两个入口。
+  - `菜谱盲盒` 入口小字为“随机应季健康餐”。
+  - `我来选食材` 入口小字为“指定库存生成菜谱”。
+  - `菜谱盲盒攻略` 副标题为“不纠结，先抽一道今日推荐应季健康菜谱。”
+  - 菜谱卡片左上角 `菜谱 1` 等序号标签已删除。
+  - 菜谱卡片展示“推荐理由”，详情弹窗也展示推荐理由。
+  - 菜谱盲盒推荐逻辑会结合冰箱库存、节气、季节、气温、湿度和雷达建议做 mock 排序与理由生成。
+- `services/recipeService.js`：
+  - 新增 mock AI 饮食建议提示词生成能力。
+  - 新增 mock AI 饮食建议输出能力。
+  - 新增结合库存和气候的菜谱推荐理由生成。
+  - 仍不接真实 AI API；真实 AI 接入时应优先放到云函数或 service 层，不能把 API key 放小程序前端。
+
+本轮修改文件：
+
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.js`
+- `pages/recipes/recipes.wxml`
+- `pages/recipes/recipes.wxss`
+- `services/recipeService.js`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/index/index.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check services/recipeService.js`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+
+当前还没解决的问题：
+
+- 节气信息目前使用常见公历日期做本地近似计算，不是每年精确天文节气时刻。
+- 菜谱页的“AI”仍是 mock AI / 规则生成，不是真实大模型调用。
+- 本轮未做微信开发者工具自动截图比对；需要用户在开发者工具和真机预览中继续看实际视觉效果。
+- `pages/index/index.wxss` 仍然偏大，后续继续改首页时应先局部清理，避免叠加覆盖样式。
+
+已尝试但失败 / 需要记录的方案：
+
+- 直接读取用户提供的 HEIC 标注图失败，需先转 PNG 查看。
+- 第一次转换 HEIC 时受沙盒临时文件写入限制失败，后续通过受控权限转换成功。
+- 菜谱页标注第一次理解不完整，漏改了 `菜谱盲盒`、入口说明、攻略标题、副标题和卡片序号标签；后续按用户逐条确认修正。
+
+下一步建议：
+
+- 在微信开发者工具中复查首页：确认顶部三色统计已消失，首页信息密度是否更清爽。
+- 在微信开发者工具中复查日历页：确认日历下方是 `库存 / 临期 / 过期` 三色统计，并且点击清单正常。
+- 在微信开发者工具中复查 AI 菜谱页：确认 2 × 2 雷达建议字牌、节气信息、两个入口、推荐理由和详情弹窗。
+- 真机预览重点看菜谱页推荐理由是否过长、是否需要折叠或限制行数。
+
+重要注意事项：
+
+- 不要再按 2026-05-25 的“四项临期统计卡必须保留”作为最新日历页目标；2026-05-27 已确认替换为三色库存统计。
+- 菜谱页当前不再展示 `每日微醺时刻` 和 `每日健康饮品` 入口。
+- 中医饮食建议只能作为生活化饮食灵感，不做诊断、治疗或医疗功效承诺。

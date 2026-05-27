@@ -1,6 +1,6 @@
 # BUG_NOTES.md
 
-最后更新：2026-05-22
+最后更新：2026-05-27
 
 ## 本轮涉及的问题与处理
 
@@ -311,7 +311,7 @@
 
 - 图片内统计点可能遮挡冰箱结构，需要真机预览后继续微调 `utils/constants.js` 中的 `markerPoint`。
 
-### 16. 真机预览二维码未生成
+### 16. 早期真机预览二维码未生成
 
 现象：
 
@@ -329,6 +329,12 @@
 
 - 已告知用户需要明确回复同意后再生成预览二维码。
 - 本轮没有绕过审批，也没有生成二维码。
+
+后续状态：
+
+- 用户后续已明确同意上传当前项目代码到微信预览平台。
+- 已成功生成真机预览二维码，最近一次二维码路径为 `/private/tmp/fridge-app-preview-qrcode-20260524-calendar-recipe-v2.png`。
+- 后续每次重新生成二维码都建议使用新的唯一文件名，避免聊天图片或微信预览缓存导致扫到旧版本。
 
 ### 17. 冰箱图片自带文字与统计卡片重叠
 
@@ -424,6 +430,49 @@
 - 首页冰箱分区数量统计点已放回图片内对应分区，但仍建议真机预览后继续微调 `markerPoint`。
 - 7 张冰箱模板图已清理内置分区文字，但仍建议真机检查是否存在残影或局部色块。
 - 当前未实现正式“注册后选择冰箱类型”流程，只预留了 `selectedFridgeLayoutKey`。
+
+## 2026-05-24 AI 菜谱与临期去化收尾记录
+
+结果：
+
+- 日历页新增临期去化模块后，基础语法检查通过。
+- 日历页临期去化已调整为直接展示 3 道去化推荐菜谱卡片，不再展示“生成 AI 菜谱”按钮。
+- 日历页彩色统计卡片已去掉“查看清单”小字，但仍保留点击查看清单能力。
+- AI 菜谱页新增 Tips 窗口、四个入口、食材选择半屏弹窗和菜谱详情后，基础语法检查通过。
+- AI 菜谱页已改为进入后默认下方空白，点选四个入口之一后再生成对应攻略内容。
+- `services/recipeService.js` 新增 AI mock 推荐、临期去化推荐和盲盒推荐后，基础语法检查通过。
+- `cloudfunctions/generateRecipes` 改为 mock AI 返回结构后，基础语法检查通过。
+
+失败 / 修正：
+
+- 额外自测时，直接用 `node -e "require('./services/recipeService')"` 加载小程序 service 失败，报错为 `Cannot find module '../utils/date'`。
+- 原因不是业务逻辑错误，而是项目根 `package.json` 仍是旧 H5 的 `"type": "module"`，Node 直接 `require` 小程序 CommonJS 文件时会走 ESM 语义，导致相对 `require` 解析方式和微信小程序运行环境不一致。
+- 处理方式：改用只读 VM 包装方式模拟 CommonJS 环境抽样调用 `recipeService`，AI 推荐、临期去化和盲盒结构均能输出。
+- 首次 JSON 扫描把 `tsconfig*.json` 也按严格 JSON 解析，因这些文件是带注释的 JSONC 而失败。
+- 处理方式：改为只检查小程序实际 JSON 配置和 package 文件，19 个严格 JSON 文件解析通过。
+
+后续注意：
+
+- 本轮尚未跑微信开发者工具自动化 UI 断言，仍建议在开发者工具和真机上点一遍日历页临期去化、AI 菜谱页、食材选择弹窗和盲盒攻略内容。
+- 当前 AI 菜谱是 mock 体验版，不代表已接真实 AI、天气或联网搜索。
+
+### 2026-05-24 真机预览扫到旧页面的排查
+
+现象：
+
+- 用户反馈扫码后页面“根本没改，跟之前一样”。
+
+原因判断：
+
+- 本地代码中 `pages/recipes/recipes.wxml` 已确认是新版 Tips 窗口和四入口结构，不是旧版标题 + 助手段落。
+- `project.config.json` 未忽略 `pages/recipes`。
+- 更可能是扫到了旧二维码、聊天图片缓存，或微信预览小程序未完全退出导致使用旧预览。
+
+处理：
+
+- 每次重新预览都使用新的唯一二维码文件名。
+- 已重新生成最新二维码：`/private/tmp/fridge-app-preview-qrcode-20260524-calendar-recipe-v2.png`。
+- 如真机仍显示旧页面，需要先完全退出微信里的预览小程序，再重新扫码。
 
 ## 验证记录
 
@@ -521,3 +570,232 @@
 
 - `node_modules` 和 `dist` 都已被 `.gitignore` 忽略，不会进入 Git。
 - 依赖清理不影响当前小程序主线运行，建议后续单独确认旧 H5 是否还需要保留后再处理。
+
+## 2026-05-24 fridgeZoneConfigs 集合创建记录
+
+结果：
+
+- CloudBase 集合 `fridgeZoneConfigs` 已创建成功。
+- 创建方式：部署并调用临时云函数 `setupFridgeZoneConfigs`。
+- 云函数返回结果：`{"ok":true,"created":true,"message":"created"}`。
+
+失败 / 修正：
+
+- 本机没有 `tcb` 或 `cloudbase` CLI，不能直接用 CloudBase CLI 创建集合。
+- 微信开发者工具 CLI 的 `cloud` 命令只支持环境和云函数，不支持数据库集合操作。
+- 尝试在小程序端自动化调用 `wx.cloud.database().createCollection` 失败，错误为 `db.createCollection is not a function`。
+- 改用云函数端 `wx-server-sdk` 调用 `db.createCollection`。
+- 第一次部署临时云函数时，云端函数处于 `Creating` 状态，返回：
+  - `FailedOperation.UpdateFunctionCode`
+  - `当前函数处于Creating状态，无法进行此操作，请稍后重试。`
+- 按提示重试部署后成功。
+- 第一次自动化调用云函数时使用 `callWxMethod('cloud.callFunction')` 失败，错误为 `wx.cloud.callFunction not exists`。
+- 改为在小程序上下文中通过 `miniProgram.evaluate` 执行 `wx.cloud.callFunction` 后调用成功。
+
+后续注意：
+
+- `fridgeZoneConfigs` 集合权限已在 CloudBase 控制台确认为“仅创建者可读写”。
+- 临时云函数 `setupFridgeZoneConfigs` 仍留在云端。
+- 本轮在 CloudBase 控制台点击删除 `setupFridgeZoneConfigs` 后，删除进度曾到 10%、20%、99%，但最终报 `socket hang up` 或卡住；CLI 列表确认函数仍存在。
+- 微信开发者工具 CLI 的 `cloud functions` 命令没有 delete / remove 子命令，不能通过当前 CLI 直接删除云函数。
+- 后续建议稍后在 CloudBase 控制台重试删除 `setupFridgeZoneConfigs`，不要删除其他业务云函数。
+
+## 2026-05-24 UI 风格迁移检查记录
+
+结果：
+
+- UI 风格迁移后，静态检查通过：
+  - `node --check app.js`
+  - `node --check pages/index/index.js`
+  - `node --check pages/item-form/item-form.js`
+  - `node --check pages/quick-add/quick-add.js`
+  - `node --check pages/parse-confirm/parse-confirm.js`
+  - `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+  - `node --check pages/calendar/calendar.js`
+  - `node --check pages/recipes/recipes.js`
+  - `node --check pages/profile/profile.js`
+  - `node --check services/itemService.js`
+  - `node --check services/parseService.js`
+  - `node --check services/recipeService.js`
+  - `node --check cloudfunctions/generateRecipes/index.js`
+  - `git diff --check`
+  - `npm run lint`
+  - `npm run build`
+- 微信开发者工具中已确认首页、日历页、菜谱页可以打开并显示。
+
+问题 / 现象：
+
+- 开发者工具 Console 仍显示历史存在的 `Error: timeout`。
+- 开发者工具 Console 仍显示 `getSystemInfo` / HarmonyOS 相关基础库提示。
+- 用户曾反馈开发者工具里“什么都看不到”，实际原因是模拟器区域被隐藏或布局折叠，不是小程序页面白屏。
+
+处理：
+
+- 已通过微信开发者工具界面恢复模拟器显示。
+- 已确认当前页面能在模拟器里显示。
+- `getSystemInfo` / HarmonyOS 提示属于微信基础库警告，本轮不处理。
+- `Error: timeout` 未造成首页、日历、菜谱白屏；先记录为后续可单独排查项。
+
+后续注意：
+
+- 真机预览时重点观察是否真的有功能卡死、加载失败或云开发调用失败。
+- 如果真机也复现 `timeout` 并影响功能，再优先从页面初始化、云函数调用、CloudBase 网络请求方向定位。
+- 轻拟物 WXSS 使用了渐变、阴影和少量伪元素，后续需要在真机上检查低端机性能和小屏适配。
+
+## 2026-05-24 默认 TabBar 回退与底部白边说明
+
+问题 / 现象：
+
+- 用户反馈“下面这里的白边太厚”，实际指的是微信原生 TabBar + iPhone 底部安全区，不是首页顶部导航栏。
+- 过程中曾误判为顶部原生导航栏过厚，短暂把首页设置为 `navigationStyle: "custom"`。
+- 用户进一步澄清后，首页顶部配置已回退为微信默认导航。
+- 微信开发者工具在页面配置切换和重编译过程中曾出现过 `appLaunch with non-empty page stack`，重新刷新 / 编译后页面恢复显示。
+
+原因判断：
+
+- 微信原生 TabBar 的高度、底部安全区、圆角和悬浮效果由小程序系统控件控制，不能通过页面 WXSS 改薄。
+- 原生 TabBar 可配置的范围主要是文字、颜色、背景色、`iconPath` 和 `selectedIconPath`。
+- 要做到参考图那种悬浮圆润胶囊底栏，只能使用 custom TabBar，但用户当前明确不想要 custom TabBar。
+
+处理：
+
+- `app.json` 保持原生 TabBar，不启用 `"custom": true`。
+- 移除三个 Tab 页面中用于 custom TabBar 的 `getTabBar().setData(...)` 选中态同步代码。
+- 新增 `images/tabbar/*.png` 作为原生 TabBar 图标。
+- 将原生 TabBar 背景调为浅薄荷色，选中态保持绿色。
+- 首页 `pages/index/index.json` 已恢复默认顶部导航。
+
+后续注意：
+
+- 不要再把底部白边问题误判为顶部导航问题。
+- 如果后续用户重新要求减少底部白边或实现悬浮圆角底栏，需要先说明必须使用 custom TabBar，再确认是否启用。
+- `custom-tab-bar/` 目录目前未启用，是否删除需要单独确认并逐个文件处理。
+
+## 2026-05-25 日历页月份栏反复调整记录
+
+问题 / 现象：
+
+- 用户反馈日历页“上月 / 下月”按钮需要缩小、变短，并且不要靠中间月份太近。
+- 多次调整后，曾出现中间月份信息不显示，页面只剩“上月 / 下月”。
+- 用户因此反馈沟通成本很高，体验很差。
+
+直接原因：
+
+- 早期为了拉开按钮和月份的距离，尝试过三列 grid、绝对定位月份标题等方案。
+- 在微信小程序里，原生 `button` 有默认最小宽度、默认样式和渲染行为，容易影响实际宽度。
+- 将月份标题 `text` 参与复杂定位后，在模拟器中出现了标题不可见的问题。
+
+最终处理：
+
+- 将“上月 / 下月”从原生 `button` 改为普通 `view`。
+- 月份栏改成稳定三段布局：
+  - 左侧普通 `view`：上月
+  - 中间普通 `view`：月份标题
+  - 右侧普通 `view`：下月
+- 不再用绝对定位隐藏 / 覆盖月份标题。
+- 不再让原生 `button` 参与该核心布局。
+
+教训：
+
+- 小程序里做精细 UI 布局时，能用 `view` 就不要用原生 `button` 作为纯视觉按钮，除非确实需要表单按钮语义。
+- 对于顶部月份栏这类简单布局，应优先使用朴素三段结构，不要上来做复杂定位。
+- 用户已经给截图圈选时，必须先明确“要保留什么、删除什么、缩小什么”，不要凭经验一次改多处。
+- 如果连续两次视觉修正仍不对，应暂停并改用更保守、可解释的布局，而不是继续叠 CSS。
+
+## 2026-05-25 日历页统计卡误删记录
+
+问题 / 现象：
+
+- 用户截图红色区域包含选中日期标题条和统计卡右侧的装饰遮挡。
+- 处理时曾误删“已过期”统计卡。
+- 用户立即补充“统计卡保留”。
+
+处理：
+
+- 已恢复“已过期”统计卡。
+- 当前保留四个统计卡：
+  - 今日到期
+  - 3 天内
+  - 7 天内
+  - 已过期
+- 仅删除选中日期标题条和右侧浅绿色装饰遮挡。
+
+教训：
+
+- “红框删掉”不等于框内所有功能都删除；要先拆分为功能内容和装饰内容。
+- 高价值信息卡片默认应保留，除非用户明确说删除该功能。
+- 用户补充纠正后，应立即恢复功能，不继续解释。
+
+## 2026-05-27 HEIC 标注图读取与沙盒转换记录
+
+问题 / 现象：
+
+- 用户提供 HEIC 标注图后，工具无法直接读取：
+  - `unsupported image image/heic`
+- 第一次使用 `sips` 转 PNG 时失败，报临时目录写入错误。
+
+原因：
+
+- 当前图片查看工具不支持 HEIC。
+- `sips` 转换过程需要写系统临时文件，普通沙盒权限下可能受限。
+
+处理：
+
+- 通过受控权限运行 `sips`，将 HEIC 临时转换为 `/private/tmp/fridge-annotated-2237.png` 后再查看。
+- 临时 PNG 只用于读取标注，不写入项目源码。
+
+后续注意：
+
+- 用户继续发 HEIC 标注图时，先说明需要临时转 PNG 查看。
+- 转换失败不要猜标注内容，应先把图片正确打开再复述理解。
+
+## 2026-05-27 菜谱页标注理解不完整记录
+
+问题 / 现象：
+
+- 用户指出“你没有完全按照标注”。
+- 第一次处理 AI 菜谱页标注时，只完成了部分删除和替换：
+  - 改了节气卡。
+  - 删除了 `每日微醺时刻`、`每日健康饮品`。
+  - 删除了菜谱卡 AI 说明小字。
+- 但漏掉了用户希望精确调整的文案：
+  - `菜品盲盒` 应改为 `菜谱盲盒`。
+  - 入口小字应改为 `随机应季健康餐`。
+  - `我来选食材` 小字应改为 `指定库存生成菜谱`。
+  - 结果标题应为 `菜谱盲盒攻略`。
+  - 结果副标题应为 `不纠结，先抽一道今日推荐应季健康菜谱。`
+  - 菜谱卡左上角序号标签应直接去掉。
+
+原因：
+
+- 对手写蓝色标注做了主观推断，没有逐条向用户确认。
+- 处理截图标注时，把“看起来像要改”的内容和“用户明确写出来的文案”混在一起执行。
+
+处理：
+
+- 暂停继续改代码，先复盘已完成和漏改项。
+- 用户逐条确认 6 条文案后，再按确认内容逐项修改。
+- 修改后检查没有残留 `菜品盲盒`、`生成健康食谱`、`菜谱 1` 等不符合要求的旧文案。
+
+后续注意：
+
+- 遇到标注图 + 手写文案时，优先把文案逐条列出给用户确认。
+- 不要用“差不多”的同义词替换用户确认过的文字。
+- 如果用户表达烦躁或指出没按标注，先复盘和确认，不继续直接改。
+
+## 2026-05-27 mock AI 能力边界记录
+
+问题 / 现象：
+
+- 用户要求“给 AI 设置好提示词”，并要求菜谱盲盒“调用 AI 生成的菜谱”。
+
+处理：
+
+- 在当前第一阶段约束下，没有接真实 AI API。
+- 在 `services/recipeService.js` 中补充 mock AI 提示词结构、mock 饮食建议输出、库存和气候相关的推荐理由。
+- 页面展示上按 AI 体验呈现，但实现仍是本地规则和 mock 结构。
+
+后续注意：
+
+- 对外描述时要明确：当前是 mock AI / 规则生成，不是真实模型调用。
+- 未来真实 AI 接入必须走云函数或服务端环境，不能把 API key 放小程序前端。

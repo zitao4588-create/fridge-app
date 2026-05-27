@@ -1,34 +1,190 @@
 <view class="page recipes-page">
-  <view class="page-title">今天吃什么</view>
-  <view class="page-subtitle">优先使用 3 天内过期食品，没有临期食品时按库存推荐。</view>
+  <view class="tips-card card">
+    <view class="tips-head">
+      <view class="tips-avatar">
+        <text>雷</text>
+        <text>达</text>
+        <text>建</text>
+        <text>议</text>
+      </view>
+      <view class="tips-main">
+        <text class="tips-text">{{context.healthTip}}</text>
+      </view>
+    </view>
 
-  <view wx:if="{{loading}}" class="empty card">正在生成推荐</view>
-  <view wx:elif="{{recommendations.length === 0}}" class="empty card">暂无可推荐菜谱，先添加一些未过期食品。</view>
+    <view class="tips-meta-grid">
+      <view class="tips-meta-item">
+        <text class="tips-meta-value">{{context.solarTermName}}</text>
+        <text class="tips-meta-name">{{context.solarTermHint}}</text>
+      </view>
+      <view class="tips-meta-item">
+        <text class="tips-meta-value">{{context.season}}</text>
+        <text class="tips-meta-name">季节</text>
+      </view>
+      <view class="tips-meta-item">
+        <text class="tips-meta-value">{{context.temperature}}℃</text>
+        <text class="tips-meta-name">{{context.weather}}</text>
+      </view>
+      <view class="tips-meta-item">
+        <text class="tips-meta-value">{{context.humidity}}%</text>
+        <text class="tips-meta-name">湿度</text>
+      </view>
+    </view>
+  </view>
 
-  <view wx:else class="recipe-list">
-    <view class="recipe-card card" wx:for="{{recommendations}}" wx:key="id">
+  <view class="guide-button-grid">
+    <view class="guide-button {{activeGuideType === 'blindBox' ? 'active' : ''}}" bindtap="handleSelectGuide" data-type="blindBox">
+      <text class="guide-button-title">菜谱盲盒</text>
+      <text class="guide-button-desc">随机应季健康餐</text>
+    </view>
+    <view class="guide-button {{activeGuideType === 'picker' ? 'active' : ''}}" bindtap="handleSelectGuide" data-type="picker">
+      <text class="guide-button-title">我来选食材</text>
+      <text class="guide-button-desc">指定库存生成菜谱</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty card">正在生成 AI 推荐</view>
+
+  <view wx:elif="{{guideRecipes.length > 0}}" class="guide-panel card">
+    <view class="guide-panel-head">
+      <view>
+        <text class="guide-panel-title">{{guideTitle}}</text>
+        <text class="guide-panel-desc">{{guideDesc}}</text>
+      </view>
+      <text wx:if="{{selectedItems.length > 0}}" class="guide-clear" bindtap="handleClearSelected">清空选材</text>
+    </view>
+
+    <view wx:if="{{selectedItems.length > 0}}" class="guide-selected">
+      <text class="guide-selected-label">已选</text>
+      <view class="chip-row compact">
+        <text class="food-chip selected" wx:for="{{selectedItems}}" wx:key="id">{{item.name}}</text>
+      </view>
+    </view>
+
+    <view
+      class="ai-recipe-card"
+      wx:for="{{guideRecipes}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="handleOpenDetail"
+    >
       <view class="recipe-head">
-        <view>
-          <text class="recipe-label">推荐 {{index + 1}}</text>
+        <view class="recipe-title-group">
           <text class="recipe-title">{{item.title}}</text>
+        </view>
+        <text class="match-pill {{item.canCook ? 'ready' : ''}}">{{item.matchLabel}}</text>
+      </view>
+
+      <view class="match-grid">
+        <view class="match-box">
+          <text class="match-title">已有食材 {{item.availableItems.length}}</text>
+          <view class="chip-row">
+            <text wx:if="{{item.availableItems.length === 0}}" class="empty-chip">暂无</text>
+            <text class="food-chip" wx:for="{{item.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
+          </view>
+        </view>
+        <view class="match-box missing">
+          <text class="match-title">缺少食材 {{item.missingItems.length}}</text>
+          <view class="chip-row">
+            <text wx:if="{{item.missingItems.length === 0}}" class="empty-chip">不缺</text>
+            <text class="food-chip missing" wx:for="{{item.missingItems}}" wx:for-item="food" wx:key="*this">{{food}}</text>
+          </view>
         </view>
       </view>
 
-      <view class="used-list">
-        <text class="used-chip" wx:for="{{item.usedItems}}" wx:for-item="food" wx:key="_id">
-          {{food.name}}{{food.quantity}}{{food.unit}}
-        </text>
+      <view wx:if="{{item.priorityItems.length > 0}}" class="priority-line">
+        <text>建议优先用掉：</text>
+        <text wx:for="{{item.priorityItems}}" wx:for-item="food" wx:for-index="priorityIndex" wx:key="id">{{food.name}}{{priorityIndex + 1 < item.priorityItems.length ? '、' : ''}}</text>
       </view>
 
-      <view class="steps-box">
-        <text class="steps-title">简单做法</text>
-        <text class="step-line" wx:for="{{item.steps}}" wx:for-item="step" wx:key="*this">
-          {{index + 1}}. {{step}}
-        </text>
+      <view class="meta-row">
+        <text>{{item.timeCost}}</text>
+        <text>{{item.difficulty}}</text>
+        <text wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
       </view>
 
-      <text class="reason">{{item.reason}}</text>
+      <view wx:if="{{item.reason}}" class="recipe-reason-box">
+        <text class="recipe-reason-title">推荐理由</text>
+        <text class="recipe-reason-text">{{item.reason}}</text>
+      </view>
     </view>
   </view>
-</view>
 
+  <view wx:if="{{detailVisible}}" class="modal-mask" bindtap="handleCloseDetail">
+    <view class="recipe-detail card" catchtap="noop">
+      <view class="modal-head">
+        <text class="modal-title">{{activeRecipe.title}}</text>
+        <text class="modal-close" bindtap="handleCloseDetail">×</text>
+      </view>
+
+      <view class="detail-meta">
+        <text>{{activeRecipe.matchLabel}}</text>
+        <text>{{activeRecipe.timeCost}}</text>
+        <text>{{activeRecipe.difficulty}}</text>
+      </view>
+
+      <view wx:if="{{activeRecipe.reason}}" class="detail-section">
+        <text class="detail-title">推荐理由</text>
+        <text class="detail-reason">{{activeRecipe.reason}}</text>
+      </view>
+
+      <view class="detail-section">
+        <text class="detail-title">已有食材</text>
+        <view class="chip-row">
+          <text wx:if="{{activeRecipe.availableItems.length === 0}}" class="empty-chip">暂无</text>
+          <text class="food-chip" wx:for="{{activeRecipe.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}} {{food.expiryHint}}</text>
+        </view>
+      </view>
+
+      <view class="detail-section">
+        <text class="detail-title">缺少食材</text>
+        <view class="chip-row">
+          <text wx:if="{{activeRecipe.missingItems.length === 0}}" class="empty-chip">不缺</text>
+          <text class="food-chip missing" wx:for="{{activeRecipe.missingItems}}" wx:for-item="food" wx:key="*this">{{food}}</text>
+        </view>
+      </view>
+
+      <view class="detail-section">
+        <text class="detail-title">简单步骤</text>
+        <text class="step-line" wx:for="{{activeRecipe.steps}}" wx:for-item="step" wx:for-index="stepIndex" wx:key="*this">{{stepIndex + 1}}. {{step}}</text>
+      </view>
+
+      <text wx:if="{{activeRecipe.safetyNote}}" class="safety-note">{{activeRecipe.safetyNote}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{pickerVisible}}" class="modal-mask" bindtap="handleClosePicker">
+    <view class="picker-panel card" catchtap="noop">
+      <view class="modal-head">
+        <view>
+          <text class="modal-title">我来选食材</text>
+          <text class="picker-desc">最多选 5 个，已过期食品不参与生成。</text>
+        </view>
+        <text class="modal-close" bindtap="handleClosePicker">×</text>
+      </view>
+
+      <view wx:if="{{pickerItems.length === 0}}" class="picker-empty">冰箱里还没有食品。</view>
+      <view wx:else class="picker-list">
+        <view
+          class="picker-item {{item.selected ? 'selected' : ''}} {{item.disabled ? 'disabled' : ''}}"
+          wx:for="{{pickerItems}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="handleToggleIngredient"
+        >
+          <view>
+            <text class="picker-name">{{item.name}}</text>
+            <text class="picker-meta">{{item.category}} · {{item.storageLocation}} · {{item.expiryHint}}</text>
+          </view>
+          <text class="status-chip {{item.statusClass}}">{{item.statusLabel}}</text>
+        </view>
+      </view>
+
+      <view class="picker-actions">
+        <view class="picker-button secondary" bindtap="handleClosePicker">取消</view>
+        <view class="picker-button primary" bindtap="handleGenerateFromSelected">用这些生成菜谱</view>
+      </view>
+    </view>
+  </view>
+
+</view>

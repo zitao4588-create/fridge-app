@@ -3,6 +3,7 @@ App({
     cloudReady: false,
     cloudEnvId: 'cloud1-d3g4v0ms8ee56bd94',
     openid: '',
+    recipePrefillItemIds: [],
   },
 
   onLaunch() {

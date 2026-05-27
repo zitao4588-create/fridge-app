@@ -1,46 +1,195 @@
 <view class="page index-page">
-  <view class="fridge-panel card">
-    <view class="fridge-panel-head">
-      <view>
-        <view class="fridge-title">我的冰箱</view>
+  <view class="home-dashboard">
+    <view class="home-dashboard-shine"></view>
+    <view class="home-dashboard-head">
+      <view class="home-brand-lockup">
+        <view class="home-brand-fridge">
+          <view class="home-brand-face"></view>
+        </view>
+        <text class="home-brand-name">我的冰箱</text>
       </view>
+      <view class="zone-config-entry" bindtap="handleOpenZoneConfig">分区管理</view>
     </view>
 
-    <view class="fridge-template-stage">
-      <view class="fridge-template-content">
-        <image class="fridge-template-image" mode="scaleToFill" src="{{fridgeLayout.image}}" />
+    <view class="search-card card">
+      <input
+        class="search-input"
+        placeholder="搜索食材名称"
+        confirm-type="search"
+        value="{{searchKeyword}}"
+        bindinput="handleSearchInput"
+        bindconfirm="handleSearchConfirm"
+      />
+      <view class="search-button" bindtap="handleSearchConfirm">搜索</view>
+    </view>
 
-        <view class="fridge-zone-markers">
-          <block wx:for="{{fridgeZones}}" wx:for-item="zone" wx:key="key">
-            <view
-              wx:if="{{zone.showMarker}}"
-              class="zone-stat-marker {{zone.alertClass}}"
-              style="{{zone.markerStyle}}"
-              data-key="{{zone.key}}"
-              bindtap="handleZoneView"
-            >
-              <text class="zone-stat-name">{{zone.name}}</text>
-              <view class="zone-stat-values">
-                <text class="zone-stat-value total">总{{zone.itemCount}}</text>
-                <text class="zone-stat-value warning">临{{zone.expiringSoon}}</text>
-                <text class="zone-stat-value danger">过{{zone.overdue}}</text>
-              </view>
+    <view class="decision-guide">
+      <view class="decision-sign known" bindtap="handleKnownHint">
+        <view class="decision-copy">
+          <text class="decision-title">按分区添加</text>
+          <text class="decision-desc">点分区右上角加号</text>
+        </view>
+        <view class="decision-pointer down">
+          <view class="pointer-line"></view>
+          <view class="pointer-head"></view>
+        </view>
+      </view>
+
+      <view class="decision-sign unknown" bindtap="handleSmartAdd">
+        <view class="decision-copy">
+          <text class="decision-title">智能录入</text>
+          <text class="decision-desc">拍照或扫码后推荐分区</text>
+        </view>
+        <view class="decision-pointer right">
+          <view class="pointer-line"></view>
+          <view class="pointer-head"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="fridge-panel card">
+    <view class="fridge-panel-light"></view>
+    <view class="fridge-panel-hinge"></view>
+
+    <view class="home-zone-list">
+      <view class="fridge-shell-backlight"></view>
+      <view class="fridge-shell-top"></view>
+      <view class="fridge-shell-side left"></view>
+      <view class="fridge-shell-side right"></view>
+      <view class="fridge-shell-frost frost-a"></view>
+      <view class="fridge-shell-frost frost-b"></view>
+      <view class="fridge-shell-bottom"></view>
+
+      <view
+        class="home-zone-card {{zone.theme}}"
+        wx:for="{{homeZones}}"
+        wx:for-item="zone"
+        wx:key="key"
+      >
+        <view class="home-zone-glass"></view>
+        <view class="home-zone-handle"></view>
+        <view class="home-zone-head">
+          <view class="home-zone-title-group">
+            <view class="home-zone-title-row">
+              <text class="home-zone-title">{{zone.name}}</text>
+              <text class="home-zone-temp">{{zone.temperature}}</text>
             </view>
-          </block>
+          </view>
+          <view class="home-zone-add-mark" data-key="{{zone.key}}" catchtap="handleZoneView">＋</view>
         </view>
 
-        <view class="fridge-hot-zones">
+        <view class="home-zone-stats">
           <view
-            class="fridge-hot-zone {{zone.itemCount > 0 ? 'has-items' : 'is-empty'}}"
-            wx:for="{{fridgeZones}}"
-            wx:for-item="zone"
-            wx:key="key"
-            style="{{zone.hotAreaStyle}}"
+            class="home-zone-stat total"
             data-key="{{zone.key}}"
-            bindtap="handleZoneView"
+            data-filter="total"
+            catchtap="handleZoneStatTap"
           >
+            <text>总</text>
+            <text>{{zone.itemCount}}</text>
+          </view>
+          <view
+            class="home-zone-stat warning"
+            data-key="{{zone.key}}"
+            data-filter="expiring"
+            catchtap="handleZoneStatTap"
+          >
+            <text>临</text>
+            <text>{{zone.expiringSoon}}</text>
+          </view>
+          <view
+            class="home-zone-stat danger"
+            data-key="{{zone.key}}"
+            data-filter="overdue"
+            catchtap="handleZoneStatTap"
+          >
+            <text>过</text>
+            <text>{{zone.overdue}}</text>
           </view>
         </view>
+
+        <scroll-view
+          wx:if="{{zone.items.length > 0}}"
+          class="food-card-scroll"
+          scroll-x
+          enhanced
+          show-scrollbar="{{false}}"
+        >
+          <view class="food-card-track">
+            <view
+              class="food-card {{food.visualStatusClass}}"
+              wx:for="{{zone.items}}"
+              wx:for-item="food"
+              wx:key="_id"
+              data-id="{{food._id}}"
+              catchtap="handleFoodImageTap"
+            >
+              <view
+                class="food-thumb {{food.thumbClass}}"
+                data-id="{{food._id}}"
+                catchtap="handleFoodImageTap"
+              >
+                <image
+                  wx:if="{{food.thumbType === 'image'}}"
+                  class="food-thumb-image"
+                  mode="aspectFill"
+                  src="{{food.thumbImage}}"
+                />
+                <text wx:else class="food-thumb-text">{{food.thumbText}}</text>
+              </view>
+              <view class="food-info {{food.visualStatusClass}}">
+                <text class="food-name">{{food.name}}</text>
+                <text class="food-status">{{food.visualStatusLabel}}</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view wx:else class="home-zone-empty">
+          <view class="home-zone-empty-icon"></view>
+          <view class="home-zone-empty-copy">
+            <text class="home-zone-empty-title">暂无食材</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{zoneAddPanelVisible}}" class="zone-panel-mask" bindtap="handleCloseZoneAddPanel">
+    <view class="zone-panel add-action-panel" catchtap="handlePanelTap">
+      <view class="zone-panel-head">
+        <view class="zone-panel-head-main">
+          <view class="zone-panel-kicker">选择添加方式</view>
+          <view class="zone-panel-title">添加到{{selectedAddZone.name}}</view>
+        </view>
+      </view>
+
+      <view class="zone-add-grid action-grid">
+        <button class="zone-add-card photo" data-location="{{selectedAddZone.location}}" bindtap="handleZonePhotoAdd">
+          <view class="zone-add-icon">拍</view>
+          <view class="zone-add-copy">
+            <text class="zone-add-title">拍食品</text>
+            <text class="zone-add-desc">拍照识别，保存后首页显示照片</text>
+          </view>
+          <view class="zone-add-arrow">›</view>
+        </button>
+        <button class="zone-add-card package" data-location="{{selectedAddZone.location}}" bindtap="handleZonePackageAdd">
+          <view class="zone-add-icon">码</view>
+          <view class="zone-add-copy">
+            <text class="zone-add-title">拍包装/条码</text>
+            <text class="zone-add-desc">扫码或拍说明文字</text>
+          </view>
+          <view class="zone-add-arrow">›</view>
+        </button>
+        <button class="zone-add-card manual" data-location="{{selectedAddZone.location}}" bindtap="handleZoneAdd">
+          <view class="zone-add-icon">写</view>
+          <view class="zone-add-copy">
+            <text class="zone-add-title">手动添加</text>
+            <text class="zone-add-desc">自己输入名称和日期</text>
+          </view>
+          <view class="zone-add-arrow">›</view>
+        </button>
       </view>
     </view>
   </view>
@@ -49,46 +198,14 @@
     <view class="zone-panel zone-section-panel" catchtap="handlePanelTap">
       <view class="zone-panel-head">
         <view class="zone-panel-head-main">
-          <view class="zone-panel-title">{{selectedZone.name}}</view>
-        </view>
-        <button class="zone-panel-add zone-panel-add-top" data-location="{{selectedZone.location}}" bindtap="handleZoneAdd">
-          添加食品
-        </button>
-      </view>
-
-      <view class="zone-panel-tools">
-        <view class="zone-local-stats">
-          <view
-            class="zone-local-stat total {{selectedZoneFilter === 'total' ? 'active' : ''}}"
-            data-filter="total"
-            bindtap="handleZoneFilterTap"
-          >
-            <text>总</text>
-            <text>{{selectedZone.itemCount}}</text>
-          </view>
-          <view
-            class="zone-local-stat warning {{selectedZoneFilter === 'expiring' ? 'active' : ''}}"
-            data-filter="expiring"
-            bindtap="handleZoneFilterTap"
-          >
-            <text>临</text>
-            <text>{{selectedZone.expiringSoon}}</text>
-          </view>
-          <view
-            class="zone-local-stat danger {{selectedZoneFilter === 'overdue' ? 'active' : ''}}"
-            data-filter="overdue"
-            bindtap="handleZoneFilterTap"
-          >
-            <text>过</text>
-            <text>{{selectedZone.overdue}}</text>
-          </view>
+          <view class="zone-panel-title">{{selectedZone.name}} · {{selectedZoneFilterLabel}}</view>
         </view>
       </view>
 
       <scroll-view class="zone-section-scroll" scroll-y enhanced show-scrollbar="{{false}}">
         <view wx:if="{{selectedZoneItems.length === 0}}" class="zone-panel-empty">
           <view class="zone-panel-empty-title">这里暂时没有{{selectedZoneFilterLabel}}</view>
-          <view class="zone-panel-empty-desc">可以切换上方分类，或添加一条食品到当前分区。</view>
+          <view class="zone-panel-empty-desc">返回首页后可点分区右上角加号添加。</view>
         </view>
 
         <view wx:else class="zone-category-list">
@@ -134,38 +251,12 @@
     </view>
   </view>
 
-  <view class="stats-grid">
-    <view class="stat-card total" data-type="total" bindtap="handleStatsTap">
-      <text class="stat-label">总食品数</text>
-      <text class="stat-value total">{{stats.total}}</text>
-    </view>
-    <view class="stat-card warning" data-type="expiring" bindtap="handleStatsTap">
-      <text class="stat-label">临期</text>
-      <text class="stat-value warning">{{stats.expiringSoon}}</text>
-    </view>
-    <view class="stat-card danger" data-type="overdue" bindtap="handleStatsTap">
-      <text class="stat-label">已过期</text>
-      <text class="stat-value danger">{{stats.overdue}}</text>
-    </view>
-  </view>
-
-  <view class="search-card card">
-    <input
-      class="search-input"
-      placeholder="搜索食品名称"
-      confirm-type="search"
-      value="{{searchKeyword}}"
-      bindinput="handleSearchInput"
-      bindconfirm="handleSearchConfirm"
-    />
-    <view class="search-button" bindtap="handleSearchConfirm">确定</view>
-  </view>
-
   <view wx:if="{{statPanelVisible}}" class="zone-panel-mask" bindtap="handleCloseStatPanel">
     <view class="zone-panel stat-section-panel" catchtap="handleStatPanelTap">
       <view class="zone-panel-head">
         <view class="zone-panel-head-main">
           <view class="zone-panel-title">{{statPanelTitle}}</view>
+          <view class="zone-panel-subtitle">{{statPanelSubtitle}}</view>
         </view>
       </view>
 
@@ -204,6 +295,82 @@
           </view>
         </view>
       </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{foodDetailVisible}}" class="zone-panel-mask" bindtap="handleCloseFoodDetail">
+    <view class="zone-panel food-detail-panel" catchtap="handlePanelTap">
+      <view class="food-detail-hero {{selectedFood.visualStatusClass}}">
+        <image
+          wx:if="{{selectedFood.thumbType === 'image'}}"
+          class="food-detail-image"
+          mode="aspectFill"
+          src="{{selectedFood.thumbImage}}"
+        />
+        <view wx:else class="food-detail-local {{selectedFood.thumbClass}}">
+          {{selectedFood.thumbText}}
+        </view>
+      </view>
+      <view class="food-detail-title-row">
+        <text class="food-detail-title">{{selectedFood.name}}</text>
+        <text class="food-detail-status {{selectedFood.visualStatusClass}}">{{selectedFood.visualStatusLabel}}</text>
+      </view>
+      <view class="food-detail-meta">
+        <text>{{selectedFood.quantity}}{{selectedFood.unit}}</text>
+        <text>{{selectedFood.category}}</text>
+        <text>{{selectedFood.storageLocation}}</text>
+        <text>到期 {{selectedFood.expireDateText}}</text>
+      </view>
+      <view wx:if="{{selectedFood.note}}" class="food-detail-note">{{selectedFood.note}}</view>
+      <view class="food-detail-actions">
+        <view class="detail-edit-button" bindtap="handleFoodDetailEdit">编辑</view>
+        <view class="detail-delete-button" bindtap="handleFoodDetailDelete">删除</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{zoneConfigPanelVisible}}" class="zone-panel-mask" bindtap="handleCloseZoneConfig">
+    <view class="zone-panel zone-config-panel" catchtap="handlePanelTap">
+      <view class="zone-panel-head">
+        <view class="zone-panel-head-main">
+          <view class="zone-panel-kicker">首页展示设置</view>
+          <view class="zone-panel-title">分区管理</view>
+        </view>
+      </view>
+
+      <view class="zone-config-desc">按住左侧拖动排序，右侧控制分区显示或删除。</view>
+
+      <view class="zone-config-list">
+        <view
+          class="zone-config-row {{item.enabled ? '' : 'disabled'}} {{index === zoneConfigDraggingIndex ? 'dragging' : ''}}"
+          wx:for="{{zoneConfigDraft}}"
+          wx:key="key"
+        >
+          <view
+            class="zone-config-drag"
+            data-index="{{index}}"
+            catchtouchstart="handleZoneConfigDragStart"
+            catchtouchmove="handleZoneConfigDragMove"
+            catchtouchend="handleZoneConfigDragEnd"
+            catchtouchcancel="handleZoneConfigDragEnd"
+          >
+            <view class="zone-config-grip"></view>
+            <text>拖动</text>
+          </view>
+          <view class="zone-config-main">
+            <text class="zone-config-name">{{item.name}}</text>
+            <text class="zone-config-hint">{{item.temperature}} · {{item.hint}}</text>
+          </view>
+          <view class="zone-config-actions">
+            <view class="zone-config-show {{item.enabled ? 'active' : ''}}" data-index="{{index}}" bindtap="handleShowZoneConfig">显示</view>
+            <view class="zone-config-delete" data-index="{{index}}" bindtap="handleDeleteZoneConfig">删除</view>
+          </view>
+        </view>
+      </view>
+
+      <button class="zone-config-save" loading="{{zoneConfigSaving}}" bindtap="handleSaveZoneConfig">
+        保存分区设置
+      </button>
     </view>
   </view>
 

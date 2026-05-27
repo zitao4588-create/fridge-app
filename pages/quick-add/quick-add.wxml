@@ -1,26 +1,53 @@
 <view class="page quick-page">
-  <view class="page-title">添加食品</view>
-  <view class="page-subtitle">选择一种录入方式，保存前都可以检查和修改。</view>
-
-  <view class="mock-notice card">
-    <text class="mock-title">第一阶段提示</text>
-    <text class="mock-desc">常用食品和常见饮品现在是示例预填，不是真实拍照识别或扫码识别。保存前请按包装信息核对。</text>
+  <view class="quick-hero card">
+    <view class="quick-hero-copy">
+      <view class="page-title">智能录入</view>
+      <view class="page-subtitle">不确定分区时，可以先识别，再按推荐分区保存。</view>
+    </view>
+    <view class="quick-hero-fridge">
+      <view class="quick-hero-face"></view>
+    </view>
   </view>
 
   <view class="entry-list">
-    <button class="entry-card card" bindtap="handleManualAdd">
-      <text class="entry-title">手动添加</text>
-      <text class="entry-desc">填写名称、数量、品类、位置和过期日期</text>
+    <button class="entry-card card manual" bindtap="handleManualSmart">
+      <view class="entry-icon manual"></view>
+      <view class="entry-copy">
+        <text class="entry-kicker">只知道名称</text>
+        <text class="entry-title">手动输入</text>
+        <text class="entry-desc">输入名称和品类后，帮你推荐分区</text>
+      </view>
+      <view class="entry-arrow">›</view>
     </button>
 
-    <button class="entry-card card" bindtap="handleDairyPrefill">
-      <text class="entry-title">常用食品示例</text>
-      <text class="entry-desc">快速填入常见乳制品信息，确认后可修改保存</text>
+    <button class="entry-card card food" bindtap="handleFoodPhoto">
+      <view class="entry-icon food"></view>
+      <view class="entry-copy">
+        <text class="entry-kicker">单个食品</text>
+        <text class="entry-title">拍食品</text>
+        <text class="entry-desc">识别食品本身，自动给出推荐分区</text>
+      </view>
+      <view class="entry-arrow">›</view>
     </button>
 
-    <button class="entry-card card" bindtap="handleDrinkPrefill">
-      <text class="entry-title">常见饮品示例</text>
-      <text class="entry-desc">快速填入饮品信息，过期日期保存前可调整</text>
+    <button class="entry-card card package" bindtap="handlePackageOrBarcode">
+      <view class="entry-icon package"></view>
+      <view class="entry-copy">
+        <text class="entry-kicker">包装信息</text>
+        <text class="entry-title">拍包装/条码</text>
+        <text class="entry-desc">扫码条形码，或拍包装说明文字</text>
+      </view>
+      <view class="entry-arrow">›</view>
+    </button>
+
+    <button class="entry-card card receipt" bindtap="handleReceiptPhoto">
+      <view class="entry-icon receipt"></view>
+      <view class="entry-copy">
+        <text class="entry-kicker">批量添加</text>
+        <text class="entry-title">拍购物小票</text>
+        <text class="entry-desc">识别多条食品，逐个确认分区后保存</text>
+      </view>
+      <view class="entry-arrow">›</view>
     </button>
   </view>
 </view>

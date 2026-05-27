@@ -1,0 +1,88 @@
+<view class="page batch-page">
+  <view class="batch-hero card">
+    <view>
+      <view class="page-title">确认小票食品</view>
+      <view class="page-subtitle">逐条确认名称、日期和分区后保存。</view>
+    </view>
+    <view class="batch-hero-mark"></view>
+  </view>
+
+  <view class="mock-alert">
+    <text class="mock-alert-title">当前是 mock 小票识别</text>
+    <text class="mock-alert-desc">这一步会打开拍照或相册入口，但识别结果仍是固定示例。保存前请按购物小票和包装信息核对。</text>
+  </view>
+
+  <view class="batch-summary card">
+    <text>{{sourceLabel}}</text>
+    <text>已选 {{selectedCount}} / {{items.length}}</text>
+  </view>
+
+  <view wx:if="{{items.length === 0}}" class="empty">
+    暂无可确认的食品
+  </view>
+
+  <view wx:else class="batch-list">
+    <view
+      class="batch-item card {{item.checked ? '' : 'disabled'}}"
+      wx:for="{{items}}"
+      wx:for-item="item"
+      wx:key="id"
+    >
+      <view class="batch-item-head">
+        <view>
+          <text class="batch-item-title">食品 {{index + 1}}</text>
+          <text class="batch-item-recommend">推荐：{{item.recommendedStorageLocation}}</text>
+        </view>
+        <view class="batch-toggle {{item.checked ? 'checked' : ''}}" data-index="{{index}}" bindtap="handleToggleItem">
+          {{item.checked ? '已选' : '不保存'}}
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="field-label">食品名称</text>
+        <input class="input" value="{{item.form.name}}" data-index="{{index}}" data-field="name" bindinput="handleInput" />
+      </view>
+
+      <view class="two-col">
+        <view class="field">
+          <text class="field-label">数量</text>
+          <input class="input" type="digit" value="{{item.form.quantity}}" data-index="{{index}}" bindinput="handleQuantityInput" />
+        </view>
+        <view class="field">
+          <text class="field-label">单位</text>
+          <picker range="{{unitOptions}}" value="{{item.unitIndex}}" data-index="{{index}}" bindchange="handleUnitChange">
+            <view class="picker-field">{{item.form.unit}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="field-label">品类</text>
+        <picker range="{{categoryOptions}}" value="{{item.categoryIndex}}" data-index="{{index}}" bindchange="handleCategoryChange">
+          <view class="picker-field">{{item.form.category}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="field-label">过期日期</text>
+        <picker mode="date" value="{{item.form.expireDate}}" data-index="{{index}}" bindchange="handleExpireDateChange">
+          <view class="picker-field required-date">{{item.form.expireDate || '请选择过期日期'}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="field-label">存放位置</text>
+        <picker range="{{locationOptions}}" value="{{item.locationIndex}}" data-index="{{index}}" bindchange="handleLocationChange">
+          <view class="picker-field">{{item.form.storageLocation}}</view>
+        </picker>
+        <button wx:if="{{item.showLocationRecommend}}" class="recommend-button" data-index="{{index}}" bindtap="handleApplyRecommendedLocation">
+          采纳推荐：{{item.recommendedStorageLocation}}
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <button wx:if="{{items.length > 0}}" class="primary-button batch-save" loading="{{saving}}" bindtap="handleBatchSave">
+    保存选中食品
+  </button>
+</view>

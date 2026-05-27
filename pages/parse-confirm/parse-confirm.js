@@ -14,8 +14,50 @@ const defaultResult = parseService.normalizeParseResult({
   fields: {},
 })
 
+function buildRecommendationState(form, source, enabled) {
+  const hasManualInput =
+    String(form.name || '').trim() || form.category !== '其他'
+  const shouldShow =
+    enabled && (source !== 'manual' || hasManualInput)
+
+  if (!shouldShow) {
+    return {
+      recommendedStorageLocation: '',
+      showLocationRecommend: false,
+    }
+  }
+
+  const recommendedStorageLocation = normalizeStorageLocation(
+    parseService.getRecommendedStorageLocation(form),
+  )
+
+  return {
+    recommendedStorageLocation,
+    showLocationRecommend:
+      !!recommendedStorageLocation &&
+      recommendedStorageLocation !== form.storageLocation,
+  }
+}
+
+function decodeOptionValue(value) {
+  try {
+    return decodeURIComponent(value || '')
+  } catch (error) {
+    return ''
+  }
+}
+
+function getOptionStorageLocation(options) {
+  const storageLocation = decodeOptionValue(
+    options.storageLocation || options.location,
+  )
+
+  return storageLocation ? normalizeStorageLocation(storageLocation) : ''
+}
+
 Page({
   data: {
+    cacheKey: '',
     saving: false,
     sourceLabel: '',
     confidenceText: '',
@@ -24,6 +66,9 @@ Page({
     source: defaultResult.source,
     rawText: '',
     confidence: 0,
+    smartRecommendEnabled: false,
+    recommendedStorageLocation: '',
+    showLocationRecommend: false,
     categoryOptions: CATEGORY_OPTIONS,
     categoryIndex: 0,
     locationOptions: STORAGE_LOCATION_OPTIONS,
@@ -34,8 +79,11 @@ Page({
 
   onLoad(options) {
     let parsed = defaultResult
+    const cacheKey = decodeOptionValue(options.cacheKey)
 
-    if (options.data) {
+    if (cacheKey) {
+      parsed = parseService.readTempParsePayload(cacheKey) || defaultResult
+    } else if (options.data) {
       try {
         parsed = JSON.parse(decodeURIComponent(options.data))
       } catch (error) {
@@ -47,19 +95,33 @@ Page({
     }
 
     const normalized = parseService.normalizeParseResult(parsed)
+    const optionStorageLocation = getOptionStorageLocation(options)
+    const smartRecommendEnabled =
+      normalized.source !== 'manual' || normalized.smartRecommend
     const form = {
       ...normalized.fields,
-      storageLocation: normalizeStorageLocation(
-        normalized.fields.storageLocation,
-      ),
+      storageLocation:
+        optionStorageLocation ||
+        normalizeStorageLocation(normalized.fields.storageLocation),
     }
+    const recommendationState = buildRecommendationState(
+      form,
+      normalized.source,
+      smartRecommendEnabled,
+    )
 
     this.setData({
+      cacheKey,
       form,
       source: normalized.source,
       rawText: normalized.rawText,
       confidence: normalized.confidence,
-      sourceLabel: SOURCE_LABELS[normalized.source] || '快捷录入',
+      smartRecommendEnabled,
+      ...recommendationState,
+      sourceLabel:
+        normalized.source === 'manual' && normalized.smartRecommend
+          ? '手动智能录入'
+          : SOURCE_LABELS[normalized.source] || '快捷录入',
       confidenceText:
         normalized.confidence >= 0.8 ? '信息较完整' : '请重点核对',
       lowConfidence: normalized.confidence < 0.8,
@@ -70,11 +132,18 @@ Page({
   },
 
   updateFormField(field, value) {
+    const form = {
+      ...this.data.form,
+      [field]: value,
+    }
+
     this.setData({
-      form: {
-        ...this.data.form,
-        [field]: value,
-      },
+      form,
+      ...buildRecommendationState(
+        form,
+        this.data.source,
+        this.data.smartRecommendEnabled,
+      ),
     })
   },
 
@@ -105,23 +174,38 @@ Page({
 
   handleCategoryChange(event) {
     const categoryIndex = Number(event.detail.value)
+    const form = {
+      ...this.data.form,
+      category: this.data.categoryOptions[categoryIndex],
+    }
+
     this.setData({
       categoryIndex,
-      form: {
-        ...this.data.form,
-        category: this.data.categoryOptions[categoryIndex],
-      },
+      form,
+      ...buildRecommendationState(
+        form,
+        this.data.source,
+        this.data.smartRecommendEnabled,
+      ),
     })
   },
 
   handleLocationChange(event) {
     const locationIndex = Number(event.detail.value)
+    const storageLocation = this.data.locationOptions[locationIndex]
+    const form = {
+      ...this.data.form,
+      storageLocation,
+    }
+
     this.setData({
       locationIndex,
-      form: {
-        ...this.data.form,
-        storageLocation: this.data.locationOptions[locationIndex],
-      },
+      form,
+      ...buildRecommendationState(
+        form,
+        this.data.source,
+        this.data.smartRecommendEnabled,
+      ),
     })
   },
 
@@ -154,6 +238,23 @@ Page({
 
   handleExpireDateChange(event) {
     this.updateFormField('expireDate', event.detail.value)
+  },
+
+  handleApplyRecommendedLocation() {
+    const storageLocation = this.data.recommendedStorageLocation
+
+    if (!storageLocation) {
+      return
+    }
+
+    this.setData({
+      form: {
+        ...this.data.form,
+        storageLocation,
+      },
+      locationIndex: Math.max(0, STORAGE_LOCATION_OPTIONS.indexOf(storageLocation)),
+      showLocationRecommend: false,
+    })
   },
 
   validateForm() {
@@ -195,6 +296,7 @@ Page({
         parseStatus: 'manual_confirmed',
       })
       .then(() => {
+        parseService.removeTempParsePayload(this.data.cacheKey)
         wx.hideLoading()
         this.setData({
           saving: false,

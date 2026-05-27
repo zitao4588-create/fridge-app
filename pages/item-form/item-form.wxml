@@ -1,5 +1,11 @@
 <view class="page form-page">
-  <view class="page-title">{{isEdit ? '编辑食品' : '添加食品'}}</view>
+  <view class="form-hero card">
+    <view>
+      <view class="page-title">{{isEdit ? '编辑食品' : '添加食品'}}</view>
+      <view class="form-hero-subtitle">名称、品类和到期日是库存提醒的关键。</view>
+    </view>
+    <view class="form-hero-mark"></view>
+  </view>
 
   <view class="form-card card">
     <view class="field">

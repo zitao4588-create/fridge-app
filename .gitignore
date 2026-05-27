@@ -8,6 +8,10 @@ dist-ssr/
 .vite/
 miniprogram_npm/
 
+# WeChat developer tool preview output
+preview-info.json
+preview-qrcode.png
+
 # Logs
 logs/
 *.log

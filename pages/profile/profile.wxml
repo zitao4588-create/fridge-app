@@ -17,31 +17,8 @@
     </view>
   </view>
 
-  <view class="settings-card card">
-    <view class="settings-head">
-      <view>
-        <text class="settings-title">冰箱类型</text>
-        <text class="settings-desc">首页会按这里选择的冰箱模板展示分区。</text>
-      </view>
-    </view>
-
-    <picker
-      range="{{fridgeLayoutOptions}}"
-      value="{{fridgeLayoutIndex}}"
-      bindchange="handleFridgeLayoutChange"
-    >
-      <view class="fridge-type-picker">
-        <view>
-          <text class="fridge-type-name">{{selectedFridgeLayout.name}}</text>
-          <text class="fridge-type-desc">{{selectedFridgeLayout.description}}</text>
-        </view>
-        <text class="fridge-type-action">更换</text>
-      </view>
-    </picker>
-  </view>
-
   <view class="info-card card">
-    <text class="info-title">关于冰箱管家</text>
+    <text class="info-title">关于冰箱雷达</text>
     <text class="info-text">用于记录冰箱食品饮料库存，支持手动管理、到期日历、库存统计和菜谱建议。</text>
   </view>
 

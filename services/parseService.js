@@ -1,39 +1,233 @@
 const { addDays, getTodayString } = require('../utils/date')
+const { normalizeStorageLocation } = require('../utils/constants')
 
-const DAIRY_PREFILL_RESULT = {
-  source: 'photo',
-  confidence: 0.76,
-  rawText: '常用乳制品信息预填',
-  fields: {
-    name: '原味酸奶',
-    category: '乳制品',
-    quantity: 1,
-    unit: '盒',
-    productionDate: getTodayString(),
-    shelfLifeDays: 21,
-    expireDate: addDays(getTodayString(), 21),
-    storageLocation: '冷藏',
-    note: '请按包装信息核对后保存',
-    imageFileId: '',
-  },
+const PARSE_CACHE_PREFIX = 'fridge_parse_payload'
+
+function normalizeOptionalStorageLocation(location) {
+  const value = String(location || '').trim()
+
+  return value ? normalizeStorageLocation(value) : ''
 }
 
-const DRINK_PREFILL_RESULT = {
-  source: 'barcode',
-  confidence: 0.86,
-  rawText: '常见饮品信息预填',
-  fields: {
-    name: '低糖乌龙茶',
-    category: '饮料',
-    quantity: 1,
-    unit: '瓶',
-    productionDate: '',
-    shelfLifeDays: '',
-    expireDate: addDays(getTodayString(), 180),
-    storageLocation: '门架',
-    note: '实际过期日期请按包装信息确认',
-    barcode: '',
-  },
+function getRecommendedStorageLocation(fields = {}) {
+  const category = fields.category || ''
+  const name = String(fields.name || '')
+
+  if (category === '蔬菜' || category === '水果') {
+    return '果蔬抽屉'
+  }
+
+  if (
+    category === '饮料' ||
+    category === '调料' ||
+    name.includes('茶') ||
+    name.includes('可乐') ||
+    name.includes('雪碧') ||
+    name.includes('果汁') ||
+    name.includes('饮料') ||
+    name.includes('矿泉水') ||
+    name.includes('汽水') ||
+    name.includes('酱油') ||
+    name.includes('醋')
+  ) {
+    return '门架'
+  }
+
+  if (
+    category === '速冻' ||
+    name.includes('速冻') ||
+    name.includes('冻') ||
+    name.includes('冰')
+  ) {
+    return '冷冻'
+  }
+
+  if (
+    category === '肉蛋' &&
+    (name.includes('牛肉') ||
+      name.includes('鸡胸') ||
+      name.includes('猪肉') ||
+      name.includes('虾'))
+  ) {
+    return '冷冻'
+  }
+
+  return '冷藏'
+}
+
+function createFoodPhotoMockResult(options = {}) {
+  const today = getTodayString()
+
+  return withRecognitionContext(
+    {
+      source: 'photo',
+      confidence: 0.78,
+      recommendedStorageLocation: '冷藏',
+      rawText: '拍食品 mock 识别：盒装草莓',
+      fields: {
+        name: '盒装草莓',
+        category: '水果',
+        quantity: 1,
+        unit: '盒',
+        productionDate: today,
+        shelfLifeDays: 5,
+        expireDate: addDays(today, 5),
+        storageLocation: '冷藏',
+        note: '第一阶段为 mock 识别，请按实物状态核对',
+        imageFileId: options.imageFileId || '',
+        tempFilePath: options.tempFilePath || '',
+      },
+    },
+    options,
+  )
+}
+
+function createPackageMockResult(options = {}) {
+  const today = getTodayString()
+
+  return withRecognitionContext(
+    {
+      source: 'package',
+      confidence: 0.74,
+      recommendedStorageLocation: '冷藏',
+      rawText: '拍包装说明 mock 识别：冷鲜鸡胸肉，保质期 7 天',
+      fields: {
+        name: '冷鲜鸡胸肉',
+        category: '肉蛋',
+        quantity: 1,
+        unit: '袋',
+        productionDate: today,
+        shelfLifeDays: 7,
+        expireDate: addDays(today, 7),
+        storageLocation: '冷藏',
+        note: '请按包装生产日期和保质期核对',
+        imageFileId: '',
+        tempFilePath: options.tempFilePath || '',
+      },
+    },
+    options,
+  )
+}
+
+function createBarcodeMockResult(options = {}) {
+  return withRecognitionContext(
+    {
+      source: 'barcode',
+      confidence: 0.86,
+      recommendedStorageLocation: '门架',
+      rawText: '条形码 mock 识别：常见饮品信息预填',
+      fields: {
+        name: '低糖乌龙茶',
+        category: '饮料',
+        quantity: 1,
+        unit: '瓶',
+        productionDate: '',
+        shelfLifeDays: '',
+        expireDate: addDays(getTodayString(), 180),
+        storageLocation: '门架',
+        note: '实际过期日期请按包装信息确认',
+        barcode: options.barcode || '',
+      },
+    },
+    options,
+  )
+}
+
+function createSmartManualResult(options = {}) {
+  return withRecognitionContext(
+    {
+      source: 'manual',
+      confidence: 0.62,
+      smartRecommend: true,
+      recommendedStorageLocation: '冷藏',
+      rawText: '手动输入名称后进行 mock 分区推荐',
+      fields: {
+        name: '',
+        category: '其他',
+        quantity: 1,
+        unit: '份',
+        productionDate: '',
+        shelfLifeDays: '',
+        expireDate: '',
+        storageLocation: '冷藏',
+        note: '',
+      },
+    },
+    options,
+  )
+}
+
+function createReceiptMockPayload(options = {}) {
+  const today = getTodayString()
+  const rawItems = [
+    {
+      name: '原味酸奶',
+      category: '乳制品',
+      quantity: 2,
+      unit: '盒',
+      productionDate: today,
+      shelfLifeDays: 21,
+      expireDate: addDays(today, 21),
+      storageLocation: '冷藏',
+      recommendedStorageLocation: '冷藏',
+      note: '小票 mock 识别，请核对数量和日期',
+    },
+    {
+      name: '速冻水饺',
+      category: '速冻',
+      quantity: 1,
+      unit: '袋',
+      productionDate: '',
+      shelfLifeDays: '',
+      expireDate: addDays(today, 120),
+      storageLocation: '冷冻',
+      recommendedStorageLocation: '冷冻',
+      note: '小票 mock 识别，请按包装补充生产日期',
+    },
+    {
+      name: '低糖乌龙茶',
+      category: '饮料',
+      quantity: 3,
+      unit: '瓶',
+      productionDate: '',
+      shelfLifeDays: '',
+      expireDate: addDays(today, 180),
+      storageLocation: '门架',
+      recommendedStorageLocation: '门架',
+      note: '小票 mock 识别，请核对实际保质期',
+    },
+  ]
+
+  const items = rawItems.map((item, index) => {
+    const normalized = withRecognitionContext(
+      {
+        source: 'receipt',
+        confidence: index === 0 ? 0.79 : 0.72,
+        recommendedStorageLocation: item.recommendedStorageLocation,
+        rawText: '购物小票 mock 识别',
+        fields: item,
+      },
+      {},
+    )
+
+    return {
+      id: `receipt-${Date.now()}-${index}`,
+      checked: true,
+      source: normalized.source,
+      confidence: normalized.confidence,
+      rawText: normalized.rawText,
+      recommendedStorageLocation: normalized.recommendedStorageLocation,
+      fields: normalized.fields,
+    }
+  })
+
+  return {
+    source: 'receipt',
+    confidence: 0.74,
+    rawText: '购物小票 mock 识别：酸奶、速冻水饺、乌龙茶',
+    tempFilePath: options.tempFilePath || '',
+    items,
+  }
 }
 
 function calculateExpireDate(productionDate, shelfLifeDays) {
@@ -48,11 +242,23 @@ function calculateExpireDate(productionDate, shelfLifeDays) {
 
 function normalizeParseResult(result) {
   const fields = result.fields || result.result || {}
+  const recommendedStorageLocation = normalizeOptionalStorageLocation(
+    result.recommendedStorageLocation ||
+      fields.recommendedStorageLocation ||
+      fields.recommendedLocation,
+  )
 
   return {
     source: result.source || result.type || 'manual',
     confidence: Number(result.confidence || 0),
     rawText: result.rawText || '',
+    smartRecommend: Boolean(
+      result.smartRecommend ||
+        result.smartManual ||
+        result.mode === 'smart-manual',
+    ),
+    recommendedStorageLocation:
+      recommendedStorageLocation || getRecommendedStorageLocation(fields),
     fields: {
       name: fields.name || '',
       category: fields.category || '其他',
@@ -63,10 +269,37 @@ function normalizeParseResult(result) {
       expireDate:
         fields.expireDate ||
         calculateExpireDate(fields.productionDate, fields.shelfLifeDays),
-      storageLocation: fields.storageLocation || '冷藏',
+      storageLocation: normalizeStorageLocation(
+        fields.storageLocation || recommendedStorageLocation || '冷藏',
+      ),
       note: fields.note || '',
       barcode: fields.barcode || result.barcode || '',
       imageFileId: fields.imageFileId || result.imageFileId || '',
+      tempFilePath: fields.tempFilePath || result.tempFilePath || '',
+    },
+  }
+}
+
+function withRecognitionContext(result, options = {}) {
+  const normalized = normalizeParseResult(result)
+  const recommendedStorageLocation = normalizeOptionalStorageLocation(
+    result.recommendedStorageLocation ||
+      normalized.recommendedStorageLocation ||
+      getRecommendedStorageLocation(normalized.fields),
+  )
+  const preferredStorageLocation = normalizeOptionalStorageLocation(
+    options.preferredStorageLocation || options.storageLocation,
+  )
+
+  return {
+    ...normalized,
+    recommendedStorageLocation,
+    fields: {
+      ...normalized.fields,
+      storageLocation:
+        preferredStorageLocation ||
+        normalized.fields.storageLocation ||
+        recommendedStorageLocation,
     },
   }
 }
@@ -92,6 +325,9 @@ function createParseLog(type, normalizedResult) {
           productionDate: fields.productionDate,
           shelfLifeDays: fields.shelfLifeDays,
           expireDate: fields.expireDate,
+          storageLocation: fields.storageLocation,
+          recommendedStorageLocation:
+            normalizedResult.recommendedStorageLocation || '',
         },
         confidence: normalizedResult.confidence,
         rawText: normalizedResult.rawText,
@@ -102,8 +338,120 @@ function createParseLog(type, normalizedResult) {
     .catch(() => null)
 }
 
-function parseByPhoto() {
-  const fallback = normalizeParseResult(DAIRY_PREFILL_RESULT)
+function createReceiptParseLog(payload) {
+  if (!wx.cloud) {
+    return Promise.resolve()
+  }
+
+  const db = wx.cloud.database()
+
+  return db
+    .collection('parseLogs')
+    .add({
+      data: {
+        type: 'receipt',
+        result: payload.items.map((item) => ({
+          name: item.fields.name,
+          category: item.fields.category,
+          expireDate: item.fields.expireDate,
+          storageLocation: item.fields.storageLocation,
+          recommendedStorageLocation: item.recommendedStorageLocation,
+        })),
+        confidence: payload.confidence,
+        rawText: payload.rawText,
+        status: 'success',
+        createdAt: Date.now(),
+      },
+    })
+    .catch(() => null)
+}
+
+function getMediaTempPath(res) {
+  if (res.tempFiles && res.tempFiles.length > 0) {
+    return res.tempFiles[0].tempFilePath || res.tempFiles[0].path || ''
+  }
+
+  if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+    return res.tempFilePaths[0]
+  }
+
+  return ''
+}
+
+function chooseImageForParse() {
+  return new Promise((resolve, reject) => {
+    if (typeof wx === 'undefined') {
+      reject(new Error('当前环境不支持拍照'))
+      return
+    }
+
+    if (wx.chooseMedia) {
+      wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['camera', 'album'],
+        success: (res) => {
+          resolve(getMediaTempPath(res))
+        },
+        fail: reject,
+      })
+      return
+    }
+
+    wx.chooseImage({
+      count: 1,
+      sourceType: ['camera', 'album'],
+      success: (res) => {
+        resolve(getMediaTempPath(res))
+      },
+      fail: reject,
+    })
+  })
+}
+
+function getFileExt(filePath) {
+  const matched = String(filePath || '').match(/\.([a-zA-Z0-9]+)(?:\?|$)/)
+
+  return matched ? matched[1].toLowerCase() : 'jpg'
+}
+
+function uploadParseImage(tempFilePath) {
+  if (!tempFilePath || !wx.cloud || !wx.cloud.uploadFile) {
+    return Promise.resolve('')
+  }
+
+  const random = Math.random().toString(16).slice(2)
+  const ext = getFileExt(tempFilePath)
+
+  return wx.cloud
+    .uploadFile({
+      cloudPath: `fridge-items/${Date.now()}-${random}.${ext}`,
+      filePath: tempFilePath,
+    })
+    .then((res) => res.fileID || '')
+    .catch(() => '')
+}
+
+function scanBarcode() {
+  return new Promise((resolve, reject) => {
+    if (typeof wx === 'undefined' || !wx.scanCode) {
+      reject(new Error('当前环境不支持扫码'))
+      return
+    }
+
+    wx.scanCode({
+      onlyFromCamera: false,
+      scanType: ['barCode'],
+      success: (res) => {
+        resolve(res.result || '')
+      },
+      fail: reject,
+    })
+  })
+}
+
+function parseByPhoto(options = {}) {
+  const fallback = createFoodPhotoMockResult(options)
 
   if (!wx.cloud) {
     return Promise.resolve(fallback)
@@ -113,11 +461,12 @@ function parseByPhoto() {
     .callFunction({
       name: 'parseFoodImage',
       data: {
-        imageFileId: '',
+        imageFileId: options.imageFileId || '',
+        tempFilePath: options.tempFilePath || '',
       },
     })
     .then((res) => ({
-      result: normalizeParseResult(res.result || DAIRY_PREFILL_RESULT),
+      result: withRecognitionContext(res.result || fallback, options),
       loggedByCloud: true,
     }))
     .catch(() => ({
@@ -133,8 +482,10 @@ function parseByPhoto() {
     })
 }
 
-function parseByBarcode() {
-  const fallback = normalizeParseResult(DRINK_PREFILL_RESULT)
+function parseByBarcode(options = {}) {
+  const safeOptions =
+    typeof options === 'string' ? { barcode: options } : options || {}
+  const fallback = createBarcodeMockResult(safeOptions)
 
   if (!wx.cloud) {
     return Promise.resolve(fallback)
@@ -144,11 +495,11 @@ function parseByBarcode() {
     .callFunction({
       name: 'parseBarcode',
       data: {
-        barcode: '',
+        barcode: safeOptions.barcode || '',
       },
     })
     .then((res) => ({
-      result: normalizeParseResult(res.result || DRINK_PREFILL_RESULT),
+      result: withRecognitionContext(res.result || fallback, safeOptions),
       loggedByCloud: true,
     }))
     .catch(() => ({
@@ -164,19 +515,110 @@ function parseByBarcode() {
     })
 }
 
+function parseFoodPhoto(options = {}) {
+  return chooseImageForParse().then((tempFilePath) =>
+    uploadParseImage(tempFilePath).then((imageFileId) =>
+      parseByPhoto({
+        ...options,
+        imageFileId,
+        tempFilePath,
+      }),
+    ),
+  )
+}
+
+function parsePackagePhoto(options = {}) {
+  return chooseImageForParse().then((tempFilePath) => {
+    const result = createPackageMockResult({
+      ...options,
+      tempFilePath,
+    })
+
+    createParseLog('package', result)
+    return result
+  })
+}
+
+function scanAndParseBarcode(options = {}) {
+  return scanBarcode().then((barcode) =>
+    parseByBarcode({
+      ...options,
+      barcode,
+    }),
+  )
+}
+
+function parseReceiptPhoto(options = {}) {
+  return chooseImageForParse().then((tempFilePath) => {
+    const payload = createReceiptMockPayload({
+      ...options,
+      tempFilePath,
+    })
+
+    createReceiptParseLog(payload)
+    return payload
+  })
+}
+
+function createCacheKey(type = 'single') {
+  const random = Math.random().toString(16).slice(2)
+
+  return `${PARSE_CACHE_PREFIX}_${type}_${Date.now()}_${random}`
+}
+
+function saveTempParsePayload(payload, type = 'single') {
+  const cacheKey = createCacheKey(type)
+
+  wx.setStorageSync(cacheKey, payload)
+
+  return cacheKey
+}
+
+function readTempParsePayload(cacheKey) {
+  if (!cacheKey) {
+    return null
+  }
+
+  return wx.getStorageSync(cacheKey) || null
+}
+
+function removeTempParsePayload(cacheKey) {
+  if (cacheKey) {
+    wx.removeStorageSync(cacheKey)
+  }
+}
+
+function isCancelError(error) {
+  const message = String(
+    (error && (error.errMsg || error.message)) || error || '',
+  ).toLowerCase()
+
+  return message.includes('cancel') || message.includes('取消')
+}
+
 function getDairyPrefillResult() {
-  return Promise.resolve(normalizeParseResult(DAIRY_PREFILL_RESULT))
+  return Promise.resolve(createFoodPhotoMockResult())
 }
 
 function getDrinkPrefillResult() {
-  return Promise.resolve(normalizeParseResult(DRINK_PREFILL_RESULT))
+  return Promise.resolve(createBarcodeMockResult())
 }
 
 module.exports = {
   calculateExpireDate,
   getDairyPrefillResult,
   getDrinkPrefillResult,
+  getRecommendedStorageLocation,
+  createSmartManualResult,
+  isCancelError,
   normalizeParseResult,
   parseByBarcode,
   parseByPhoto,
+  parseFoodPhoto,
+  parsePackagePhoto,
+  parseReceiptPhoto,
+  readTempParsePayload,
+  removeTempParsePayload,
+  saveTempParsePayload,
+  scanAndParseBarcode,
 }

@@ -1,6 +1,11 @@
 <view class="page confirm-page">
-  <view class="page-title">确认食品信息</view>
-  <view class="page-subtitle">请核对信息，确认无误后保存。</view>
+  <view class="confirm-hero card">
+    <view>
+      <view class="page-title">确认食品信息</view>
+      <view class="page-subtitle">请核对信息，确认无误后保存。</view>
+    </view>
+    <view class="confirm-hero-mark"></view>
+  </view>
 
   <view class="parse-card card">
     <view>
@@ -17,9 +22,32 @@
     请重点检查名称、品类和过期日期。
   </view>
 
-  <view wx:if="{{source !== 'manual'}}" class="mock-alert">
-    <text class="mock-alert-title">当前是示例预填</text>
-    <text class="mock-alert-desc">这一步还没有接入真实 OCR、扫码商品库或 AI 识别。请核对名称、数量、单位、生产日期和过期日期后再保存。</text>
+  <view wx:if="{{source !== 'manual' || smartRecommendEnabled}}" class="mock-alert">
+    <text class="mock-alert-title">当前是 mock 识别</text>
+    <text class="mock-alert-desc">这一步还没有接入真实 OCR、扫码商品库或 AI 分区模型。请核对名称、数量、单位、生产日期、过期日期和存放位置后再保存。</text>
+  </view>
+
+  <view wx:if="{{recommendedStorageLocation}}" class="recommend-card {{showLocationRecommend ? 'active' : ''}}">
+    <view class="recommend-main">
+      <text class="recommend-label">推荐分区</text>
+      <text class="recommend-value">{{recommendedStorageLocation}}</text>
+    </view>
+    <view class="recommend-current">当前选择：{{form.storageLocation}}</view>
+    <button wx:if="{{showLocationRecommend}}" class="recommend-button" bindtap="handleApplyRecommendedLocation">
+      采纳推荐
+    </button>
+  </view>
+
+  <view wx:if="{{form.tempFilePath || form.imageFileId}}" class="photo-preview-card card">
+    <image
+      class="photo-preview-image"
+      mode="aspectFill"
+      src="{{form.imageFileId || form.tempFilePath}}"
+    />
+    <view class="photo-preview-copy">
+      <text class="photo-preview-title">食品照片</text>
+      <text class="photo-preview-desc">确认保存后，首页食品卡片会优先显示这张照片。</text>
+    </view>
   </view>
 
   <view class="form-card card">

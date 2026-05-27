@@ -4,37 +4,39 @@
     "pages/quick-add/quick-add",
     "pages/calendar/calendar",
     "pages/recipes/recipes",
-    "pages/profile/profile",
     "pages/item-form/item-form",
-    "pages/parse-confirm/parse-confirm"
+    "pages/parse-confirm/parse-confirm",
+    "pages/batch-parse-confirm/batch-parse-confirm"
   ],
   "window": {
-    "navigationBarTitleText": "冰箱管家",
-    "navigationBarBackgroundColor": "#f7fbff",
+    "navigationBarTitleText": "冰箱雷达",
+    "navigationBarBackgroundColor": "#f7fff6",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f7fbff"
+    "backgroundColor": "#fff8ea"
   },
   "tabBar": {
-    "color": "#64748b",
-    "selectedColor": "#0f766e",
-    "backgroundColor": "#ffffff",
+    "color": "#7f918a",
+    "selectedColor": "#1f9f73",
+    "backgroundColor": "#f4fff8",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "冰箱"
+        "text": "冰箱",
+        "iconPath": "images/tabbar/fridge.png",
+        "selectedIconPath": "images/tabbar/fridge-active.png"
       },
       {
         "pagePath": "pages/calendar/calendar",
-        "text": "日历"
+        "text": "日历",
+        "iconPath": "images/tabbar/calendar.png",
+        "selectedIconPath": "images/tabbar/calendar-active.png"
       },
       {
         "pagePath": "pages/recipes/recipes",
-        "text": "菜谱"
-      },
-      {
-        "pagePath": "pages/profile/profile",
-        "text": "我的"
+        "text": "菜谱",
+        "iconPath": "images/tabbar/recipe.png",
+        "selectedIconPath": "images/tabbar/recipe-active.png"
       }
     ]
   },
