@@ -3,24 +3,17 @@
     <view class="home-dashboard-shine"></view>
     <view class="home-dashboard-head">
       <view class="home-brand-lockup">
-        <view class="home-brand-fridge">
-          <view class="home-brand-face"></view>
-        </view>
         <text class="home-brand-name">我的冰箱</text>
       </view>
       <view class="zone-config-entry" bindtap="handleOpenZoneConfig">分区管理</view>
     </view>
 
-    <view class="search-card card">
-      <input
-        class="search-input"
-        placeholder="搜索食材名称"
-        confirm-type="search"
-        value="{{searchKeyword}}"
-        bindinput="handleSearchInput"
-        bindconfirm="handleSearchConfirm"
-      />
-      <view class="search-button" bindtap="handleSearchConfirm">搜索</view>
+    <view class="home-hero">
+      <image class="home-mascot" src="/images/mascot/fridge-happy.png" mode="aspectFit" />
+      <view class="home-speech">
+        <text class="home-speech-title">今天冰箱状态很好～</text>
+        <text class="home-speech-desc">继续保持，别让食材浪费啦！</text>
+      </view>
     </view>
 
     <view class="decision-guide">
@@ -51,6 +44,18 @@
   <view class="fridge-panel card">
     <view class="fridge-panel-light"></view>
     <view class="fridge-panel-hinge"></view>
+
+    <view class="search-card fridge-search-card card">
+      <input
+        class="search-input"
+        placeholder="搜索食材名称"
+        confirm-type="search"
+        value="{{searchKeyword}}"
+        bindinput="handleSearchInput"
+        bindconfirm="handleSearchConfirm"
+      />
+      <view class="search-button" bindtap="handleSearchConfirm">搜索</view>
+    </view>
 
     <view class="home-zone-list">
       <view class="fridge-shell-backlight"></view>
@@ -86,7 +91,7 @@
             data-filter="total"
             catchtap="handleZoneStatTap"
           >
-            <text>总</text>
+            <text>库存</text>
             <text>{{zone.itemCount}}</text>
           </view>
           <view
@@ -95,7 +100,7 @@
             data-filter="expiring"
             catchtap="handleZoneStatTap"
           >
-            <text>临</text>
+            <text>临期</text>
             <text>{{zone.expiringSoon}}</text>
           </view>
           <view
@@ -104,7 +109,7 @@
             data-filter="overdue"
             catchtap="handleZoneStatTap"
           >
-            <text>过</text>
+            <text>过期</text>
             <text>{{zone.overdue}}</text>
           </view>
         </view>
@@ -124,19 +129,17 @@
               wx:key="_id"
               data-id="{{food._id}}"
               catchtap="handleFoodImageTap"
-            >
-              <view
-                class="food-thumb {{food.thumbClass}}"
-                data-id="{{food._id}}"
-                catchtap="handleFoodImageTap"
               >
-                <image
-                  wx:if="{{food.thumbType === 'image'}}"
-                  class="food-thumb-image"
-                  mode="aspectFill"
-                  src="{{food.thumbImage}}"
+                <view
+                  class="food-image-wrap {{food.thumbClass}}"
+                  data-id="{{food._id}}"
+                  catchtap="handleFoodImageTap"
+                >
+                  <image
+                    class="food-image {{food.thumbType}}"
+                    mode="{{food.thumbType === 'photo' ? 'aspectFill' : 'aspectFit'}}"
+                    src="{{food.thumbImage || '/images/foods/default.png'}}"
                 />
-                <text wx:else class="food-thumb-text">{{food.thumbText}}</text>
               </view>
               <view class="food-info {{food.visualStatusClass}}">
                 <text class="food-name">{{food.name}}</text>
@@ -302,14 +305,10 @@
     <view class="zone-panel food-detail-panel" catchtap="handlePanelTap">
       <view class="food-detail-hero {{selectedFood.visualStatusClass}}">
         <image
-          wx:if="{{selectedFood.thumbType === 'image'}}"
-          class="food-detail-image"
-          mode="aspectFill"
-          src="{{selectedFood.thumbImage}}"
+          class="food-detail-image {{selectedFood.thumbType}}"
+          mode="{{selectedFood.thumbType === 'photo' ? 'aspectFill' : 'aspectFit'}}"
+          src="{{selectedFood.thumbImage || '/images/foods/default.png'}}"
         />
-        <view wx:else class="food-detail-local {{selectedFood.thumbClass}}">
-          {{selectedFood.thumbText}}
-        </view>
       </view>
       <view class="food-detail-title-row">
         <text class="food-detail-title">{{selectedFood.name}}</text>

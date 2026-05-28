@@ -30,6 +30,8 @@ function decorateBatchItem(entry, index) {
     confidence: entry.confidence,
     rawText: entry.rawText,
     recommendedStorageLocation: entry.recommendedStorageLocation,
+    providerStatus: entry.providerStatus,
+    fallbackReason: entry.fallbackReason,
     fields: entry.fields || entry,
   })
   const form = {
@@ -46,6 +48,8 @@ function decorateBatchItem(entry, index) {
     source: 'receipt',
     confidence: normalized.confidence,
     rawText: normalized.rawText,
+    providerStatus: normalized.providerStatus,
+    fallbackReason: normalized.fallbackReason,
     recommendedStorageLocation,
     showLocationRecommend:
       !!recommendedStorageLocation &&
@@ -57,12 +61,57 @@ function decorateBatchItem(entry, index) {
   }
 }
 
+function buildBatchRecognitionAlert(payload = {}, items = []) {
+  const firstFallbackItem = items.find(
+    (item) => item.providerStatus === 'mock' || item.fallbackReason,
+  )
+  const firstRealItem = items.find((item) => item.providerStatus === 'real')
+  const providerStatus =
+    payload.providerStatus ||
+    (firstFallbackItem && firstFallbackItem.providerStatus) ||
+    (firstRealItem && firstRealItem.providerStatus) ||
+    ''
+  const fallbackReason =
+    payload.fallbackReason ||
+    (firstFallbackItem && firstFallbackItem.fallbackReason) ||
+    ''
+
+  if (providerStatus === 'real' && !fallbackReason) {
+    return {
+      recognitionAlertType: 'real',
+      recognitionAlertTitle: '已使用真实小票识别',
+      recognitionAlertDesc:
+        '已调用云端 OCR / AI 识别。小票和包装日期仍需要逐条核对后再保存。',
+    }
+  }
+
+  if (providerStatus === 'mock' || fallbackReason) {
+    return {
+      recognitionAlertType: 'fallback',
+      recognitionAlertTitle: '已使用备用小票识别',
+      recognitionAlertDesc: fallbackReason
+        ? `真实识别暂不可用，已使用预填结果。原因：${fallbackReason}`
+        : '真实识别暂不可用，已使用预填结果。请按购物小票和包装信息核对。',
+    }
+  }
+
+  return {
+    recognitionAlertType: 'unknown',
+    recognitionAlertTitle: '小票识别状态待确认',
+    recognitionAlertDesc:
+      '云端没有返回识别来源，请逐条核对名称、数量、日期和分区后保存。',
+  }
+}
+
 Page({
   data: {
     cacheKey: '',
     saving: false,
     sourceLabel: SOURCE_LABELS.receipt,
     rawText: '',
+    recognitionAlertType: '',
+    recognitionAlertTitle: '',
+    recognitionAlertDesc: '',
     items: [],
     selectedCount: 0,
     categoryOptions: CATEGORY_OPTIONS,
@@ -74,10 +123,12 @@ Page({
     const cacheKey = decodeOptionValue(options.cacheKey)
     const payload = parseService.readTempParsePayload(cacheKey) || {}
     const items = (payload.items || []).map(decorateBatchItem)
+    const recognitionAlert = buildBatchRecognitionAlert(payload, items)
 
     this.setData({
       cacheKey,
       rawText: payload.rawText || '',
+      ...recognitionAlert,
       items,
       selectedCount: getSelectedCount(items),
     })

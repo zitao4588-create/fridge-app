@@ -62,6 +62,12 @@ function getDefaultStorageLocation(options) {
   return storageLocation ? normalizeStorageLocation(storageLocation) : ''
 }
 
+function getDefaultCategory(options) {
+  const category = decodeOptionValue(options.category)
+
+  return CATEGORY_OPTIONS.includes(category) ? category : ''
+}
+
 Page({
   data: {
     id: '',
@@ -100,13 +106,19 @@ Page({
     }
 
     const storageLocation = getDefaultStorageLocation(options)
+    const name = decodeOptionValue(options.name)
+    const category = getDefaultCategory(options)
+    const form = {
+      ...this.data.form,
+      ...(storageLocation ? { storageLocation } : {}),
+      ...(name ? { name } : {}),
+      ...(category ? { category } : {}),
+    }
 
-    if (storageLocation) {
+    if (storageLocation || name || category) {
       this.setData({
-        form: {
-          ...this.data.form,
-          storageLocation,
-        },
+        form,
+        categoryIndex: Math.max(0, CATEGORY_OPTIONS.indexOf(form.category)),
       })
     }
   },

@@ -25,6 +25,20 @@ const EMPTY_STATS = {
   overdue: 0,
 }
 
+const EMPTY_MEAL_RADAR_REPORT = {
+  score: 0,
+  scoreText: '0%',
+  levelLabel: '低',
+  levelTitle: '先处理风险或补货',
+  levelClass: 'low',
+  recipeHint: '暂无可匹配菜谱',
+  inventoryCount: 0,
+  expiringCount: 0,
+  overdueCount: 0,
+  priorityItems: [],
+  explanation: '基于库存匹配、临期食材和过期风险计算',
+}
+
 const EMPTY_RECIPE_DETAIL = {
   title: '',
   timeCost: '',
@@ -69,6 +83,115 @@ function formatInventoryItem(item) {
   }
 }
 
+function clampScore(value) {
+  return Math.max(0, Math.min(99, Math.round(value)))
+}
+
+function getRecipeMatchRate(recommendations) {
+  const safeRecommendations = Array.isArray(recommendations)
+    ? recommendations
+    : []
+  const rates = safeRecommendations
+    .map((recipe) => {
+      const availableCount = (recipe.availableItems || []).length
+      const missingCount = (recipe.missingItems || []).length
+      const totalCount = availableCount + missingCount
+
+      return totalCount > 0 ? availableCount / totalCount : 0
+    })
+    .filter((rate) => rate > 0)
+
+  if (rates.length === 0) {
+    return 0
+  }
+
+  return rates.reduce((sum, rate) => sum + rate, 0) / rates.length
+}
+
+function getMealRadarLevel(score) {
+  if (score >= 80) {
+    return {
+      levelLabel: '高',
+      levelTitle: '今天很适合开饭',
+      levelClass: 'high',
+    }
+  }
+
+  if (score >= 50) {
+    return {
+      levelLabel: '中',
+      levelTitle: '可以开饭，建议补 1-2 样',
+      levelClass: 'medium',
+    }
+  }
+
+  return {
+    levelLabel: '低',
+    levelTitle: '先处理风险或补货',
+    levelClass: 'low',
+  }
+}
+
+function getPriorityPreviewItems(expiryUsage) {
+  const items = Array.isArray(expiryUsage.threeDayItems)
+    ? expiryUsage.threeDayItems
+    : []
+  const usedKeys = new Set()
+
+  return items
+    .filter((item) => {
+      const key = item.id || item._id || item.name
+
+      if (usedKeys.has(key)) {
+        return false
+      }
+
+      usedKeys.add(key)
+      return true
+    })
+    .slice(0, 3)
+}
+
+function buildMealRadarReport(items, expiryUsage) {
+  const safeItems = Array.isArray(items) ? items : []
+  const safeExpiryUsage = expiryUsage || EMPTY_EXPIRY_USAGE
+  const recommendations = Array.isArray(safeExpiryUsage.recommendations)
+    ? safeExpiryUsage.recommendations
+    : []
+  const usableCount = Number(safeExpiryUsage.usableCount) || 0
+  const expiringCount = (safeExpiryUsage.threeDayItems || []).length
+  const overdueCount = (safeExpiryUsage.overdueItems || []).length
+  const directRecipeCount = recommendations.filter(
+    (recipe) => (recipe.missingItems || []).length === 0,
+  ).length
+  const matchScore = getRecipeMatchRate(recommendations) * 60
+  const inventoryScore = Math.min(usableCount / 8, 1) * 20
+  const expiryValueScore = Math.min(expiringCount * 3, 10)
+  const overduePenalty = Math.min(overdueCount * 8, 25)
+  const score = clampScore(
+    matchScore + inventoryScore + expiryValueScore - overduePenalty,
+  )
+  const level = getMealRadarLevel(score)
+  const recipeHint =
+    directRecipeCount > 0
+      ? `已有 ${directRecipeCount} 道可直接做`
+      : recommendations.length > 0
+        ? `推荐 ${recommendations.length} 个去化方案`
+        : '暂无可匹配菜谱'
+
+  return {
+    ...EMPTY_MEAL_RADAR_REPORT,
+    ...level,
+    score,
+    scoreText: `${score}%`,
+    recipeHint,
+    inventoryCount: safeItems.length,
+    expiringCount,
+    overdueCount,
+    priorityItems: getPriorityPreviewItems(safeExpiryUsage),
+  }
+}
+
 Page({
   data: {
     loading: false,
@@ -81,6 +204,7 @@ Page({
     items: [],
     stats: EMPTY_STATS,
     expiryUsage: EMPTY_EXPIRY_USAGE,
+    mealRadarReport: EMPTY_MEAL_RADAR_REPORT,
     selectedDate: '',
     selectedItems: [],
     inventoryPanelVisible: false,
@@ -115,12 +239,15 @@ Page({
       .then((items) => {
         const events = reminderService.getCalendarEvents(items)
         const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
+        const stats = buildStats(items)
+        const mealRadarReport = buildMealRadarReport(items, expiryUsage)
 
         this.setData({
           events,
           items,
-          stats: buildStats(items),
+          stats,
           expiryUsage,
+          mealRadarReport,
           loading: false,
         })
         this.renderCalendar()

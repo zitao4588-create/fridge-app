@@ -7,9 +7,9 @@
     <view class="batch-hero-mark"></view>
   </view>
 
-  <view class="mock-alert">
-    <text class="mock-alert-title">当前是 mock 小票识别</text>
-    <text class="mock-alert-desc">这一步会打开拍照或相册入口，但识别结果仍是固定示例。保存前请按购物小票和包装信息核对。</text>
+  <view class="recognition-alert {{recognitionAlertType}}">
+    <text class="recognition-alert-title">{{recognitionAlertTitle}}</text>
+    <text class="recognition-alert-desc">{{recognitionAlertDesc}}</text>
   </view>
 
   <view class="batch-summary card">

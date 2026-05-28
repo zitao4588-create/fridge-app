@@ -1,9 +1,13 @@
 const itemService = require('../../services/itemService')
 const recipeService = require('../../services/recipeService')
-const { getDaysUntil } = require('../../utils/date')
+const { addDays, getDaysUntil, getTodayString } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const MANUAL_INGREDIENT_PREFIX = 'manual:'
+const RECIPE_PICKER_CACHE_KEY = 'fridge_recipe_picker_cache_v1'
+const RECIPE_PICKER_CACHE_VERSION = 1
+const SOLAR_TERM_PREVIEW_THRESHOLD_DAYS = 3
 const SOLAR_TERMS = [
   { name: '小寒', month: 1, day: 5 },
   { name: '大寒', month: 1, day: 20 },
@@ -35,11 +39,98 @@ function getItemId(item) {
   return item && (item._id || item.id || item.name)
 }
 
+function normalizeIngredientName(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function normalizeForCompare(value) {
+  return normalizeIngredientName(value).toLowerCase()
+}
+
+function getManualIngredientId(name) {
+  return `${MANUAL_INGREDIENT_PREFIX}${normalizeIngredientName(name)}`
+}
+
+function isManualIngredientId(id) {
+  return String(id || '').startsWith(MANUAL_INGREDIENT_PREFIX)
+}
+
+function createManualIngredient(name) {
+  const safeName = normalizeIngredientName(name)
+
+  return {
+    id: getManualIngredientId(safeName),
+    name: safeName,
+    category: '其他',
+    quantity: 1,
+    unit: '份',
+    expireDate: addDays(getTodayString(), 30),
+    storageLocation: '临时食材',
+    isManual: true,
+  }
+}
+
+function clearRecipePickerCache() {
+  try {
+    wx.removeStorageSync(RECIPE_PICKER_CACHE_KEY)
+  } catch {
+    // 本地缓存失败不影响菜谱生成主流程。
+  }
+}
+
+function readRecipePickerCache() {
+  try {
+    const cache = wx.getStorageSync(RECIPE_PICKER_CACHE_KEY)
+
+    if (!cache || cache.version !== RECIPE_PICKER_CACHE_VERSION) {
+      return null
+    }
+
+    if (cache.date !== getTodayString()) {
+      clearRecipePickerCache()
+      return null
+    }
+
+    const selectedItemIds = Array.isArray(cache.selectedItemIds)
+      ? cache.selectedItemIds.filter(Boolean)
+      : []
+
+    if (selectedItemIds.length === 0) {
+      return null
+    }
+
+    return {
+      selectedItemIds,
+      manualIngredients: Array.isArray(cache.manualIngredients)
+        ? cache.manualIngredients
+        : [],
+      recipeRefreshIndex: Number(cache.recipeRefreshIndex) || 0,
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveRecipePickerCache(payload) {
+  try {
+    wx.setStorageSync(RECIPE_PICKER_CACHE_KEY, {
+      version: RECIPE_PICKER_CACHE_VERSION,
+      date: getTodayString(),
+      savedAt: Date.now(),
+      selectedItemIds: payload.selectedItemIds,
+      manualIngredients: payload.manualIngredients,
+      recipeRefreshIndex: payload.recipeRefreshIndex,
+    })
+  } catch {
+    // 本地缓存写入失败时，继续保留页面内生成结果。
+  }
+}
+
 function getLocalDateOnly(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
-function getNearestSolarTerm(date = new Date()) {
+function getDisplaySolarTerm(date = new Date()) {
   const today = getLocalDateOnly(date)
   const year = today.getFullYear()
   const candidates = [year - 1, year, year + 1].flatMap((targetYear) =>
@@ -48,35 +139,60 @@ function getNearestSolarTerm(date = new Date()) {
       date: new Date(targetYear, term.month - 1, term.day),
     })),
   )
-  const nearest = candidates
-    .map((term) => ({
-      name: term.name,
-      diffDays: Math.round((term.date.getTime() - today.getTime()) / DAY_MS),
-    }))
-    .sort(
-      (left, right) =>
-        Math.abs(left.diffDays) - Math.abs(right.diffDays) ||
-        left.diffDays - right.diffDays,
-    )[0]
+    .sort((left, right) => left.date.getTime() - right.date.getTime())
+  let previousTerm = null
+  let nextTerm = null
 
-  if (!nearest || nearest.diffDays === 0) {
+  candidates.forEach((term) => {
+    if (term.date.getTime() <= today.getTime()) {
+      previousTerm = term
+      return
+    }
+
+    if (!nextTerm) {
+      nextTerm = term
+    }
+  })
+
+  if (!previousTerm && nextTerm) {
     return {
-      solarTermName: nearest ? nearest.name : '',
+      solarTermName: nextTerm.name,
+      solarTermHint: `还有 ${Math.round((nextTerm.date.getTime() - today.getTime()) / DAY_MS)} 天`,
+    }
+  }
+
+  if (!previousTerm) {
+    return {
+      solarTermName: '',
+      solarTermHint: '',
+    }
+  }
+
+  const daysSincePrevious = Math.round((today.getTime() - previousTerm.date.getTime()) / DAY_MS)
+
+  if (daysSincePrevious === 0) {
+    return {
+      solarTermName: previousTerm.name,
       solarTermHint: '当日',
     }
   }
 
+  if (daysSincePrevious <= SOLAR_TERM_PREVIEW_THRESHOLD_DAYS || !nextTerm) {
+    return {
+      solarTermName: previousTerm.name,
+      solarTermHint: `已过 ${daysSincePrevious} 天`,
+    }
+  }
+
   return {
-    solarTermName: nearest.name,
-    solarTermHint:
-      nearest.diffDays > 0
-        ? `还差 ${nearest.diffDays} 天`
-        : `已过 ${Math.abs(nearest.diffDays)} 天`,
+    solarTermName: nextTerm.name,
+    solarTermHint: `还有 ${Math.round((nextTerm.date.getTime() - today.getTime()) / DAY_MS)} 天`,
   }
 }
 
-function buildPickerItems(items, selectedItemIds) {
+function buildPickerItems(items, selectedItemIds, query = '') {
   const selectedSet = new Set(selectedItemIds)
+  const keyword = normalizeForCompare(query)
 
   return items
     .map((item) => {
@@ -94,6 +210,15 @@ function buildPickerItems(items, selectedItemIds) {
         sortWeight: daysUntil < 0 ? 9999 : daysUntil,
       }
     })
+    .filter((item) => {
+      if (!keyword) {
+        return true
+      }
+
+      return normalizeForCompare(
+        `${item.name} ${item.category} ${item.storageLocation}`,
+      ).includes(keyword)
+    })
     .sort((left, right) => {
       if (left.sortWeight !== right.sortWeight) {
         return left.sortWeight - right.sortWeight
@@ -103,6 +228,76 @@ function buildPickerItems(items, selectedItemIds) {
     })
 }
 
+function mergeRecommendationItems(items, manualIngredients) {
+  return (Array.isArray(items) ? items : []).concat(
+    Array.isArray(manualIngredients) ? manualIngredients : [],
+  )
+}
+
+function buildSelectedPreviewItems(items, manualIngredients, selectedItemIds) {
+  const itemMap = new Map()
+  const manualMap = new Map()
+
+  items.forEach((item) => {
+    itemMap.set(getItemId(item), {
+      id: getItemId(item),
+      name: item.name,
+      meta: `${item.category} · ${item.storageLocation}`,
+      isManual: false,
+    })
+  })
+
+  manualIngredients.forEach((item) => {
+    manualMap.set(item.id, {
+      id: item.id,
+      name: item.name,
+      meta: '临时食材',
+      isManual: true,
+    })
+  })
+
+  return selectedItemIds
+    .map((id) => manualMap.get(id) || itemMap.get(id))
+    .filter(Boolean)
+}
+
+function buildPickerState(items, selectedItemIds, manualIngredients, query) {
+  const safeItems = Array.isArray(items) ? items : []
+  const safeSelectedIds = Array.isArray(selectedItemIds) ? selectedItemIds : []
+  const safeManualIngredients = Array.isArray(manualIngredients)
+    ? manualIngredients
+    : []
+  const addText = normalizeIngredientName(query)
+  const addTextKey = normalizeForCompare(addText)
+  const hasInventoryMatch = safeItems.some(
+    (item) => normalizeForCompare(item.name) === addTextKey,
+  )
+  const hasManualMatch = safeManualIngredients.some(
+    (item) => normalizeForCompare(item.name) === addTextKey,
+  )
+
+  return {
+    pickerItems: buildPickerItems(safeItems, safeSelectedIds, query),
+    pickerSelectedItems: buildSelectedPreviewItems(
+      safeItems,
+      safeManualIngredients,
+      safeSelectedIds,
+    ),
+    pickerAddText: addText,
+    pickerCanAddManual: Boolean(addText && !hasInventoryMatch && !hasManualMatch),
+  }
+}
+
+function rotateRecipes(recipes, offset) {
+  if (!recipes.length) {
+    return []
+  }
+
+  const safeOffset = offset % recipes.length
+
+  return recipes.slice(safeOffset).concat(recipes.slice(0, safeOffset))
+}
+
 function decorateGuideRecipes(recipes, label) {
   return recipes.map((recipe, index) => ({
     ...recipe,
@@ -110,10 +305,26 @@ function decorateGuideRecipes(recipes, label) {
   }))
 }
 
+function buildBlindBoxRecipes(items, recommendations, context, refreshIndex) {
+  const sourceRecipes = rotateRecipes(recommendations, refreshIndex).slice(0, 3)
+
+  if (sourceRecipes.length >= 3) {
+    return sourceRecipes
+  }
+
+  const fallbackRecipe = recipeService.getBlindBoxRecommendation(
+    items,
+    'blindBox',
+    context,
+  )
+
+  return sourceRecipes.concat([fallbackRecipe]).slice(0, 3)
+}
+
 function decorateContext(context) {
   const nextContext = {
     ...context,
-    ...getNearestSolarTerm(),
+    ...getDisplaySolarTerm(),
   }
 
   return {
@@ -141,8 +352,15 @@ Page({
     guideTitle: '',
     guideDesc: '',
     guideRecipes: [],
+    recipeRefreshIndex: 0,
     selectedItemIds: [],
     selectedItems: [],
+    manualIngredients: [],
+    generatedManualIngredients: [],
+    pickerQuery: '',
+    pickerSelectedItems: [],
+    pickerAddText: '',
+    pickerCanAddManual: false,
     recommendations: [],
     expiryRecommendations: [],
     detailVisible: false,
@@ -165,11 +383,33 @@ Page({
     itemService
       .getItems()
       .then((items) => {
-        const selectedItemIds = Array.isArray(prefillItemIds)
+        const safePrefillItemIds = Array.isArray(prefillItemIds)
           ? prefillItemIds.filter(Boolean)
-          : this.data.selectedItemIds
+          : []
+        const cachedPicker = safePrefillItemIds.length > 0
+          ? null
+          : readRecipePickerCache()
 
-        this.applyRecommendations(items, selectedItemIds)
+        if (safePrefillItemIds.length > 0) {
+          clearRecipePickerCache()
+        }
+
+        this.setData({
+          recipeRefreshIndex: cachedPicker
+            ? cachedPicker.recipeRefreshIndex
+            : this.data.recipeRefreshIndex,
+        })
+        const selectedItemIds = cachedPicker
+          ? cachedPicker.selectedItemIds
+          : safePrefillItemIds.length > 0
+            ? safePrefillItemIds
+            : this.data.selectedItemIds
+
+        this.applyRecommendations(
+          items,
+          selectedItemIds,
+          cachedPicker ? cachedPicker.manualIngredients : this.data.manualIngredients,
+        )
       })
       .catch(() => {
         this.setData({
@@ -182,19 +422,32 @@ Page({
       })
   },
 
-  applyRecommendations(items, selectedItemIds) {
-    const baseResult = recipeService.getAIRecipeRecommendations(items, {
-      selectedItemIds,
+  applyRecommendations(
+    items,
+    selectedItemIds,
+    manualIngredients = this.data.manualIngredients,
+    options = {},
+  ) {
+    const safeSelectedIds = Array.isArray(selectedItemIds) ? selectedItemIds : []
+    const safeManualIngredients = Array.isArray(manualIngredients)
+      ? manualIngredients
+      : []
+    const recommendationItems = mergeRecommendationItems(
+      items,
+      safeManualIngredients,
+    )
+    const baseResult = recipeService.getAIRecipeRecommendations(recommendationItems, {
+      selectedItemIds: safeSelectedIds,
     })
     const context = decorateContext(baseResult.context)
-    const result = recipeService.getAIRecipeRecommendations(items, {
-      selectedItemIds,
+    const result = recipeService.getAIRecipeRecommendations(recommendationItems, {
+      selectedItemIds: safeSelectedIds,
       context,
     })
     const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
     const currentGuideType = this.data.activeGuideType
     const activeGuideType =
-      selectedItemIds.length > 0
+      safeSelectedIds.length > 0
         ? 'picker'
         : currentGuideType === 'picker'
           ? ''
@@ -205,31 +458,102 @@ Page({
       result.recommendations,
       expiryUsage.recommendations,
       context,
+      this.data.recipeRefreshIndex,
+    )
+    const pickerState = buildPickerState(
+      items,
+      safeSelectedIds,
+      safeManualIngredients,
+      this.data.pickerQuery,
     )
 
-    this.setData({
+    const nextData = {
       items,
-      pickerItems: buildPickerItems(items, selectedItemIds),
+      ...pickerState,
       context,
       activeGuideType,
       guideTitle: guideContent.title,
       guideDesc: guideContent.desc,
       guideRecipes: guideContent.recipes,
-      selectedItemIds,
+      selectedItemIds: safeSelectedIds,
       selectedItems: result.selectedItems,
+      manualIngredients: safeManualIngredients,
+      generatedManualIngredients:
+        activeGuideType === 'picker' && safeSelectedIds.length > 0
+          ? safeManualIngredients
+          : [],
       recommendations: result.recommendations,
       expiryRecommendations: expiryUsage.recommendations,
       loading: false,
+    }
+
+    this.setData(nextData)
+
+    this.refreshCloudRecommendations({
+      items,
+      recommendationItems,
+      selectedItemIds: safeSelectedIds,
+      context,
+      expiryRecommendations: expiryUsage.recommendations,
     })
+
+    if (options.persistPickerCache && activeGuideType === 'picker') {
+      saveRecipePickerCache({
+        selectedItemIds: safeSelectedIds,
+        manualIngredients: safeManualIngredients,
+        recipeRefreshIndex: this.data.recipeRefreshIndex,
+      })
+    }
   },
 
-  buildGuideContent(type, items, recommendations, expiryRecommendations, context) {
+  refreshCloudRecommendations(payload) {
+    const requestId = `${Date.now()}-${Math.random()}`
+    this.cloudRecipeRequestId = requestId
+
+    recipeService
+      .getCloudAIRecipeRecommendations(payload.recommendationItems, {
+        selectedItemIds: payload.selectedItemIds,
+        city: payload.context.city || '',
+      })
+      .then((cloudResult) => {
+        if (this.cloudRecipeRequestId !== requestId) {
+          return
+        }
+
+        const context = decorateContext({
+          ...payload.context,
+          ...(cloudResult.context || {}),
+        })
+        const guideContent = this.buildGuideContent(
+          this.data.activeGuideType,
+          payload.items,
+          cloudResult.recommendations,
+          payload.expiryRecommendations,
+          context,
+          this.data.recipeRefreshIndex,
+        )
+
+        this.setData({
+          context,
+          recommendations: cloudResult.recommendations,
+          selectedItems: cloudResult.selectedItems || this.data.selectedItems,
+          guideTitle: guideContent.title,
+          guideDesc: guideContent.desc,
+          guideRecipes: guideContent.recipes,
+        })
+      })
+      .catch(() => {
+        // 云端 AI 失败时保留本地推荐，避免用户当前操作被打断。
+      })
+  },
+
+  buildGuideContent(type, items, recommendations, expiryRecommendations, context, refreshIndex = 0) {
     if (type === 'blindBox') {
       return {
-        title: '菜谱盲盒攻略',
-        desc: '不纠结，先抽一道今日推荐应季健康菜谱。',
+        title: '菜谱盲盒',
+        desc: '不纠结，一次抽 3 道适合今天的菜谱。',
         recipes: decorateGuideRecipes(
-          [recipeService.getBlindBoxRecommendation(items, 'blindBox', context)],
+          buildBlindBoxRecipes(items, recommendations, context, refreshIndex),
           '菜谱',
         ),
       }
@@ -237,9 +561,12 @@ Page({
 
     if (type === 'picker') {
       return {
-        title: '我来选食材攻略',
-        desc: '根据你点选的冰箱食材生成菜谱。',
-        recipes: decorateGuideRecipes(recommendations.slice(0, 3), '菜谱'),
+        title: '我来选食材',
+        desc: '根据你放进料理碗的食材生成菜谱。',
+        recipes: decorateGuideRecipes(
+          rotateRecipes(recommendations, refreshIndex).slice(0, 3),
+          '菜谱',
+        ),
       }
     }
 
@@ -249,15 +576,21 @@ Page({
   handleSelectGuide(event) {
     const activeGuideType = event.currentTarget.dataset.type
 
+    clearRecipePickerCache()
+
     if (activeGuideType === 'picker') {
       this.setData({
         activeGuideType,
+        recipeRefreshIndex: 0,
         guideTitle: '',
         guideDesc: '',
         guideRecipes: [],
         selectedItemIds: [],
         selectedItems: [],
-        pickerItems: buildPickerItems(this.data.items, []),
+        manualIngredients: [],
+        generatedManualIngredients: [],
+        pickerQuery: '',
+        ...buildPickerState(this.data.items, [], [], ''),
       })
       this.handleOpenPicker()
       return
@@ -269,23 +602,33 @@ Page({
       this.data.recommendations,
       this.data.expiryRecommendations,
       this.data.context,
+      0,
     )
 
     this.setData({
       activeGuideType,
+      recipeRefreshIndex: 0,
       guideTitle: guideContent.title,
       guideDesc: guideContent.desc,
       guideRecipes: guideContent.recipes,
       selectedItemIds: [],
       selectedItems: [],
-      pickerItems: buildPickerItems(this.data.items, []),
+      manualIngredients: [],
+      generatedManualIngredients: [],
+      pickerQuery: '',
+      ...buildPickerState(this.data.items, [], [], ''),
     })
   },
 
   handleOpenPicker() {
     this.setData({
       pickerVisible: true,
-      pickerItems: buildPickerItems(this.data.items, this.data.selectedItemIds),
+      ...buildPickerState(
+        this.data.items,
+        this.data.selectedItemIds,
+        this.data.manualIngredients,
+        this.data.pickerQuery,
+      ),
     })
   },
 
@@ -299,6 +642,20 @@ Page({
     }
 
     this.setData(nextData)
+  },
+
+  handlePickerQueryInput(event) {
+    const pickerQuery = event.detail.value
+
+    this.setData({
+      pickerQuery,
+      ...buildPickerState(
+        this.data.items,
+        this.data.selectedItemIds,
+        this.data.manualIngredients,
+        pickerQuery,
+      ),
+    })
   },
 
   handleToggleIngredient(event) {
@@ -317,12 +674,6 @@ Page({
 
     if (selectedSet.has(itemId)) {
       selectedSet.delete(itemId)
-    } else if (selectedSet.size >= 5) {
-      wx.showToast({
-        title: '最多选择 5 个',
-        icon: 'none',
-      })
-      return
     } else {
       selectedSet.add(itemId)
     }
@@ -331,7 +682,82 @@ Page({
 
     this.setData({
       selectedItemIds,
-      pickerItems: buildPickerItems(this.data.items, selectedItemIds),
+      ...buildPickerState(
+        this.data.items,
+        selectedItemIds,
+        this.data.manualIngredients,
+        this.data.pickerQuery,
+      ),
+    })
+  },
+
+  handleAddManualIngredient(event) {
+    const inputValue = event && event.detail ? event.detail.value : ''
+    const ingredientName = normalizeIngredientName(
+      this.data.pickerAddText || inputValue,
+    )
+
+    if (!ingredientName) {
+      wx.showToast({
+        title: '先输入食材名',
+        icon: 'none',
+      })
+      return
+    }
+
+    const ingredientKey = normalizeForCompare(ingredientName)
+    const existsInInventory = this.data.items.some(
+      (item) => normalizeForCompare(item.name) === ingredientKey,
+    )
+
+    if (existsInInventory) {
+      wx.showToast({
+        title: '冰箱已有，直接点选它',
+        icon: 'none',
+      })
+      return
+    }
+
+    const existsInManual = this.data.manualIngredients.some(
+      (item) => normalizeForCompare(item.name) === ingredientKey,
+    )
+
+    if (existsInManual) {
+      wx.showToast({
+        title: '已经在料理碗里了',
+        icon: 'none',
+      })
+      return
+    }
+
+    const manualIngredient = createManualIngredient(ingredientName)
+    const manualIngredients = this.data.manualIngredients.concat(manualIngredient)
+    const selectedItemIds = this.data.selectedItemIds.concat(manualIngredient.id)
+
+    this.setData({
+      manualIngredients,
+      selectedItemIds,
+      pickerQuery: '',
+      ...buildPickerState(this.data.items, selectedItemIds, manualIngredients, ''),
+    })
+  },
+
+  handleRemoveSelectedIngredient(event) {
+    const itemId = event.currentTarget.dataset.id
+    const selectedItemIds = this.data.selectedItemIds.filter((id) => id !== itemId)
+    const manualIngredients = isManualIngredientId(itemId)
+      ? this.data.manualIngredients.filter((item) => item.id !== itemId)
+      : this.data.manualIngredients
+
+    this.setData({
+      selectedItemIds,
+      manualIngredients,
+      ...buildPickerState(
+        this.data.items,
+        selectedItemIds,
+        manualIngredients,
+        this.data.pickerQuery,
+      ),
     })
   },
 
@@ -344,17 +770,74 @@ Page({
       return
     }
 
-    this.applyRecommendations(this.data.items, this.data.selectedItemIds)
+    this.applyRecommendations(
+      this.data.items,
+      this.data.selectedItemIds,
+      this.data.manualIngredients,
+      {
+        persistPickerCache: true,
+      },
+    )
     this.setData({
       pickerVisible: false,
+      pickerQuery: '',
     })
   },
 
   handleClearSelected() {
+    clearRecipePickerCache()
     this.setData({
       activeGuideType: '',
+      recipeRefreshIndex: 0,
+      manualIngredients: [],
+      generatedManualIngredients: [],
+      pickerQuery: '',
     })
-    this.applyRecommendations(this.data.items, [])
+    this.applyRecommendations(this.data.items, [], [])
+  },
+
+  handleAddManualToInventory(event) {
+    const name = normalizeIngredientName(event.currentTarget.dataset.name)
+    const category = event.currentTarget.dataset.category || '其他'
+
+    if (!name) {
+      return
+    }
+
+    wx.navigateTo({
+      url: `/pages/item-form/item-form?name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}`,
+    })
+  },
+
+  handleRefreshGuide() {
+    if (!this.data.activeGuideType) {
+      return
+    }
+
+    const recipeRefreshIndex = this.data.recipeRefreshIndex + 1
+    const guideContent = this.buildGuideContent(
+      this.data.activeGuideType,
+      this.data.items,
+      this.data.recommendations,
+      this.data.expiryRecommendations,
+      this.data.context,
+      recipeRefreshIndex,
+    )
+
+    this.setData({
+      recipeRefreshIndex,
+      guideTitle: guideContent.title,
+      guideDesc: guideContent.desc,
+      guideRecipes: guideContent.recipes,
+    })
+
+    if (this.data.activeGuideType === 'picker' && this.data.selectedItemIds.length > 0) {
+      saveRecipePickerCache({
+        selectedItemIds: this.data.selectedItemIds,
+        manualIngredients: this.data.manualIngredients,
+        recipeRefreshIndex,
+      })
+    }
   },
 
   handleOpenDetail(event) {

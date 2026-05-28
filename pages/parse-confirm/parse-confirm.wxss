@@ -93,7 +93,7 @@
   box-shadow: var(--shadow-warning, 0 8rpx 20rpx rgba(255, 184, 77, 0.22));
 }
 
-.mock-alert {
+.recognition-alert {
   position: relative;
   overflow: hidden;
   margin-top: 18rpx;
@@ -104,7 +104,19 @@
   box-shadow: 0 10rpx 26rpx rgba(144, 112, 58, 0.1);
 }
 
-.mock-alert::before {
+.recognition-alert.real {
+  border-color: rgba(88, 201, 139, 0.2);
+  background: linear-gradient(135deg, #f7fff6 0%, #e7fff0 62%, #effaff 100%);
+}
+
+.recognition-alert.partial,
+.recognition-alert.local,
+.recognition-alert.unknown {
+  border-color: rgba(100, 181, 246, 0.2);
+  background: linear-gradient(135deg, #f8fdff 0%, #eaf7ff 62%, #f7fff6 100%);
+}
+
+.recognition-alert::before {
   content: "";
   position: absolute;
   left: 24rpx;
@@ -117,7 +129,19 @@
   box-shadow: inset 0 3rpx 8rpx rgba(255, 255, 255, 0.9);
 }
 
-.mock-alert::after {
+.recognition-alert.real::before {
+  border-color: rgba(36, 169, 107, 0.22);
+  background: linear-gradient(180deg, #f8fff9 0%, #bff2d6 100%);
+}
+
+.recognition-alert.partial::before,
+.recognition-alert.local::before,
+.recognition-alert.unknown::before {
+  border-color: rgba(64, 148, 220, 0.2);
+  background: linear-gradient(180deg, #ffffff 0%, #d5efff 100%);
+}
+
+.recognition-alert::after {
   content: "";
   position: absolute;
   left: 40rpx;
@@ -128,14 +152,14 @@
   border-radius: 0 0 999rpx 999rpx;
 }
 
-.mock-alert-title {
+.recognition-alert-title {
   display: block;
   color: var(--color-text-title, #24352f);
   font-size: 28rpx;
   font-weight: 900;
 }
 
-.mock-alert-desc {
+.recognition-alert-desc {
   display: block;
   margin-top: 10rpx;
   color: #8a6a2f;

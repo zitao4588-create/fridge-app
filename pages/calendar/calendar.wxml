@@ -50,47 +50,82 @@
     </view>
   </view>
 
-  <view class="expiry-card card">
+  <view class="meal-radar-card card">
+    <image class="meal-radar-decor leaf" src="/images/decor/leaf.png" mode="aspectFit" />
+    <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" />
+
+    <view class="meal-radar-head">
+      <view class="meal-radar-title-wrap">
+        <image class="meal-radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
+        <view class="meal-radar-title-block">
+          <text class="meal-radar-title">开饭雷达检测报告</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="meal-radar-console">
+      <view class="meal-radar-screen {{mealRadarReport.levelClass}}">
+        <view class="radar-orbit orbit-one"></view>
+        <view class="radar-orbit orbit-two"></view>
+        <view class="radar-orbit orbit-three"></view>
+        <view class="radar-sweep"></view>
+        <view class="radar-core">
+          <text class="radar-score-label">可开饭指数</text>
+          <text class="radar-score-value">{{mealRadarReport.score}}</text>
+        </view>
+      </view>
+
+      <view class="meal-radar-explain">
+        <text class="meal-radar-explain-main">{{mealRadarReport.explanation}}</text>
+        <view class="meal-radar-ranges">
+          <text>高 80-99：适合开饭</text>
+          <text>中 50-79：建议补 1-2 样</text>
+          <text>低 0-49：先处理风险或补货</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="meal-radar-priority {{mealRadarReport.priorityItems.length > 0 ? '' : 'empty'}}" data-type="threeDay" bindtap="handleOpenExpiryList">
+      <text class="meal-radar-priority-label">今日优先用掉</text>
+      <view wx:if="{{mealRadarReport.priorityItems.length > 0}}" class="meal-radar-priority-chips">
+        <text wx:for="{{mealRadarReport.priorityItems}}" wx:key="id">{{item.name}}</text>
+      </view>
+      <text wx:else class="meal-radar-priority-empty">暂无临期压力，可以按心情安排一顿。</text>
+    </view>
+
     <view wx:if="{{expiryUsage.recommendations.length > 0}}" class="expiry-recipe-list">
-      <text class="expiry-food-title">开饭雷达检测报告</text>
+      <view class="expiry-section-head">
+        <text class="expiry-food-title">推荐去化方案</text>
+        <text class="expiry-recipe-hint">{{mealRadarReport.recipeHint}}</text>
+      </view>
+
       <view
-        class="expiry-recipe-card"
+        class="meal-recipe-card"
         wx:for="{{expiryUsage.recommendations}}"
         wx:key="id"
         data-id="{{item.id}}"
         bindtap="handleOpenRecipeDetail"
       >
-        <view class="expiry-recipe-head">
-          <view class="expiry-recipe-main">
-            <text class="expiry-recipe-title">{{item.title}}</text>
+        <image class="meal-recipe-image" src="{{item.image || '/images/recipe/default.png'}}" mode="aspectFill" />
+        <view class="meal-recipe-content">
+          <view class="meal-recipe-head">
+            <text class="meal-recipe-title">{{item.title}}</text>
+            <text class="meal-recipe-action">查看做法</text>
           </view>
-          <text class="expiry-recipe-action">查看做法</text>
-        </view>
-
-        <view class="expiry-match-grid">
-          <view class="expiry-match-box">
-            <text class="expiry-match-title">已有食材 {{item.availableItems.length}}</text>
-            <view class="expiry-chip-row">
-              <text wx:if="{{item.availableItems.length === 0}}" class="expiry-empty-chip">暂无</text>
-              <text class="expiry-food-chip" wx:for="{{item.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
-            </view>
+          <view class="meal-recipe-meta">
+            <text>{{item.timeCost}}</text>
+            <text>{{item.difficulty}}</text>
+            <text class="{{item.canCook ? 'ready' : 'missing'}}">{{item.matchLabel}}</text>
           </view>
-          <view class="expiry-match-box missing">
-            <text class="expiry-match-title">缺少食材 {{item.missingItems.length}}</text>
-            <view class="expiry-chip-row">
-              <text wx:if="{{item.missingItems.length === 0}}" class="expiry-empty-chip">不缺</text>
-              <text class="expiry-food-chip missing" wx:for="{{item.missingItems}}" wx:for-item="food" wx:key="*this">{{food}}</text>
-            </view>
+          <view class="expiry-chip-row">
+            <text wx:if="{{item.availableItems.length === 0}}" class="expiry-empty-chip">暂无可用库存</text>
+            <text class="expiry-food-chip" wx:for="{{item.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
+            <text class="expiry-food-chip missing" wx:for="{{item.missingItems}}" wx:for-item="food" wx:key="*this">缺 {{food}}</text>
           </view>
-        </view>
-
-        <view wx:if="{{item.priorityItems.length > 0}}" class="expiry-priority-line">
-          <text>建议优先用掉：</text>
-            <text wx:for="{{item.priorityItems}}" wx:for-item="food" wx:for-index="priorityIndex" wx:key="id">{{food.name}}{{priorityIndex + 1 < item.priorityItems.length ? '、' : ''}}</text>
         </view>
       </view>
     </view>
-    <view wx:else class="expiry-empty">暂无可去化临期食材，AI 菜谱仍可给日常灵感。</view>
+    <view wx:else class="expiry-empty">暂无可去化临期食材，菜谱页仍可给日常灵感。</view>
 
     <view wx:if="{{expiryUsage.safetyTips.length > 0}}" class="safety-box">
       <text class="safety-title">已过期提醒</text>

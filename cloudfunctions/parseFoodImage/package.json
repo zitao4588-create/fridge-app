@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0",
+    "tencentcloud-sdk-nodejs-ocr": "latest",
+    "tencentcloud-sdk-nodejs-tiia": "latest",
     "wx-server-sdk": "latest"
   }
 }
-

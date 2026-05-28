@@ -1,5 +1,25 @@
 const { getDaysUntil, getTodayString } = require('../utils/date')
 
+const DEFAULT_RECIPE_IMAGE = '/images/recipe/default.png'
+
+const RECIPE_IMAGE_MAP = {
+  'tomato-egg': '/images/recipe/tomato-egg.png',
+  'vegetable-tofu-soup': '/images/recipe/vegetable-tofu-soup.png',
+  'egg-fried-rice': '/images/recipe/egg-fried-rice.png',
+  'warm-noodle': '/images/recipe/warm-noodle.png',
+  'yogurt-fruit-bowl': '/images/recipe/yogurt-fruit-bowl.png',
+  'milk-oat-cup': '/images/recipe/milk-oat-cup.png',
+  'stir-fry-greens': '/images/recipe/stir-fry-greens.png',
+  'cucumber-egg-salad': '/images/recipe/cucumber-egg-salad.png',
+  'blind-rice-bowl': '/images/recipe/blind-rice-bowl.png',
+  'blind-soup': '/images/recipe/blind-soup.png',
+  'blind-sandwich': '/images/recipe/blind-sandwich.png',
+  'tipsy-peach-tea': '/images/recipe/tipsy-peach-tea.png',
+  'tipsy-citrus-soda': '/images/recipe/tipsy-citrus-soda.png',
+  'healthy-apple-yogurt': '/images/recipe/healthy-apple-yogurt.png',
+  'healthy-banana-milk': '/images/recipe/healthy-banana-milk.png',
+}
+
 const AI_RECIPE_LIBRARY = [
   {
     id: 'tomato-egg',
@@ -514,6 +534,7 @@ function matchRecipeToItems(recipe, items, sourceType, context) {
   return {
     id: recipe.id,
     title: recipe.title,
+    image: recipe.image || RECIPE_IMAGE_MAP[recipe.id] || DEFAULT_RECIPE_IMAGE,
     sourceType,
     reason,
     availableItems,
@@ -586,6 +607,7 @@ function buildExpiryFallbackRecipe(item, index) {
   return {
     id: `${template.id}-${getItemKey(item)}-${index}`,
     title: template.title,
+    image: DEFAULT_RECIPE_IMAGE,
     sourceType: 'expiry',
     reason: `AI 根据临期食材${item.name}生成，建议优先用掉。`,
     availableItems: [formattedItem],
@@ -644,6 +666,74 @@ function getAIRecipeRecommendations(items, options) {
     selectedItems: selectedItems.map(formatItemForRecipe),
     recommendations,
   }
+}
+
+function normalizeCloudRecipe(recipe, index) {
+  const id = recipe.id || `cloud-recipe-${index}`
+
+  return {
+    ...recipe,
+    id,
+    image: recipe.image || RECIPE_IMAGE_MAP[id] || DEFAULT_RECIPE_IMAGE,
+    sourceType: recipe.sourceType || 'ai',
+    reason: recipe.reason || '云端 AI 根据当前库存生成。',
+    availableItems: Array.isArray(recipe.availableItems)
+      ? recipe.availableItems
+      : [],
+    missingItems: Array.isArray(recipe.missingItems) ? recipe.missingItems : [],
+    priorityItems: Array.isArray(recipe.priorityItems)
+      ? recipe.priorityItems
+      : [],
+    matchScore: Number(recipe.matchScore) || 0,
+    matchLabel: recipe.matchLabel || '',
+    canCook: Boolean(recipe.canCook),
+    timeCost: recipe.timeCost || '15 分钟',
+    difficulty: recipe.difficulty || '简单',
+    tags: Array.isArray(recipe.tags) ? recipe.tags : [],
+    seasonTags: Array.isArray(recipe.seasonTags) ? recipe.seasonTags : [],
+    steps: Array.isArray(recipe.steps) ? recipe.steps : [],
+    safetyNote: recipe.safetyNote || '',
+    providerStatus: recipe.providerStatus || '',
+  }
+}
+
+function getCloudAIRecipeRecommendations(items, options = {}) {
+  const fallback = getAIRecipeRecommendations(items, options)
+
+  if (typeof wx === 'undefined' || !wx.cloud) {
+    return Promise.reject(new Error('当前环境不支持云端菜谱生成'))
+  }
+
+  return wx.cloud
+    .callFunction({
+      name: 'generateRecipes',
+      data: {
+        items: Array.isArray(items) ? items : [],
+        selectedItemIds: Array.isArray(options.selectedItemIds)
+          ? options.selectedItemIds
+          : [],
+        city: options.city || '',
+      },
+    })
+    .then((res) => {
+      const payload = res.result || {}
+      const recommendations = Array.isArray(payload.recommendations)
+        ? payload.recommendations.map(normalizeCloudRecipe)
+        : fallback.recommendations
+
+      return {
+        context: {
+          ...fallback.context,
+          ...(payload.context || {}),
+        },
+        selectedItems: Array.isArray(payload.selectedItems)
+          ? payload.selectedItems
+          : fallback.selectedItems,
+        recommendations,
+        providerStatus: payload.providerStatus || '',
+        fallbackReason: payload.fallbackReason || '',
+      }
+    })
 }
 
 function getExpiryUsageRecommendations(items) {
@@ -744,6 +834,7 @@ module.exports = {
   buildRadarDietPrompt,
   fallbackAIRecipes,
   getAIRecipeRecommendations,
+  getCloudAIRecipeRecommendations,
   getBlindBoxRecommendation,
   getExpiryUsageRecommendations,
   getMockRecommendationContext,

@@ -55,6 +55,71 @@ function getOptionStorageLocation(options) {
   return storageLocation ? normalizeStorageLocation(storageLocation) : ''
 }
 
+function buildRecognitionAlert(result) {
+  const source = result.source || 'manual'
+  const providerStatus = result.providerStatus || ''
+  const fallbackReason = result.fallbackReason || ''
+
+  if (source === 'manual' && !result.smartRecommend) {
+    return {
+      showRecognitionAlert: false,
+      recognitionAlertType: '',
+      recognitionAlertTitle: '',
+      recognitionAlertDesc: '',
+    }
+  }
+
+  if (source === 'manual' && result.smartRecommend) {
+    return {
+      showRecognitionAlert: true,
+      recognitionAlertType: 'local',
+      recognitionAlertTitle: '本地分区推荐',
+      recognitionAlertDesc:
+        '这是根据食品名称和品类给出的本地分区建议，请按实际存放位置核对后保存。',
+    }
+  }
+
+  if (providerStatus === 'real') {
+    return {
+      showRecognitionAlert: true,
+      recognitionAlertType: 'real',
+      recognitionAlertTitle: '已使用真实识别',
+      recognitionAlertDesc:
+        '已调用云端 OCR / AI 识别。机器识别仍可能不准，请核对名称、日期和分区后保存。',
+    }
+  }
+
+  if (providerStatus === 'partial') {
+    return {
+      showRecognitionAlert: true,
+      recognitionAlertType: 'partial',
+      recognitionAlertTitle: '已使用图片识别',
+      recognitionAlertDesc: fallbackReason
+        ? `云端 AI 暂不可用，已先用图片识别结果预填。原因：${fallbackReason}`
+        : '云端 AI 暂不可用，已先用图片识别结果预填。请按实物核对后保存。',
+    }
+  }
+
+  if (providerStatus === 'mock' || fallbackReason) {
+    return {
+      showRecognitionAlert: true,
+      recognitionAlertType: 'fallback',
+      recognitionAlertTitle: '已使用备用识别',
+      recognitionAlertDesc: fallbackReason
+        ? `真实识别暂不可用，已使用预填结果。原因：${fallbackReason}`
+        : '真实识别暂不可用，已使用预填结果。请按实物状态核对后保存。',
+    }
+  }
+
+  return {
+    showRecognitionAlert: true,
+    recognitionAlertType: 'unknown',
+    recognitionAlertTitle: '识别状态待确认',
+    recognitionAlertDesc:
+      '云端没有返回识别来源，请按实物状态核对名称、日期和分区后保存。',
+  }
+}
+
 Page({
   data: {
     cacheKey: '',
@@ -66,6 +131,12 @@ Page({
     source: defaultResult.source,
     rawText: '',
     confidence: 0,
+    providerStatus: '',
+    fallbackReason: '',
+    showRecognitionAlert: false,
+    recognitionAlertType: '',
+    recognitionAlertTitle: '',
+    recognitionAlertDesc: '',
     smartRecommendEnabled: false,
     recommendedStorageLocation: '',
     showLocationRecommend: false,
@@ -116,6 +187,9 @@ Page({
       source: normalized.source,
       rawText: normalized.rawText,
       confidence: normalized.confidence,
+      providerStatus: normalized.providerStatus,
+      fallbackReason: normalized.fallbackReason,
+      ...buildRecognitionAlert(normalized),
       smartRecommendEnabled,
       ...recommendationState,
       sourceLabel:

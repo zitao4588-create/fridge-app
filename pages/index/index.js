@@ -8,18 +8,6 @@ const {
 const { formatDate, getDaysUntil } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
 
-const CATEGORY_THUMB_TEXT = {
-  蔬菜: '菜',
-  水果: '果',
-  肉蛋: '蛋',
-  乳制品: '奶',
-  饮料: '饮',
-  速冻: '冻',
-  调料: '调',
-  主食: '饭',
-  其他: '食',
-}
-
 const CATEGORY_THUMB_CLASS = {
   蔬菜: 'vegetable',
   水果: 'fruit',
@@ -30,6 +18,18 @@ const CATEGORY_THUMB_CLASS = {
   调料: 'seasoning',
   主食: 'staple',
   其他: 'other',
+}
+
+const CATEGORY_ICON_MAP = {
+  蔬菜: '/images/foods/vegetable.png',
+  水果: '/images/foods/fruit.png',
+  肉蛋: '/images/foods/egg.png',
+  乳制品: '/images/foods/dairy.png',
+  饮料: '/images/foods/drink.png',
+  速冻: '/images/foods/dumpling.png',
+  调料: '/images/foods/seasoning.png',
+  主食: '/images/foods/rice.png',
+  其他: '/images/foods/default.png',
 }
 
 function getZoneDefinition(key) {
@@ -68,17 +68,15 @@ function getExpiryTone(expireDate) {
 function getFoodThumb(item) {
   if (item.source === 'photo' && item.imageFileId) {
     return {
-      type: 'image',
+      type: 'photo',
       image: item.imageFileId,
-      text: '',
       className: 'photo',
     }
   }
 
   return {
-    type: 'local',
-    image: '',
-    text: CATEGORY_THUMB_TEXT[item.category] || CATEGORY_THUMB_TEXT.其他,
+    type: 'icon',
+    image: CATEGORY_ICON_MAP[item.category] || CATEGORY_ICON_MAP.其他,
     className: CATEGORY_THUMB_CLASS[item.category] || CATEGORY_THUMB_CLASS.其他,
   }
 }
@@ -406,8 +404,8 @@ Page({
       visualStatusClass: tone.className,
       thumbType: thumb.type,
       thumbImage: thumb.image,
-      thumbText: thumb.text,
       thumbClass: thumb.className,
+      categoryIcon: thumb.image || CATEGORY_ICON_MAP.其他,
     }
   },
 

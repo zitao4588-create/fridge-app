@@ -22,9 +22,9 @@
     请重点检查名称、品类和过期日期。
   </view>
 
-  <view wx:if="{{source !== 'manual' || smartRecommendEnabled}}" class="mock-alert">
-    <text class="mock-alert-title">当前是 mock 识别</text>
-    <text class="mock-alert-desc">这一步还没有接入真实 OCR、扫码商品库或 AI 分区模型。请核对名称、数量、单位、生产日期、过期日期和存放位置后再保存。</text>
+  <view wx:if="{{showRecognitionAlert}}" class="recognition-alert {{recognitionAlertType}}">
+    <text class="recognition-alert-title">{{recognitionAlertTitle}}</text>
+    <text class="recognition-alert-desc">{{recognitionAlertDesc}}</text>
   </view>
 
   <view wx:if="{{recommendedStorageLocation}}" class="recommend-card {{showLocationRecommend ? 'active' : ''}}">

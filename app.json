@@ -10,14 +10,14 @@
   ],
   "window": {
     "navigationBarTitleText": "冰箱雷达",
-    "navigationBarBackgroundColor": "#f7fff6",
+    "navigationBarBackgroundColor": "#FFF9EA",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#fff8ea"
+    "backgroundColor": "#FFF4DE"
   },
   "tabBar": {
-    "color": "#7f918a",
-    "selectedColor": "#1f9f73",
-    "backgroundColor": "#f4fff8",
+    "color": "#8FA39A",
+    "selectedColor": "#159A5B",
+    "backgroundColor": "#FFFEF8",
     "borderStyle": "white",
     "list": [
       {

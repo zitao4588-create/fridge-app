@@ -101,7 +101,7 @@ function createPackageMockResult(options = {}) {
         expireDate: addDays(today, 7),
         storageLocation: '冷藏',
         note: '请按包装生产日期和保质期核对',
-        imageFileId: '',
+        imageFileId: options.imageFileId || '',
         tempFilePath: options.tempFilePath || '',
       },
     },
@@ -226,6 +226,7 @@ function createReceiptMockPayload(options = {}) {
     confidence: 0.74,
     rawText: '购物小票 mock 识别：酸奶、速冻水饺、乌龙茶',
     tempFilePath: options.tempFilePath || '',
+    imageFileId: options.imageFileId || '',
     items,
   }
 }
@@ -252,6 +253,8 @@ function normalizeParseResult(result) {
     source: result.source || result.type || 'manual',
     confidence: Number(result.confidence || 0),
     rawText: result.rawText || '',
+    providerStatus: result.providerStatus || '',
+    fallbackReason: result.fallbackReason || '',
     smartRecommend: Boolean(
       result.smartRecommend ||
         result.smartManual ||
@@ -280,6 +283,16 @@ function normalizeParseResult(result) {
   }
 }
 
+function createPhotoFallbackByMode(options = {}) {
+  const mode = options.mode || options.source || options.type
+
+  if (mode === 'package') {
+    return createPackageMockResult(options)
+  }
+
+  return createFoodPhotoMockResult(options)
+}
+
 function withRecognitionContext(result, options = {}) {
   const normalized = normalizeParseResult(result)
   const recommendedStorageLocation = normalizeOptionalStorageLocation(
@@ -293,6 +306,8 @@ function withRecognitionContext(result, options = {}) {
 
   return {
     ...normalized,
+    providerStatus: normalized.providerStatus,
+    fallbackReason: normalized.fallbackReason,
     recommendedStorageLocation,
     fields: {
       ...normalized.fields,
@@ -301,6 +316,59 @@ function withRecognitionContext(result, options = {}) {
         normalized.fields.storageLocation ||
         recommendedStorageLocation,
     },
+  }
+}
+
+function normalizeReceiptPayload(payload = {}, options = {}) {
+  const sourceItems = Array.isArray(payload.items) ? payload.items : []
+  const imageFileId = payload.imageFileId || options.imageFileId || ''
+  const tempFilePath = payload.tempFilePath || options.tempFilePath || ''
+  const items = sourceItems.map((item, index) => {
+    const normalized = withRecognitionContext(
+      {
+        source: item.source || 'receipt',
+        confidence: item.confidence || payload.confidence || 0,
+        rawText: item.rawText || payload.rawText || '',
+        recommendedStorageLocation: item.recommendedStorageLocation || '',
+        providerStatus: item.providerStatus || payload.providerStatus || '',
+        fallbackReason: item.fallbackReason || payload.fallbackReason || '',
+        fields: {
+          ...(item.fields || item.result || item),
+          imageFileId:
+            (item.fields && item.fields.imageFileId) ||
+            item.imageFileId ||
+            imageFileId,
+          tempFilePath:
+            (item.fields && item.fields.tempFilePath) ||
+            item.tempFilePath ||
+            tempFilePath,
+        },
+      },
+      options,
+    )
+
+    return {
+      id: item.id || `receipt-${Date.now()}-${index}`,
+      checked: item.checked !== false,
+      source: normalized.source,
+      confidence: normalized.confidence,
+      rawText: normalized.rawText,
+      recommendedStorageLocation: normalized.recommendedStorageLocation,
+      providerStatus: normalized.providerStatus,
+      fallbackReason: normalized.fallbackReason,
+      fields: normalized.fields,
+    }
+  })
+
+  return {
+    source: 'receipt',
+    confidence: Number(payload.confidence || 0),
+    rawText: payload.rawText || '',
+    tempFilePath,
+    imageFileId,
+    providerStatus: payload.providerStatus || '',
+    fallbackReason: payload.fallbackReason || '',
+    items,
   }
 }
 
@@ -331,6 +399,8 @@ function createParseLog(type, normalizedResult) {
         },
         confidence: normalizedResult.confidence,
         rawText: normalizedResult.rawText,
+        providerStatus: normalizedResult.providerStatus || '',
+        fallbackReason: normalizedResult.fallbackReason || '',
         status: 'success',
         createdAt: Date.now(),
       },
@@ -350,6 +420,7 @@ function createReceiptParseLog(payload) {
     .add({
       data: {
         type: 'receipt',
+        imageFileId: payload.imageFileId || '',
         result: payload.items.map((item) => ({
           name: item.fields.name,
           category: item.fields.category,
@@ -359,6 +430,8 @@ function createReceiptParseLog(payload) {
         })),
         confidence: payload.confidence,
         rawText: payload.rawText,
+        providerStatus: payload.providerStatus || '',
+        fallbackReason: payload.fallbackReason || '',
         status: 'success',
         createdAt: Date.now(),
       },
@@ -451,7 +524,8 @@ function scanBarcode() {
 }
 
 function parseByPhoto(options = {}) {
-  const fallback = createFoodPhotoMockResult(options)
+  const fallback = createPhotoFallbackByMode(options)
+  const mode = options.mode || options.source || 'food'
 
   if (!wx.cloud) {
     return Promise.resolve(fallback)
@@ -461,6 +535,7 @@ function parseByPhoto(options = {}) {
     .callFunction({
       name: 'parseFoodImage',
       data: {
+        mode,
         imageFileId: options.imageFileId || '',
         tempFilePath: options.tempFilePath || '',
       },
@@ -475,7 +550,7 @@ function parseByPhoto(options = {}) {
     }))
     .then(({ result, loggedByCloud }) => {
       if (!loggedByCloud) {
-        createParseLog('photo', result)
+        createParseLog(result.source || mode, result)
       }
 
       return result
@@ -528,15 +603,16 @@ function parseFoodPhoto(options = {}) {
 }
 
 function parsePackagePhoto(options = {}) {
-  return chooseImageForParse().then((tempFilePath) => {
-    const result = createPackageMockResult({
-      ...options,
-      tempFilePath,
-    })
-
-    createParseLog('package', result)
-    return result
-  })
+  return chooseImageForParse().then((tempFilePath) =>
+    uploadParseImage(tempFilePath).then((imageFileId) =>
+      parseByPhoto({
+        ...options,
+        mode: 'package',
+        imageFileId,
+        tempFilePath,
+      }),
+    ),
+  )
 }
 
 function scanAndParseBarcode(options = {}) {
@@ -549,15 +625,49 @@ function scanAndParseBarcode(options = {}) {
 }
 
 function parseReceiptPhoto(options = {}) {
-  return chooseImageForParse().then((tempFilePath) => {
-    const payload = createReceiptMockPayload({
-      ...options,
-      tempFilePath,
-    })
+  return chooseImageForParse().then((tempFilePath) =>
+    uploadParseImage(tempFilePath).then((imageFileId) => {
+      const payload = createReceiptMockPayload({
+        ...options,
+        imageFileId,
+        tempFilePath,
+      })
 
-    createReceiptParseLog(payload)
-    return payload
-  })
+      if (!wx.cloud) {
+        createReceiptParseLog(payload)
+        return payload
+      }
+
+      return wx.cloud
+        .callFunction({
+          name: 'parseFoodImage',
+          data: {
+            mode: 'receipt',
+            imageFileId,
+            tempFilePath,
+          },
+        })
+        .then((res) => ({
+          payload: normalizeReceiptPayload(res.result || payload, {
+            ...options,
+            imageFileId,
+            tempFilePath,
+          }),
+          loggedByCloud: true,
+        }))
+        .catch(() => ({
+          payload,
+          loggedByCloud: false,
+        }))
+        .then(({ payload: nextPayload, loggedByCloud }) => {
+          if (!loggedByCloud) {
+            createReceiptParseLog(nextPayload)
+          }
+
+          return nextPayload
+        })
+    }),
+  )
 }
 
 function createCacheKey(type = 'single') {
