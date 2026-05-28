@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-05-28
+最后更新：2026-05-29
 
 ## 当前项目目标
 
@@ -19,7 +19,7 @@
 - 每条食品数据绑定当前用户 `_openid`
 - 日历页显示到期食品，并在日历下方直接承接临期 / 过期食材去化
 - 菜谱页固定为 AI 菜谱体验页，已接入云函数真实 AI 路径，服务不可用或额度受限时自动回退 mock 结构
-- 拍食品、拍包装、拍购物小票已接入云函数 OCR / AI 结构化路径；条码已预留联网搜索路径；所有识别结果仍必须经过确认页后保存
+- 拍食品已接入智谱视觉模型直看图片；拍包装、拍购物小票走腾讯云 OCR + CloudBase/Hunyuan 结构化；条形码扫描模块已从用户入口移除；所有识别结果仍必须经过确认页后保存
 
 ## 当前技术栈
 
@@ -93,12 +93,12 @@
 - 点击分区空白、标题或加号会弹出添加方式面板：
   - 手动添加
   - 拍食品
-  - 拍包装 / 条码
+  - 拍包装
 - 点击分区 `总 / 临 / 过` 统计会打开当前分区对应清单
 - 点击食品图片会打开食品详情面板，可查看、编辑、删除
 - 食品卡片使用本地食材图片或拍照图片作为主视觉，文字区按状态三色区分：正常绿色、临期黄色、已过期红色
 - 拍食品会上传照片到 CloudBase 云存储并保存 `imageFileId`，首页优先显示照片
-- 手动、条码、包装、小票来源使用本地品类图片缩略图，不接真实外部识别或图片服务
+- 手动、包装、小票来源使用本地品类图片缩略图；条形码来源仅保留历史数据兼容
 - 分区 DIY 配置保存到 `fridgeZoneConfigs`
 - 首次无配置时弹出分区 DIY 面板，可启用 / 隐藏和排序 5 个标准分区
 - 首页提供轻量“分区”入口用于重新配置
@@ -126,8 +126,8 @@
 - 分区清单内可直接编辑食品
 - 分区清单内可直接删除食品，删除前二次确认
 - 分区清单内可手动添加食品到当前分区
-- 分区清单内可拍食品、拍包装 / 条码，并默认带入当前分区
-- 首页“我的冰箱”标题右侧提供“智能录入”入口，用于不预选分区的拍食品、拍包装 / 条码和小票批量录入
+- 分区清单内可拍食品、拍包装，并默认带入当前分区
+- 首页“我的冰箱”标题右侧提供“智能录入”入口，用于不预选分区的拍食品、拍包装和小票批量录入
 - 首页已取消冰箱类型选择，固定使用默认“三门冰箱”模板
 - 底部全局统计：
   - 总食品数
@@ -146,21 +146,25 @@
 
 ### 添加 / 编辑
 
-- 支持字段：
+- 当前主要显示字段：
   - 食品名称
   - 品类
-  - 数量
-  - 单位
   - 生产日期
   - 保质期天数
   - 过期日期
-  - 存放位置
+  - 存放分区
   - 备注
+- 数量和单位不再作为添加 / 识别确认的用户必填项，保存时继续写入兼容默认值：
+  - `quantity: 1`
+  - `unit: "份"`
+- 存放分区只使用当前 5 个标准分区：冷藏、冷冻、门架、果蔬抽屉、变温
+- 历史数据中的 `其他` 存放位置会在读取时归一到有效分区，避免首页和日历统计对不上
 - 生产日期 + 保质期天数可自动计算过期日期
 - 过期日期仍可手动修改
-- 品类、单位、存放位置支持直接点选，不再必须打开系统 picker
-- 已选品类、单位、存放位置会高亮显示
-- 表单会对食品名称、数量、保质期天数、过期日期做字段级校验
+- 品类、存放分区支持直接点选，不再必须打开系统 picker
+- 已选品类、存放分区会高亮显示
+- 智能录入里的手动输入会进入带推荐分区的添加页，用户可采纳推荐分区后保存
+- 表单会对食品名称、保质期天数、过期日期做字段级校验
 - 校验失败时会在对应字段下方展示错误文案，并标红输入区域
 
 ### 过期状态
@@ -190,10 +194,10 @@
 - 当前定位为 AI 菜谱体验页
 - 顶部使用冰箱吉祥物 banner，展示库存感知菜谱推荐说明和一条生活化饮食建议
 - 顶部下方展示节气、季节、气温和湿度四个 mock 环境信息
-- 第一轮使用 mock 日期、季节、天气、时间段和 AI 推荐结构
+- 第一轮仍使用 mock 日期、季节、天气和时间段；菜谱推荐已接入云函数 AI 路径，服务不可用或额度受限时回退本地结构
 - 进入菜谱页后，下方默认保持空白，不自动展示“临期去化攻略”
 - 菜谱页当前只保留“菜谱盲盒”和“我来选食材”两个入口
-- “菜谱盲盒”一次展示 3 道 mock 推荐菜
+- “菜谱盲盒”一次展示 3 道本地 / 云端结构化推荐菜
 - 菜谱结果以美食图片卡片展示，包含菜品图、菜名、耗时、难度、标签、已有食材、缺少食材和临期优先提醒
 - 菜谱结果支持“换一批”
 - AI 推荐会读取冰箱库存，标记已有食材、缺少食材、可直接做 / 还差几样
@@ -208,18 +212,20 @@
   - 临时食材不自动写入 `items`
   - 生成后可跳转添加页，预填临时食材名称，由用户补齐到期日后保存
   - 同一天内通过本地缓存恢复最近一次“我来选食材”结果
-- 第一阶段不调用真实 AI API、真实天气 API 或真实联网搜索
+- 当前不调用真实天气 API 或真实联网搜索；真实 AI 只通过云函数调用，失败时必须保留兜底
 
-### 智能录入 mock 流程
+### 智能录入识别流程
 
-- 拍食品入口会打开相机 / 相册，第一阶段返回 mock 食品解析结果
-- 拍包装入口会打开相机 / 相册，第一阶段返回 mock 包装说明解析结果
-- 扫码条形码入口会打开扫码能力，第一阶段返回 mock 商品解析结果
-- 拍购物小票入口会打开相机 / 相册，第一阶段返回多条 mock 食品解析结果
+- 拍食品入口会打开相机 / 相册，上传图片到 CloudBase 云存储后调用 `parseFoodImage`
+- 拍食品优先走智谱视觉模型直看图片，失败时回退 mock / 待确认结果
+- 拍包装入口会打开相机 / 相册，上传图片后走腾讯 OCR + CloudBase/Hunyuan 结构化，失败时回退 mock / 待确认结果
+- 拍购物小票入口会打开相机 / 相册，上传图片后走腾讯 OCR + CloudBase/Hunyuan 批量结构化，失败时回退 mock / 待确认结果
+- 条形码扫描入口已移除，当前不再作为用户录入方式
 - 单个解析结果进入 `pages/parse-confirm`
 - 小票批量解析结果进入 `pages/batch-parse-confirm`
 - 单品会显示推荐分区；从冰箱分区进入时默认使用当前分区，用户可采纳推荐分区
-- 小票批量确认页每条食品可单独勾选、修改名称、数量、单位、品类、过期日期和存放位置
+- 小票批量确认页每条食品可单独勾选、修改名称、品类、过期日期和存放分区
+- 小票批量确认页保留手动补充添加入口，用于识别漏项时继续追加食品
 - 用户确认后才保存到 `items`
 - `parseLogs` 会记录解析日志
 
@@ -255,7 +261,7 @@ type FridgeItem = {
   productionDate?: string;
   shelfLifeDays?: number;
   expireDate: string;
-  storageLocation: "冷藏" | "变温" | "冷冻" | "门架" | "其他";
+  storageLocation: "冷藏" | "冷冻" | "门架" | "果蔬抽屉" | "变温";
   note?: string;
   source: "manual" | "photo" | "barcode" | "package" | "receipt";
   barcode?: string;
@@ -274,7 +280,7 @@ type FridgeItem = {
 
 ### parseLogs
 
-用于记录拍食品、包装 / 条码、小票 mock 解析日志。
+用于记录拍食品、包装、小票识别日志；条形码历史日志仅用于兼容旧数据。
 
 ### 本地缓存
 
@@ -297,10 +303,8 @@ type FridgeItem = {
   - `clearItems`
 - `services/parseService.js`
   - `parseByPhoto`
-  - `parseByBarcode`
   - `parseFoodPhoto`
   - `parsePackagePhoto`
-  - `scanAndParseBarcode`
   - `parseReceiptPhoto`
   - `normalizeParseResult`
   - `calculateExpireDate`
@@ -331,12 +335,175 @@ type FridgeItem = {
 
 说明：
 
-- `parseFoodImage` 已部署真实 OCR / 图像标签 / CloudBase AI 结构化路径；缺少图片、服务未开或调用失败时回退 mock
-- `parseBarcode` 已部署联网搜索 + AI 结构化预留路径；当前 `FRIDGE_ENABLE_REAL_SEARCH=false` 时回退 mock
+- `parseFoodImage` 已部署真实识别路径：
+  - 拍食品：优先走智谱 `glm-4.6v-flash` 视觉模型直接识别图片
+  - 拍包装 / 小票：走腾讯 OCR + CloudBase/Hunyuan 结构化，使用已领取的混元额度
+  - 拍食品的 DeepSeek `v4-flash` 仅作为 OCR / 图片标签文字整理备用
+  - 真实服务不可用、OCR 和标签均为空或识别失败时回退 mock / 待确认结果
+- `parseBarcode` 云函数文件和历史部署暂时保留，但小程序用户入口已移除，不再主动调用
 - `generateRecipes` 已部署 CloudBase AI 菜谱生成路径；模型额度 / 频率受限时回退 mock
 - `sendExpiryReminders` 第一阶段只保留结构，不实际发送订阅消息
 
 ## 本轮完成内容
+
+### 2026-05-28 删除条形码扫描用户入口
+
+- 按用户决策移除条形码扫描模块的用户入口。
+- 智能录入页入口从“拍包装/条码”改为“拍包装”。
+- 首页分区添加面板入口从“拍包装/条码”改为“拍包装”。
+- 首页智能录入引导文案从“拍照或扫码”改为“拍照识别”。
+- `services/parseService.js` 移除前端扫码调用链：
+  - `scanBarcode`
+  - `parseByBarcode`
+  - `scanAndParseBarcode`
+  - 条码 mock 预填导出
+- `utils/constants.js` 移除 `SOURCE_LABELS.barcode`。
+- `items.barcode` 字段暂时保留，用于兼容历史数据。
+- `cloudfunctions/parseBarcode` 本地目录和云端历史函数暂时保留，本轮未做物理删除。
+
+本轮修改文件：
+
+- `pages/quick-add/quick-add.js`
+- `pages/quick-add/quick-add.wxml`
+- `pages/index/index.js`
+- `pages/index/index.wxml`
+- `services/parseService.js`
+- `utils/constants.js`
+- `README.md`
+- `AGENTS.md`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `DECISIONS.md`
+
+下一步建议：
+
+- 真机确认智能录入页不再出现条码 / 扫码入口。
+- 真机确认首页分区添加面板只保留拍食品、拍包装、手动添加。
+- 如果未来确认彻底不恢复条码扫描，再单独逐个删除 `cloudfunctions/parseBarcode` 本地文件，并在云端删除历史函数。
+
+### 2026-05-28 真实拍照识别模型路由与 Loading 修复
+
+- `parseFoodImage` 云函数已配置真实模型路由：
+  - 拍食品使用智谱 `glm-4.6v-flash` 直接看图
+  - 拍包装 / 小票使用腾讯 OCR + CloudBase/Hunyuan 结构化
+  - DeepSeek `v4-flash` 只作为拍食品文字整理备用，不再处理包装和小票
+- 已将智谱 API key 配置到 CloudBase 云函数环境变量，未写入前端或代码仓库
+- 已清理包含云函数环境变量的 `/private/tmp` 临时配置文件
+- 同一张真机上传的杨梅照片云端验证通过，返回：
+  - `name: 杨梅`
+  - `category: 水果`
+  - `providerStatus: real`
+- 修复智能录入 Loading 时机：
+  - 弹出“拍摄 / 从手机相册选择”时不再提前显示“识别中”
+  - 用户拍完或选完图片后，开始上传和云函数识别时才显示“识别中”
+  - 识别中使用 `mask: true`，避免用户误点
+  - 用户取消拍摄时不显示失败提示
+- 已生成并由用户真机验证最新预览二维码：
+  - `/private/tmp/fridge-preview-loading-fix-20260528.png`
+
+本轮修改文件：
+
+- `cloudfunctions/parseFoodImage/index.js`
+- `services/parseService.js`
+- `pages/quick-add/quick-add.js`
+- `pages/index/index.js`
+
+本轮验证：
+
+- `node --check cloudfunctions/parseFoodImage/index.js`
+- `node --check services/parseService.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/index/index.js`
+- `npm run lint`
+- `git diff --check`
+- CloudBase 云函数部署成功
+- 云端直接调用 `parseFoodImage` 识别杨梅图成功
+- 用户真机验证 Loading 时机修复成功
+
+当前还没解决的问题：
+
+- 智谱视觉识别一次真实调用约十几秒，Loading 已修复但仍需继续观察真机等待体感。
+- 包装和小票已切到 Hunyuan 路由，但还需要继续用真实包装、小票照片做真机验收。
+- 条形码扫描模块已从用户入口移除，当前不再作为上线前验证项。
+- 菜谱生成已接入 CloudBase AI 路径，但仍需继续观察混元额度、429 和 mock 兜底表现。
+
+下一步建议：
+
+- 真机各拍 1 张包装和 1 张购物小票，确认是否进入确认页、字段是否可编辑、保存后库存是否正常显示。
+- CloudBase 控制台查看 `parseFoodImage` 日志，确认不同入口的 `providerStatus` 和 `fallbackReason` 可读。
+- 上线前为智谱和腾讯云密钥准备生产专用 key，避免继续使用开发期 key。
+
+### 2026-05-28 添加流程简化、分区归一和日历库存修复
+
+- 所有添加 / 识别确认流程不再要求用户填写数量和单位。
+- `items` 数据结构仍保留 `quantity` 和 `unit`，保存时继续写入默认值 `1 / 份`，保证历史数据和页面兼容。
+- 存放分区收敛为 5 个标准分区：
+  - 冷藏
+  - 冷冻
+  - 门架
+  - 果蔬抽屉
+  - 变温
+- 存放分区不再提供 `其他` 选项；食品品类仍保留 `其他`。
+- 历史库存中 `storageLocation: "其他"` 的食品会在读取时归一到有效分区，避免日历库存和首页分区统计对不上。
+- 智能录入里的手动输入改为进入带“推荐分区”的添加页，而不是直接进入普通手动添加。
+- 单品确认页和小票批量确认页的“采纳推荐”按钮已做居中处理。
+- 小票批量确认页保留手动补充添加入口，便于识别漏掉食品时继续补录。
+- 日历页 `库存 / 临期 / 过期` 弹窗清单新增删除入口，用户可以在日历库存清单中直接删除食品。
+- 分区管理弹窗优化：
+  - 显示 / 删除按钮和拖动触摸区分开，减少点不到的问题
+  - 单指按住分区主体可上下拖动排序
+  - 拖动时增加轻触震动反馈
+  - 保存分区设置按钮位置重新调整，避免贴边
+- 明确不引入 `shadcn/ui` 或 Storybook。它们适合 React/Web 项目，不适合当前微信小程序原生 WXML/WXSS 主线。
+
+本轮修改文件：
+
+- `pages/quick-add/quick-add.js`
+- `pages/quick-add/quick-add.wxml`
+- `pages/item-form/item-form.js`
+- `pages/item-form/item-form.wxml`
+- `pages/item-form/item-form.wxss`
+- `pages/parse-confirm/parse-confirm.js`
+- `pages/parse-confirm/parse-confirm.wxml`
+- `pages/parse-confirm/parse-confirm.wxss`
+- `pages/batch-parse-confirm/batch-parse-confirm.js`
+- `pages/batch-parse-confirm/batch-parse-confirm.wxml`
+- `pages/batch-parse-confirm/batch-parse-confirm.wxss`
+- `pages/index/index.js`
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `services/itemService.js`
+- `services/zoneConfigService.js`
+- `utils/constants.js`
+
+本轮验证：
+
+- `node --check services/itemService.js`
+- `node --check services/zoneConfigService.js`
+- `node --check pages/index/index.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+- 微信开发者工具 CLI 预览编译通过，最新二维码：
+  - `/private/tmp/fridge-preview-zone-fixes-20260528.jpg`
+
+当前还没解决的问题：
+
+- 分区拖动仍需要用户在真机上继续确认手感是否足够顺滑。
+- 日历库存弹窗删除食品已完成代码和编译验证，但还需要真机确认删除后弹窗关闭、库存统计刷新是否符合预期。
+- 历史 `其他` 分区数据当前只在读取展示时归一，不会主动批量改写数据库，避免未经确认批量修改用户数据。
+
+下一步建议：
+
+- 扫描最新预览码，重点测试分区管理显示 / 删除 / 拖动、日历库存弹窗删除、智能录入手动推荐分区、小票手动补充添加。
+- 真机确认无误后，再考虑是否把历史 `其他` 数据做一次用户确认后的单条迁移。
 
 ### 2026-05-28 “我来选食材”料理碗与本地缓存
 
@@ -856,8 +1023,7 @@ type FridgeItem = {
 - 菜谱页规则推荐正常
 - 拍照 mock 解析进入确认页正常
 - 拍照 mock 确认保存正常
-- 扫码 mock 解析进入确认页正常
-- 扫码 mock 确认保存正常
+- 条形码扫描用户入口已移除，不再作为当前验收项
 - 云函数列表确认 5 个函数均存在
 - `npm run lint` 通过
 - `npm run build` 通过
@@ -926,11 +1092,11 @@ type FridgeItem = {
 - 临时云函数 `setupFridgeZoneConfigs` 只用于创建集合，当前仍留在云端；本轮在 CloudBase 控制台删除时连续失败，后续需要稍后重试或手动删除
 - 多冰箱管理还没做；后续如果一个用户有两个及以上冰箱，再单独设计冰箱切换入口
 - `pages/profile` 文件仍保留，但当前不注册页面、不出现在底部 Tab
-- 真实 OCR 未接入
-- 真实条形码商品库未接入
-- 真实 AI 菜谱推荐未接入
-- 拍食品、拍包装 / 条码、小票批量确认还需要在微信开发者工具和真机上完整复查相机、扫码、确认保存体验
-- 日历页临期去化卡片和 AI 菜谱四入口交互已生成预览二维码，但仍等待真机人工确认
+- 拍食品已接入智谱视觉；包装和小票已接入腾讯 OCR + CloudBase/Hunyuan，但仍需要更多真实样本验证效果
+- 真实条形码商品库当前不接入，条形码扫描入口已移除
+- 真实 AI 菜谱推荐已接入云函数路径，但仍需要继续观察额度、429 和 mock 兜底表现
+- 拍食品、拍包装、小票批量确认还需要继续用真机复查相机、确认页和保存体验
+- 日历页临期去化卡片和 AI 菜谱两个入口仍需要继续真机人工确认
 - 真实订阅消息提醒未接入
 - 旧 React/Vite 文件还保留在目录里，后续如果确认不再需要，可以手动逐个清理
 - 开发者工具服务端口为了本轮测试已开启，后续不用自动化时可以在微信开发者工具的安全设置里关闭
@@ -941,7 +1107,7 @@ type FridgeItem = {
 优先建议：
 
 - 用真机预览检查本轮“奶油玩具冰箱”视觉：奶油背景是否干净、冰箱外壳 / 内胆 / 抽屉层级是否清楚、食材图片是否比汉字占位更自然
-- 用真机预览检查菜谱页：banner、四个入口、菜品图片卡、换一批、详情弹窗和选食材弹窗是否顺手
+- 用真机预览检查菜谱页：banner、菜谱盲盒、我来选食材、菜品图片卡、换一批、详情弹窗和选食材弹窗是否顺手
 - 关注主包大小；后续新增图片资产前先压缩或评估分包
 - 在微信开发者工具和真机上检查首页分区 DIY 货架、横向食品卡片和添加方式面板
 - 重点复查分区 `总 / 临 / 过` 统计是否好点、食品图片详情面板是否好用
@@ -950,9 +1116,9 @@ type FridgeItem = {
 - 如果后续支持多个冰箱，再单独设计冰箱切换入口
 - 检查新增 `变温` 位置在首页分区、添加页、编辑页、日历页、菜谱页的实际展示是否顺畅
 - 用真机预览检查首页、添加页、分区统计、底部 Tab 的实际触控体验
-- 用真机预览检查智能录入入口、分区内拍食品、拍包装 / 条码、小票批量保存流程
+- 用真机预览检查智能录入入口、分区内拍食品、拍包装、小票批量保存流程
 - 用真机预览检查日历页临期去化卡片、统计清单弹窗和 AI 菜谱页默认空白状态
-- 用真机预览点选四个 AI 菜谱入口，确认下方攻略内容按入口生成且不自动显示临期去化
+- 用真机预览点击“菜谱盲盒”和“我来选食材”，确认下方内容按入口生成且不自动显示临期去化
 - 根据真机截图继续微调首页货架布局、分区统计按钮大小和触控面积
 
 后续第二阶段：
@@ -1759,7 +1925,7 @@ type FridgeItem = {
   - 缺少图片、服务未开、模型失败或解析失败时自动回退 mock。
 - `cloudfunctions/parseBarcode`：
   - 保留条码 mock 兜底。
-  - 预留腾讯联网搜索 API key 路径，后续启用 `FRIDGE_ENABLE_REAL_SEARCH=true` 后可进入搜索 + AI 结构化。
+  - 预留腾讯联网搜索 API key 路径；该能力后来已从用户入口移除，当前不作为验收项。
 - `cloudfunctions/generateRecipes`：
   - 已接入 CloudBase AI 菜谱生成路径。
   - 模型额度 / 频率受限时自动回退 mock 菜谱。
@@ -1798,7 +1964,7 @@ type FridgeItem = {
 当前还没解决的问题：
 
 - `generateRecipes` 调用真实模型时出现过 `429`，说明当前模型额度 / 频率暂时受限；函数已正确回退 mock。
-- `FRIDGE_ENABLE_REAL_SEARCH=false`，条码联网搜索和天气搜索当前不会真实调用。
+- 条码联网搜索入口已移除；天气搜索当前也不会真实调用。
 - `parseFoodImage` 的真实图片识别链路还需要用真机拍照 / 相册图片生成真实 `fileID` 后验证。
 - 此前控制台截图和 CLI 配置详情可能出现过密钥明文，必须在腾讯云访问密钥里轮换旧密钥，并同步更新云函数环境变量。
 
@@ -1808,7 +1974,6 @@ type FridgeItem = {
   - 拍食品 -> 确认页 -> 保存
   - 拍包装 -> 确认页 -> 保存
   - 拍购物小票 -> 批量确认页 -> 保存
-  - 扫条码 -> 确认页 -> 保存
   - 菜谱盲盒和我来选食材 -> 云端失败时页面仍正常
 - 在 CloudBase 日志里重点看：
   - `providerStatus`
@@ -1816,10 +1981,176 @@ type FridgeItem = {
   - OCR 是否成功提取文字
   - AI 是否返回合法 JSON
 - 如果真实 AI 仍频繁 `429`，先保持 mock 兜底上线，不要强制关闭兜底。
-- 启用联网搜索前，先申请 / 配置对应 API key，再把 `FRIDGE_ENABLE_REAL_SEARCH` 改为 `true`。
+- 如未来恢复条码或联网搜索能力，先评估接口成本和覆盖率，再申请 / 配置对应 API key。
 
 重要注意事项：
 
 - 任何密钥只能放云函数环境变量，不能写入小程序前端、文档或 Git。
 - `parseLogs` 只记录识别结果和 fallback 原因，不记录密钥。
 - 本轮接入的是“真实路径 + mock 兜底”，不是所有真实服务都已经稳定可用。
+
+## 2026-05-29 分区管理与首页视觉细节收尾
+
+本轮完成：
+
+- 分区管理弹窗改为固定高度的上下结构：
+  - 上方为可滚动分区列表。
+  - 下方为独立 footer。
+  - 保存按钮不再跟着列表内容上下贴边。
+- “保存分区设置”按钮从小程序原生 `button` 改为 `view + text` 组合。
+- 保存按钮文字使用 flex 居中，避开原生 `button` 默认行高和内边距导致的视觉不居中问题。
+- 保存分区设置时增加重复点击保护，避免保存中再次触发。
+- 修复首页冰箱分区中的白色条状遮挡：
+  - 原因是冰箱背景装饰霜条层级高于分区卡片。
+  - 已将装饰霜条层级降到分区卡片后方。
+
+本轮修改文件：
+
+- `pages/index/index.wxml`
+- `pages/index/index.wxss`
+- `pages/index/index.js`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/index/index.js`
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+- 微信开发者工具 CLI 预览编译通过：
+  - 保存按钮居中预览码：`/private/tmp/fridge-preview-zone-save-center-20260529.jpg`
+  - 去掉白色遮挡条预览码：`/private/tmp/fridge-preview-remove-frost-bar-20260529.jpg`
+  - 最新包体约 `1.9 MB`
+
+当前还没解决的问题：
+
+- 仍需要用户真机确认：
+  - 保存分区设置按钮是否在不同屏幕高度下都视觉居中、位置合适。
+  - 首页冰箱里的白色条状遮挡是否已经完全消失。
+  - 分区拖动手感是否达到用户预期。
+
+下一步建议：
+
+- 先扫最新预览码，重点检查首页分区和分区管理弹窗。
+- 如果白色装饰条仍有干扰，下一步直接隐藏该装饰层，而不是继续微调层级。
+- 如果分区拖动仍不够顺手，建议改成更稳定的排序模式，例如“长按进入排序 + 上下移动按钮”，避免小程序触摸事件和滚动容器继续打架。
+
+重要注意事项：
+
+- 本轮只改 UI 层和文档，没有修改数据库结构、云函数、AI 接口或 CloudBase 权限。
+- 分区管理仍保持微信小程序原生 WXML / WXSS / JS 实现，不引入 Web 组件库。
+
+## 2026-05-29 日历页去化方案精简收尾
+
+本轮完成：
+
+- 根据用户蓝色标注精简日历页“开饭雷达检测报告”下方的去化方案区域。
+- 删除菜谱列表上方的 `推荐去化方案` 标题。
+- 删除右侧绿色 `推荐 3 个去化方案` 提示。
+- 删除每张菜谱卡片里的时间、难度和匹配状态标签，例如：
+  - `15 分钟`
+  - `简单`
+  - `还差 2 样`
+- 保留菜名、`查看做法`、已有食材和缺少食材标签。
+
+本轮修改文件：
+
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/calendar/calendar.js`
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+- 微信开发者工具 CLI 预览编译通过：
+  - 预览码：`/private/tmp/fridge-preview-calendar-clean-20260529.png`
+  - 预览信息：`/private/tmp/fridge-preview-calendar-clean-20260529.json`
+  - 最新包体：`1,940,364 bytes`
+
+当前还没解决的问题：
+
+- 仍需要用户真机确认精简后的日历页是否足够清爽。
+- 菜谱详情弹窗仍保留时间、难度、匹配状态，因为用户本轮标注只针对列表卡片。
+
+下一步建议：
+
+- 真机打开日历页，检查去化方案区域是否不再有重复标题和小标签干扰。
+- 如果列表仍显拥挤，再考虑缩小食材标签数量或只展示前 3 个缺少食材。
+
+重要注意事项：
+
+- 本轮只删展示层元素，没有改 `recipeService` 推荐逻辑。
+- 详情弹窗继续保留完整信息，避免用户点进详情后缺少做菜判断依据。
+
+## 2026-05-29 开饭雷达云端 AI 菜谱收尾
+
+本轮完成：
+
+- 系统性检查日历页 `开饭雷达检测报告` 推荐链路，确认旧实现会在本地用固定菜谱库和模板兜底生成菜谱。
+- 按新要求调整为：
+  - 本地只做库存感知扫描。
+  - 本地扫描可用库存、3 天内临期、7 天内临期和已过期风险。
+  - 日历页不再使用本地规则 / mock 生成去化菜谱。
+  - 日历页异步调用云函数 `generateRecipes` 生成云端 AI 菜谱。
+  - 云端 AI 成功后展示 3 道菜谱。
+  - 云端 AI 不可用或无可用库存时，不再回退成本地菜谱，只显示状态提示。
+- 保留菜谱卡片和详情中的已有食材 / 缺少食材展示。
+- 修复云端 AI 返回食材名带 `临期`、数量或单位时，前端和云函数无法匹配库存的问题。
+- 过滤基础调味品，避免 `盐`、`食用油`、`水`、`葱姜蒜` 等污染 `缺少食材` 列表。
+- 收紧过期食品安全提示：过期食品不进入菜谱，只提示直接丢弃。
+- 已重新部署 `generateRecipes` 云函数到 CloudBase。
+
+本轮修改文件：
+
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `services/recipeService.js`
+- `cloudfunctions/generateRecipes/index.js`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/calendar/calendar.js`
+- `node --check services/recipeService.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- 已改动小程序页面和 service 的 `node --check`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+- CloudBase CLI 部署 `generateRecipes` 成功。
+- CloudBase CLI 云端 smoke test 通过：
+  - 有临期番茄、鸡蛋、米饭和过期牛奶时，返回 `providerStatus: "real"` 和 3 道云端 AI 菜谱。
+  - `availableItems` 能正确匹配番茄、鸡蛋、米饭。
+  - `missingItems` 不再包含基础调味品。
+  - 过期牛奶只出现在安全提示里，不作为菜谱原料。
+  - 只有过期食品时返回 `recommendations: []` 和 `providerStatus: "empty"`，没有本地菜谱兜底。
+
+当前还没解决的问题：
+
+- 尚未在微信开发者工具或真机上点验日历页异步加载云端 AI 菜谱的真实页面表现。
+- 云端 AI 调用仍受模型额度、频率和环境变量影响；如果云端失败，日历页会展示失败原因而不是本地菜谱。
+- AI 生成内容仍需要继续观察真实库存场景，尤其是菜名重复、搭配合理性和安全提示措辞。
+
+下一步建议：
+
+- 用微信开发者工具打开日历页，确认先显示库存扫描状态，再展示云端 AI 菜谱。
+- 真机确认云端 AI 等待时间是否可接受。
+- 如果等待体感偏长，下一步可以只优化 Loading 文案或增加手动刷新，不恢复本地菜谱兜底。
+
+重要注意事项：
+
+- 日历页 `开饭雷达检测报告` 现在不再使用本地 mock / 规则菜谱兜底。
+- 菜谱页的 `菜谱盲盒 / 我来选食材` 仍保留原有本地先出结果、云端刷新、失败保留本地推荐的体验，不属于本轮变更范围。
