@@ -30,12 +30,12 @@
       <view class="entry-arrow">›</view>
     </button>
 
-    <button class="entry-card card package" bindtap="handlePackageOrBarcode">
+    <button class="entry-card card package" bindtap="handlePackagePhoto">
       <view class="entry-icon package"></view>
       <view class="entry-copy">
         <text class="entry-kicker">包装信息</text>
-        <text class="entry-title">拍包装/条码</text>
-        <text class="entry-desc">扫码条形码，或拍包装说明文字</text>
+        <text class="entry-title">拍包装</text>
+        <text class="entry-desc">识别包装说明文字，提取名称和保质期</text>
       </view>
       <view class="entry-arrow">›</view>
     </button>

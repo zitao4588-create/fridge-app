@@ -231,6 +231,9 @@
 }
 
 .recommend-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 72rpx;
   margin-top: 18rpx;
@@ -239,7 +242,7 @@
   color: #ffffff;
   font-size: 26rpx;
   font-weight: 800;
-  line-height: 72rpx;
+  line-height: 1;
   box-shadow: var(--shadow-button, 0 8rpx 18rpx rgba(88, 201, 139, 0.28));
 }
 

@@ -17,6 +17,10 @@
     <text>已选 {{selectedCount}} / {{items.length}}</text>
   </view>
 
+  <button class="manual-add-button" bindtap="handleAddManualItem">
+    手动补充食品
+  </button>
+
   <view wx:if="{{items.length === 0}}" class="empty">
     暂无可确认的食品
   </view>
@@ -43,19 +47,6 @@
         <input class="input" value="{{item.form.name}}" data-index="{{index}}" data-field="name" bindinput="handleInput" />
       </view>
 
-      <view class="two-col">
-        <view class="field">
-          <text class="field-label">数量</text>
-          <input class="input" type="digit" value="{{item.form.quantity}}" data-index="{{index}}" bindinput="handleQuantityInput" />
-        </view>
-        <view class="field">
-          <text class="field-label">单位</text>
-          <picker range="{{unitOptions}}" value="{{item.unitIndex}}" data-index="{{index}}" bindchange="handleUnitChange">
-            <view class="picker-field">{{item.form.unit}}</view>
-          </picker>
-        </view>
-      </view>
-
       <view class="field">
         <text class="field-label">品类</text>
         <picker range="{{categoryOptions}}" value="{{item.categoryIndex}}" data-index="{{index}}" bindchange="handleCategoryChange">
@@ -71,7 +62,7 @@
       </view>
 
       <view class="field">
-        <text class="field-label">存放位置</text>
+        <text class="field-label">存放分区</text>
         <picker range="{{locationOptions}}" value="{{item.locationIndex}}" data-index="{{index}}" bindchange="handleLocationChange">
           <view class="picker-field">{{item.form.storageLocation}}</view>
         </picker>

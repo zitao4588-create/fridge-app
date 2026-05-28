@@ -36,6 +36,14 @@ function getZoneDefinition(key) {
   return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
 }
 
+function safeVibrateShort() {
+  if (typeof wx !== 'undefined' && wx.vibrateShort) {
+    wx.vibrateShort({
+      type: 'light',
+    })
+  }
+}
+
 function getZoneItems(items, zone) {
   const locations = zone.locations || [zone.location]
 
@@ -603,18 +611,26 @@ Page({
     const index = Number(event.currentTarget.dataset.index)
     const touch = event.touches && event.touches[0]
 
-    if (!touch || index < 0 || index >= this.data.zoneConfigDraft.length) {
+    if (
+      !touch ||
+      event.touches.length !== 1 ||
+      index < 0 ||
+      index >= this.data.zoneConfigDraft.length
+    ) {
       return
     }
 
     this.zoneConfigDragState = {
       index,
-      currentY: touch.clientY,
+      startIndex: index,
+      startY: touch.clientY,
+      rowStep: 62,
     }
 
     this.setData({
       zoneConfigDraggingIndex: index,
     })
+    safeVibrateShort()
   },
 
   handleZoneConfigDragMove(event) {
@@ -625,34 +641,31 @@ Page({
       return
     }
 
-    const deltaY = touch.clientY - dragState.currentY
-    const threshold = 44
-
-    if (Math.abs(deltaY) < threshold) {
-      return
-    }
-
-    const direction = deltaY > 0 ? 1 : -1
-    const targetIndex = dragState.index + direction
+    const offset = Math.round((touch.clientY - dragState.startY) / dragState.rowStep)
+    const targetIndex = Math.max(
+      0,
+      Math.min(
+        this.data.zoneConfigDraft.length - 1,
+        dragState.startIndex + offset,
+      ),
+    )
     const zoneConfigDraft = this.data.zoneConfigDraft.slice()
 
-    if (targetIndex < 0 || targetIndex >= zoneConfigDraft.length) {
-      dragState.currentY = touch.clientY
+    if (targetIndex === dragState.index) {
       return
     }
 
-    const current = zoneConfigDraft[dragState.index]
+    const current = zoneConfigDraft.splice(dragState.index, 1)[0]
 
-    zoneConfigDraft[dragState.index] = zoneConfigDraft[targetIndex]
-    zoneConfigDraft[targetIndex] = current
+    zoneConfigDraft.splice(targetIndex, 0, current)
 
     dragState.index = targetIndex
-    dragState.currentY = touch.clientY
 
     this.setData({
       zoneConfigDraft,
       zoneConfigDraggingIndex: targetIndex,
     })
+    safeVibrateShort()
   },
 
   handleZoneConfigDragEnd() {
@@ -663,6 +676,10 @@ Page({
   },
 
   handleSaveZoneConfig() {
+    if (this.data.zoneConfigSaving) {
+      return
+    }
+
     const enabledCount = this.data.zoneConfigDraft.filter(
       (zone) => zone.enabled,
     ).length
@@ -732,13 +749,25 @@ Page({
   },
 
   runZoneParseTask(task) {
-    wx.showLoading({
-      title: '识别中',
-    })
+    let loadingVisible = false
+    const showRecognizing = () => {
+      if (loadingVisible) {
+        return
+      }
 
-    task()
+      loadingVisible = true
+      wx.showLoading({
+        title: '识别中',
+        mask: true,
+      })
+    }
+
+    task(showRecognizing)
       .then((result) => {
-        wx.hideLoading()
+        if (loadingVisible) {
+          wx.hideLoading()
+        }
+
         this.setData({
           zonePanelVisible: false,
           zoneAddPanelVisible: false,
@@ -746,7 +775,9 @@ Page({
         this.navigateToSingleConfirm(result)
       })
       .catch((error) => {
-        wx.hideLoading()
+        if (loadingVisible) {
+          wx.hideLoading()
+        }
 
         if (parseService.isCancelError(error)) {
           return
@@ -777,9 +808,10 @@ Page({
   handleZonePhotoAdd(event) {
     const { location } = event.currentTarget.dataset
 
-    this.runZoneParseTask(() =>
+    this.runZoneParseTask((showRecognizing) =>
       parseService.parseFoodPhoto({
         preferredStorageLocation: location,
+        onProcessingStart: showRecognizing,
       }),
     )
   },
@@ -787,25 +819,12 @@ Page({
   handleZonePackageAdd(event) {
     const { location } = event.currentTarget.dataset
 
-    wx.showActionSheet({
-      itemList: ['扫码条形码', '拍包装说明'],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          this.runZoneParseTask(() =>
-            parseService.scanAndParseBarcode({
-              preferredStorageLocation: location,
-            }),
-          )
-          return
-        }
-
-        this.runZoneParseTask(() =>
-          parseService.parsePackagePhoto({
-            preferredStorageLocation: location,
-          }),
-        )
-      },
-    })
+    this.runZoneParseTask((showRecognizing) =>
+      parseService.parsePackagePhoto({
+        preferredStorageLocation: location,
+        onProcessingStart: showRecognizing,
+      }),
+    )
   },
 
   handleZoneItemEdit(event) {

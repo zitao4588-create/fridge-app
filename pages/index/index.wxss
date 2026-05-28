@@ -534,7 +534,7 @@
 }
 
 .fridge-shell-frost {
-  z-index: 3;
+  z-index: 1;
   height: 16rpx;
   border-radius: 0 0 18rpx 18rpx;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(199, 237, 252, 0.22));
@@ -1318,11 +1318,20 @@
 
 /* Zone config */
 .zone-config-panel {
+  height: 82vh;
   min-height: 82vh;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
+  padding-bottom: 0;
+}
+
+.zone-config-body {
+  height: 0;
+  min-height: 0;
+  flex: 1;
+  padding-bottom: 20rpx;
+  box-sizing: border-box;
 }
 
 .zone-config-desc {
@@ -1350,7 +1359,17 @@
   align-items: center;
   gap: 14rpx;
   padding: 20rpx;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.zone-config-touch {
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  min-height: 72rpx;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
 }
 
 .zone-config-row.disabled {
@@ -1449,18 +1468,15 @@
 }
 
 .zone-config-save {
-  align-self: center;
   width: 440rpx;
   max-width: 100%;
   height: 76rpx;
-  margin-top: auto;
-  margin-right: auto;
-  margin-left: auto;
-  transform: translateY(30rpx);
+  margin: 0 auto;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   border: 4rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 999rpx;
   background: linear-gradient(180deg, #8ee7b2 0%, #35bf7a 48%, #159a5b 100%);
@@ -1472,8 +1488,26 @@
   box-shadow: var(--shadow-button-green);
 }
 
-.zone-config-save::after {
-  border: 0;
+.zone-config-save.loading {
+  opacity: 0.78;
+}
+
+.zone-config-save text {
+  display: block;
+  width: 100%;
+  line-height: 1;
+  text-align: center;
+}
+
+.zone-config-footer {
+  flex-shrink: 0;
+  margin-right: -28rpx;
+  margin-left: -28rpx;
+  padding: 28rpx 28rpx calc(30rpx + env(safe-area-inset-bottom));
+  border-top: 2rpx solid rgba(241, 222, 192, 0.46);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 234, 0.82) 0%, #fff4de 100%);
+  box-shadow: 0 -12rpx 28rpx rgba(80, 130, 100, 0.08);
 }
 
 /* Notice */

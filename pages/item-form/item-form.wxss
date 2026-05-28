@@ -435,6 +435,78 @@
   border: 0;
 }
 
+.recommend-card {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 26rpx;
+  padding: 24rpx 26rpx;
+  border: 2rpx solid rgba(100, 181, 246, 0.2);
+  border-radius: 32rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(221, 244, 255, 0.7) 100%);
+  box-shadow:
+    inset 0 3rpx 10rpx rgba(255, 255, 255, 0.86),
+    var(--shadow-ice, 0 10rpx 28rpx rgba(92, 160, 190, 0.18));
+}
+
+.recommend-card.active {
+  border-color: rgba(88, 201, 139, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(221, 248, 232, 0.8) 100%);
+}
+
+.recommend-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.recommend-label {
+  color: #778781;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.recommend-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 104rpx;
+  padding: 7rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(88, 201, 139, 0.14);
+  color: #1f9f73;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.recommend-current {
+  margin-top: 10rpx;
+  color: #778781;
+  font-size: 24rpx;
+}
+
+.recommend-button {
+  width: 100%;
+  height: 72rpx;
+  margin-top: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #73dda0 0%, #35ba78 100%);
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: var(--shadow-button, 0 8rpx 18rpx rgba(88, 201, 139, 0.28));
+}
+
+.recommend-button::after {
+  border: none;
+}
+
 .date-mode-switch {
   gap: 14rpx;
   padding: 8rpx;

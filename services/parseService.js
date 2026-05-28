@@ -109,30 +109,6 @@ function createPackageMockResult(options = {}) {
   )
 }
 
-function createBarcodeMockResult(options = {}) {
-  return withRecognitionContext(
-    {
-      source: 'barcode',
-      confidence: 0.86,
-      recommendedStorageLocation: '门架',
-      rawText: '条形码 mock 识别：常见饮品信息预填',
-      fields: {
-        name: '低糖乌龙茶',
-        category: '饮料',
-        quantity: 1,
-        unit: '瓶',
-        productionDate: '',
-        shelfLifeDays: '',
-        expireDate: addDays(getTodayString(), 180),
-        storageLocation: '门架',
-        note: '实际过期日期请按包装信息确认',
-        barcode: options.barcode || '',
-      },
-    },
-    options,
-  )
-}
-
 function createSmartManualResult(options = {}) {
   return withRecognitionContext(
     {
@@ -505,22 +481,10 @@ function uploadParseImage(tempFilePath) {
     .catch(() => '')
 }
 
-function scanBarcode() {
-  return new Promise((resolve, reject) => {
-    if (typeof wx === 'undefined' || !wx.scanCode) {
-      reject(new Error('当前环境不支持扫码'))
-      return
-    }
-
-    wx.scanCode({
-      onlyFromCamera: false,
-      scanType: ['barCode'],
-      success: (res) => {
-        resolve(res.result || '')
-      },
-      fail: reject,
-    })
-  })
+function notifyProcessingStart(options = {}) {
+  if (typeof options.onProcessingStart === 'function') {
+    options.onProcessingStart()
+  }
 }
 
 function parseByPhoto(options = {}) {
@@ -557,76 +521,40 @@ function parseByPhoto(options = {}) {
     })
 }
 
-function parseByBarcode(options = {}) {
-  const safeOptions =
-    typeof options === 'string' ? { barcode: options } : options || {}
-  const fallback = createBarcodeMockResult(safeOptions)
-
-  if (!wx.cloud) {
-    return Promise.resolve(fallback)
-  }
-
-  return wx.cloud
-    .callFunction({
-      name: 'parseBarcode',
-      data: {
-        barcode: safeOptions.barcode || '',
-      },
-    })
-    .then((res) => ({
-      result: withRecognitionContext(res.result || fallback, safeOptions),
-      loggedByCloud: true,
-    }))
-    .catch(() => ({
-      result: fallback,
-      loggedByCloud: false,
-    }))
-    .then(({ result, loggedByCloud }) => {
-      if (!loggedByCloud) {
-        createParseLog('barcode', result)
-      }
-
-      return result
-    })
-}
-
 function parseFoodPhoto(options = {}) {
-  return chooseImageForParse().then((tempFilePath) =>
-    uploadParseImage(tempFilePath).then((imageFileId) =>
+  return chooseImageForParse().then((tempFilePath) => {
+    notifyProcessingStart(options)
+
+    return uploadParseImage(tempFilePath).then((imageFileId) =>
       parseByPhoto({
         ...options,
         imageFileId,
         tempFilePath,
       }),
-    ),
-  )
+    )
+  })
 }
 
 function parsePackagePhoto(options = {}) {
-  return chooseImageForParse().then((tempFilePath) =>
-    uploadParseImage(tempFilePath).then((imageFileId) =>
+  return chooseImageForParse().then((tempFilePath) => {
+    notifyProcessingStart(options)
+
+    return uploadParseImage(tempFilePath).then((imageFileId) =>
       parseByPhoto({
         ...options,
         mode: 'package',
         imageFileId,
         tempFilePath,
       }),
-    ),
-  )
-}
-
-function scanAndParseBarcode(options = {}) {
-  return scanBarcode().then((barcode) =>
-    parseByBarcode({
-      ...options,
-      barcode,
-    }),
-  )
+    )
+  })
 }
 
 function parseReceiptPhoto(options = {}) {
-  return chooseImageForParse().then((tempFilePath) =>
-    uploadParseImage(tempFilePath).then((imageFileId) => {
+  return chooseImageForParse().then((tempFilePath) => {
+    notifyProcessingStart(options)
+
+    return uploadParseImage(tempFilePath).then((imageFileId) => {
       const payload = createReceiptMockPayload({
         ...options,
         imageFileId,
@@ -666,8 +594,8 @@ function parseReceiptPhoto(options = {}) {
 
           return nextPayload
         })
-    }),
-  )
+    })
+  })
 }
 
 function createCacheKey(type = 'single') {
@@ -706,23 +634,43 @@ function isCancelError(error) {
   return message.includes('cancel') || message.includes('取消')
 }
 
-function getDairyPrefillResult() {
-  return Promise.resolve(createFoodPhotoMockResult())
+function formatFallbackReason(reason) {
+  const message = String(reason || '').trim()
+
+  if (!message) {
+    return ''
+  }
+
+  if (message.includes('FRIDGE_ENABLE_REAL_SEARCH')) {
+    return '联网搜索暂未启用，已使用预填结果'
+  }
+
+  if (
+    message.includes('FRIDGE_WSA_API_KEY') ||
+    message.includes('FRIDGE_SEARCH_API_KEY')
+  ) {
+    return '联网搜索密钥未配置，已使用预填结果'
+  }
+
+  if (/FRIDGE_[A-Z0-9_]+|[A-Z0-9_]+_API_KEY/.test(message)) {
+    return '真实服务暂不可用，已使用预填结果'
+  }
+
+  return message
 }
 
-function getDrinkPrefillResult() {
-  return Promise.resolve(createBarcodeMockResult())
+function getDairyPrefillResult() {
+  return Promise.resolve(createFoodPhotoMockResult())
 }
 
 module.exports = {
   calculateExpireDate,
   getDairyPrefillResult,
-  getDrinkPrefillResult,
   getRecommendedStorageLocation,
+  formatFallbackReason,
   createSmartManualResult,
   isCancelError,
   normalizeParseResult,
-  parseByBarcode,
   parseByPhoto,
   parseFoodPhoto,
   parsePackagePhoto,
@@ -730,5 +678,4 @@ module.exports = {
   readTempParsePayload,
   removeTempParsePayload,
   saveTempParsePayload,
-  scanAndParseBarcode,
 }

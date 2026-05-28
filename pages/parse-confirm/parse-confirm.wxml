@@ -63,19 +63,6 @@
       </picker>
     </view>
 
-    <view class="two-col">
-      <view class="field">
-        <text class="field-label">数量</text>
-        <input class="input" type="digit" value="{{form.quantity}}" bindinput="handleQuantityInput" />
-      </view>
-      <view class="field">
-        <text class="field-label">单位</text>
-        <picker range="{{unitOptions}}" value="{{unitIndex}}" bindchange="handleUnitChange">
-          <view class="picker-field">{{form.unit}}</view>
-        </picker>
-      </view>
-    </view>
-
     <view class="field">
       <text class="field-label">生产日期</text>
       <picker mode="date" value="{{form.productionDate}}" bindchange="handleProductionDateChange">
@@ -96,7 +83,7 @@
     </view>
 
     <view class="field">
-      <text class="field-label">存放位置</text>
+      <text class="field-label">存放分区</text>
       <picker range="{{locationOptions}}" value="{{locationIndex}}" bindchange="handleLocationChange">
         <view class="picker-field">{{form.storageLocation}}</view>
       </picker>

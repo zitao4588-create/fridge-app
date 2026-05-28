@@ -31,7 +31,7 @@
       <view class="decision-sign unknown" bindtap="handleSmartAdd">
         <view class="decision-copy">
           <text class="decision-title">智能录入</text>
-          <text class="decision-desc">拍照或扫码后推荐分区</text>
+          <text class="decision-desc">拍照识别后推荐分区</text>
         </view>
         <view class="decision-pointer right">
           <view class="pointer-line"></view>
@@ -178,10 +178,10 @@
           <view class="zone-add-arrow">›</view>
         </button>
         <button class="zone-add-card package" data-location="{{selectedAddZone.location}}" bindtap="handleZonePackageAdd">
-          <view class="zone-add-icon">码</view>
+          <view class="zone-add-icon">包</view>
           <view class="zone-add-copy">
-            <text class="zone-add-title">拍包装/条码</text>
-            <text class="zone-add-desc">扫码或拍说明文字</text>
+            <text class="zone-add-title">拍包装</text>
+            <text class="zone-add-desc">识别包装说明文字</text>
           </view>
           <view class="zone-add-arrow">›</view>
         </button>
@@ -337,39 +337,45 @@
         </view>
       </view>
 
-      <view class="zone-config-desc">按住左侧拖动排序，右侧控制分区显示或删除。</view>
+      <scroll-view class="zone-config-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <view class="zone-config-desc">按住分区拖动排序，右侧控制分区显示或删除。</view>
 
-      <view class="zone-config-list">
-        <view
-          class="zone-config-row {{item.enabled ? '' : 'disabled'}} {{index === zoneConfigDraggingIndex ? 'dragging' : ''}}"
-          wx:for="{{zoneConfigDraft}}"
-          wx:key="key"
-        >
+        <view class="zone-config-list">
           <view
-            class="zone-config-drag"
-            data-index="{{index}}"
-            catchtouchstart="handleZoneConfigDragStart"
-            catchtouchmove="handleZoneConfigDragMove"
-            catchtouchend="handleZoneConfigDragEnd"
-            catchtouchcancel="handleZoneConfigDragEnd"
+            class="zone-config-row {{item.enabled ? '' : 'disabled'}} {{index === zoneConfigDraggingIndex ? 'dragging' : ''}}"
+            wx:for="{{zoneConfigDraft}}"
+            wx:key="key"
           >
-            <view class="zone-config-grip"></view>
-            <text>拖动</text>
-          </view>
-          <view class="zone-config-main">
-            <text class="zone-config-name">{{item.name}}</text>
-            <text class="zone-config-hint">{{item.temperature}} · {{item.hint}}</text>
-          </view>
-          <view class="zone-config-actions">
-            <view class="zone-config-show {{item.enabled ? 'active' : ''}}" data-index="{{index}}" bindtap="handleShowZoneConfig">显示</view>
-            <view class="zone-config-delete" data-index="{{index}}" bindtap="handleDeleteZoneConfig">删除</view>
+            <view
+              class="zone-config-touch"
+              data-index="{{index}}"
+              catchtouchstart="handleZoneConfigDragStart"
+              catchtouchmove="handleZoneConfigDragMove"
+              catchtouchend="handleZoneConfigDragEnd"
+              catchtouchcancel="handleZoneConfigDragEnd"
+            >
+              <view class="zone-config-drag">
+                <view class="zone-config-grip"></view>
+                <text>拖动</text>
+              </view>
+              <view class="zone-config-main">
+                <text class="zone-config-name">{{item.name}}</text>
+                <text class="zone-config-hint">{{item.temperature}} · {{item.hint}}</text>
+              </view>
+            </view>
+            <view class="zone-config-actions">
+              <view class="zone-config-show {{item.enabled ? 'active' : ''}}" data-index="{{index}}" catchtap="handleShowZoneConfig">显示</view>
+              <view class="zone-config-delete" data-index="{{index}}" catchtap="handleDeleteZoneConfig">删除</view>
+            </view>
           </view>
         </view>
-      </view>
+      </scroll-view>
 
-      <button class="zone-config-save" loading="{{zoneConfigSaving}}" bindtap="handleSaveZoneConfig">
-        保存分区设置
-      </button>
+      <view class="zone-config-footer">
+        <view class="zone-config-save {{zoneConfigSaving ? 'loading' : ''}}" bindtap="handleSaveZoneConfig">
+          <text>{{zoneConfigSaving ? '保存中' : '保存分区设置'}}</text>
+        </view>
+      </view>
     </view>
   </view>
 

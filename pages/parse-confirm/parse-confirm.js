@@ -1,10 +1,10 @@
 const itemService = require('../../services/itemService')
 const parseService = require('../../services/parseService')
+const zoneConfigService = require('../../services/zoneConfigService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
   STORAGE_LOCATION_OPTIONS,
-  UNIT_OPTIONS,
   SOURCE_LABELS,
 } = require('../../utils/constants')
 
@@ -14,7 +14,17 @@ const defaultResult = parseService.normalizeParseResult({
   fields: {},
 })
 
-function buildRecommendationState(form, source, enabled) {
+function getOptionIndex(options, value) {
+  return Math.max(0, options.indexOf(value))
+}
+
+function getSupportedStorageLocation(location, options) {
+  const storageLocation = normalizeStorageLocation(location)
+
+  return options.includes(storageLocation) ? storageLocation : options[0] || '冷藏'
+}
+
+function buildRecommendationState(form, source, enabled, locationOptions) {
   const hasManualInput =
     String(form.name || '').trim() || form.category !== '其他'
   const shouldShow =
@@ -27,8 +37,9 @@ function buildRecommendationState(form, source, enabled) {
     }
   }
 
-  const recommendedStorageLocation = normalizeStorageLocation(
+  const recommendedStorageLocation = getSupportedStorageLocation(
     parseService.getRecommendedStorageLocation(form),
+    locationOptions,
   )
 
   return {
@@ -58,7 +69,7 @@ function getOptionStorageLocation(options) {
 function buildRecognitionAlert(result) {
   const source = result.source || 'manual'
   const providerStatus = result.providerStatus || ''
-  const fallbackReason = result.fallbackReason || ''
+  const fallbackReason = parseService.formatFallbackReason(result.fallbackReason)
 
   if (source === 'manual' && !result.smartRecommend) {
     return {
@@ -106,7 +117,7 @@ function buildRecognitionAlert(result) {
       recognitionAlertType: 'fallback',
       recognitionAlertTitle: '已使用备用识别',
       recognitionAlertDesc: fallbackReason
-        ? `真实识别暂不可用，已使用预填结果。原因：${fallbackReason}`
+        ? `${fallbackReason}。请按实物状态核对后保存。`
         : '真实识别暂不可用，已使用预填结果。请按实物状态核对后保存。',
     }
   }
@@ -144,8 +155,6 @@ Page({
     categoryIndex: 0,
     locationOptions: STORAGE_LOCATION_OPTIONS,
     locationIndex: 0,
-    unitOptions: UNIT_OPTIONS,
-    unitIndex: 0,
   },
 
   onLoad(options) {
@@ -175,12 +184,6 @@ Page({
         optionStorageLocation ||
         normalizeStorageLocation(normalized.fields.storageLocation),
     }
-    const recommendationState = buildRecommendationState(
-      form,
-      normalized.source,
-      smartRecommendEnabled,
-    )
-
     this.setData({
       cacheKey,
       form,
@@ -191,7 +194,6 @@ Page({
       fallbackReason: normalized.fallbackReason,
       ...buildRecognitionAlert(normalized),
       smartRecommendEnabled,
-      ...recommendationState,
       sourceLabel:
         normalized.source === 'manual' && normalized.smartRecommend
           ? '手动智能录入'
@@ -199,9 +201,36 @@ Page({
       confidenceText:
         normalized.confidence >= 0.8 ? '信息较完整' : '请重点核对',
       lowConfidence: normalized.confidence < 0.8,
-      categoryIndex: Math.max(0, CATEGORY_OPTIONS.indexOf(form.category)),
-      locationIndex: Math.max(0, STORAGE_LOCATION_OPTIONS.indexOf(form.storageLocation)),
-      unitIndex: Math.max(0, UNIT_OPTIONS.indexOf(form.unit)),
+      categoryIndex: getOptionIndex(CATEGORY_OPTIONS, form.category),
+    })
+    this.loadLocationOptions(form, normalized.source, smartRecommendEnabled)
+  },
+
+  loadLocationOptions(form, source, smartRecommendEnabled) {
+    return zoneConfigService.getZoneConfig().then((config) => {
+      const locationOptions = zoneConfigService.getEnabledStorageLocationOptions(
+        config.zones,
+      )
+      const storageLocation = getSupportedStorageLocation(
+        form.storageLocation,
+        locationOptions,
+      )
+      const nextForm = {
+        ...form,
+        storageLocation,
+      }
+
+      this.setData({
+        form: nextForm,
+        locationOptions,
+        locationIndex: getOptionIndex(locationOptions, storageLocation),
+        ...buildRecommendationState(
+          nextForm,
+          source,
+          smartRecommendEnabled,
+          locationOptions,
+        ),
+      })
     })
   },
 
@@ -217,6 +246,7 @@ Page({
         form,
         this.data.source,
         this.data.smartRecommendEnabled,
+        this.data.locationOptions,
       ),
     })
   },
@@ -224,10 +254,6 @@ Page({
   handleInput(event) {
     const { field } = event.currentTarget.dataset
     this.updateFormField(field, event.detail.value)
-  },
-
-  handleQuantityInput(event) {
-    this.updateFormField('quantity', event.detail.value)
   },
 
   handleShelfLifeInput(event) {
@@ -260,6 +286,7 @@ Page({
         form,
         this.data.source,
         this.data.smartRecommendEnabled,
+        this.data.locationOptions,
       ),
     })
   },
@@ -279,18 +306,8 @@ Page({
         form,
         this.data.source,
         this.data.smartRecommendEnabled,
+        this.data.locationOptions,
       ),
-    })
-  },
-
-  handleUnitChange(event) {
-    const unitIndex = Number(event.detail.value)
-    this.setData({
-      unitIndex,
-      form: {
-        ...this.data.form,
-        unit: this.data.unitOptions[unitIndex],
-      },
     })
   },
 
@@ -326,7 +343,7 @@ Page({
         ...this.data.form,
         storageLocation,
       },
-      locationIndex: Math.max(0, STORAGE_LOCATION_OPTIONS.indexOf(storageLocation)),
+      locationIndex: getOptionIndex(this.data.locationOptions, storageLocation),
       showLocationRecommend: false,
     })
   },

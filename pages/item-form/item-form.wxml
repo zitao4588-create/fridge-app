@@ -29,6 +29,32 @@
       </view>
     </view>
 
+    <view wx:if="{{recommendedStorageLocation}}" class="recommend-card {{showLocationRecommend ? 'active' : ''}}">
+      <view class="recommend-main">
+        <text class="recommend-label">推荐分区</text>
+        <text class="recommend-value">{{recommendedStorageLocation}}</text>
+      </view>
+      <view class="recommend-current">当前选择：{{form.storageLocation}}</view>
+      <button wx:if="{{showLocationRecommend}}" class="recommend-button" bindtap="handleApplyRecommendedLocation">
+        采纳推荐
+      </button>
+    </view>
+
+    <view class="field">
+      <text class="field-label">存放分区</text>
+      <view class="option-grid location-options">
+        <button
+          class="option-chip {{form.storageLocation === item ? 'active' : ''}}"
+          wx:for="{{locationOptions}}"
+          wx:key="*this"
+          data-index="{{index}}"
+          bindtap="handleLocationTap"
+        >
+          {{item}}
+        </button>
+      </view>
+    </view>
+
     <view class="field date-field">
       <text class="field-label">过期日期</text>
 

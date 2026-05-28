@@ -22,17 +22,31 @@ Page({
   },
 
   runParseTask(task, onSuccess) {
-    wx.showLoading({
-      title: '识别中',
-    })
+    let loadingVisible = false
+    const showRecognizing = () => {
+      if (loadingVisible) {
+        return
+      }
 
-    task()
+      loadingVisible = true
+      wx.showLoading({
+        title: '识别中',
+        mask: true,
+      })
+    }
+
+    task(showRecognizing)
       .then((result) => {
-        wx.hideLoading()
+        if (loadingVisible) {
+          wx.hideLoading()
+        }
+
         onSuccess(result)
       })
       .catch((error) => {
-        wx.hideLoading()
+        if (loadingVisible) {
+          wx.hideLoading()
+        }
 
         if (parseService.isCancelError(error)) {
           return
@@ -47,32 +61,36 @@ Page({
 
   handleFoodPhoto() {
     this.runParseTask(
-      () => parseService.parseFoodPhoto(),
+      (showRecognizing) =>
+        parseService.parseFoodPhoto({
+          onProcessingStart: showRecognizing,
+        }),
       (result) => this.navigateToSingleConfirm(result),
     )
   },
 
   handleManualSmart() {
-    this.navigateToSingleConfirm(parseService.createSmartManualResult())
+    wx.navigateTo({
+      url: '/pages/item-form/item-form?smartRecommend=1',
+    })
   },
 
-  handlePackageOrBarcode() {
-    wx.showActionSheet({
-      itemList: ['扫码条形码', '拍包装说明'],
-      success: (res) => {
-        const task =
-          res.tapIndex === 0
-            ? () => parseService.scanAndParseBarcode()
-            : () => parseService.parsePackagePhoto()
-
-        this.runParseTask(task, (result) => this.navigateToSingleConfirm(result))
-      },
-    })
+  handlePackagePhoto() {
+    this.runParseTask(
+      (showRecognizing) =>
+        parseService.parsePackagePhoto({
+          onProcessingStart: showRecognizing,
+        }),
+      (result) => this.navigateToSingleConfirm(result),
+    )
   },
 
   handleReceiptPhoto() {
     this.runParseTask(
-      () => parseService.parseReceiptPhoto(),
+      (showRecognizing) =>
+        parseService.parseReceiptPhoto({
+          onProcessingStart: showRecognizing,
+        }),
       (result) => this.navigateToBatchConfirm(result),
     )
   },

@@ -16,7 +16,6 @@ const STORAGE_LOCATION_OPTIONS = [
   '门架',
   '果蔬抽屉',
   '变温',
-  '其他',
 ]
 
 const STORAGE_LOCATION_ALIASES = {
@@ -361,7 +360,6 @@ const UNIT_OPTIONS = ['个', '盒', '瓶', '袋', '包', '斤', '克', '毫升',
 const SOURCE_LABELS = {
   manual: '手动录入',
   photo: '拍食品识别',
-  barcode: '条码识别',
   package: '包装说明识别',
   receipt: '小票批量识别',
 }

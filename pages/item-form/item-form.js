@@ -1,8 +1,10 @@
 const itemService = require('../../services/itemService')
 const parseService = require('../../services/parseService')
+const zoneConfigService = require('../../services/zoneConfigService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
+  STORAGE_LOCATION_OPTIONS,
 } = require('../../utils/constants')
 const {
   buildMonthDays,
@@ -68,6 +70,39 @@ function getDefaultCategory(options) {
   return CATEGORY_OPTIONS.includes(category) ? category : ''
 }
 
+function getOptionIndex(options, value) {
+  return Math.max(0, options.indexOf(value))
+}
+
+function getSupportedStorageLocation(location, options) {
+  const storageLocation = normalizeStorageLocation(location)
+
+  return options.includes(storageLocation) ? storageLocation : options[0] || '冷藏'
+}
+
+function buildRecommendationState(form, smartRecommendEnabled, locationOptions) {
+  const hasInput = String(form.name || '').trim() || form.category !== '其他'
+
+  if (!smartRecommendEnabled || !hasInput) {
+    return {
+      recommendedStorageLocation: '',
+      showLocationRecommend: false,
+    }
+  }
+
+  const recommendedStorageLocation = getSupportedStorageLocation(
+    parseService.getRecommendedStorageLocation(form),
+    locationOptions,
+  )
+
+  return {
+    recommendedStorageLocation,
+    showLocationRecommend:
+      !!recommendedStorageLocation &&
+      recommendedStorageLocation !== form.storageLocation,
+  }
+}
+
 Page({
   data: {
     id: '',
@@ -77,6 +112,11 @@ Page({
     errors: { ...emptyErrors },
     categoryOptions: CATEGORY_OPTIONS,
     categoryIndex: CATEGORY_OPTIONS.indexOf(emptyForm.category),
+    locationOptions: STORAGE_LOCATION_OPTIONS,
+    locationIndex: getOptionIndex(STORAGE_LOCATION_OPTIONS, emptyForm.storageLocation),
+    smartRecommendEnabled: false,
+    recommendedStorageLocation: '',
+    showLocationRecommend: false,
     dateMode: 'production',
     datePickerVisible: false,
     datePickerTarget: 'production',
@@ -100,6 +140,7 @@ Page({
       this.setData({
         id: options.id,
         isEdit: true,
+        smartRecommendEnabled: false,
       })
       this.loadItem(options.id)
       return
@@ -108,6 +149,7 @@ Page({
     const storageLocation = getDefaultStorageLocation(options)
     const name = decodeOptionValue(options.name)
     const category = getDefaultCategory(options)
+    const smartRecommendEnabled = options.smartRecommend === '1'
     const form = {
       ...this.data.form,
       ...(storageLocation ? { storageLocation } : {}),
@@ -115,12 +157,39 @@ Page({
       ...(category ? { category } : {}),
     }
 
-    if (storageLocation || name || category) {
+    this.setData({
+      form,
+      smartRecommendEnabled,
+      categoryIndex: getOptionIndex(CATEGORY_OPTIONS, form.category),
+    })
+    this.loadLocationOptions(form)
+  },
+
+  loadLocationOptions(form = this.data.form) {
+    return zoneConfigService.getZoneConfig().then((config) => {
+      const locationOptions = zoneConfigService.getEnabledStorageLocationOptions(
+        config.zones,
+      )
+      const storageLocation = getSupportedStorageLocation(
+        form.storageLocation,
+        locationOptions,
+      )
+      const nextForm = {
+        ...form,
+        storageLocation,
+      }
+
       this.setData({
-        form,
-        categoryIndex: Math.max(0, CATEGORY_OPTIONS.indexOf(form.category)),
+        form: nextForm,
+        locationOptions,
+        locationIndex: getOptionIndex(locationOptions, storageLocation),
+        ...buildRecommendationState(
+          nextForm,
+          this.data.smartRecommendEnabled,
+          locationOptions,
+        ),
       })
-    }
+    })
   },
 
   loadItem(id) {
@@ -144,10 +213,11 @@ Page({
 
         this.setData({
           form,
-          categoryIndex: Math.max(0, CATEGORY_OPTIONS.indexOf(form.category)),
+          categoryIndex: getOptionIndex(CATEGORY_OPTIONS, form.category),
           dateMode,
           datePickerTarget: dateMode,
         })
+        this.loadLocationOptions(form)
       })
       .catch(() => {
         wx.hideLoading()
@@ -172,6 +242,14 @@ Page({
         [field]: value,
       },
       errors,
+      ...buildRecommendationState(
+        {
+          ...this.data.form,
+          [field]: value,
+        },
+        this.data.smartRecommendEnabled,
+        this.data.locationOptions,
+      ),
     })
   },
 
@@ -215,17 +293,60 @@ Page({
   },
 
   selectCategory(categoryIndex) {
+    const form = {
+      ...this.data.form,
+      category: this.data.categoryOptions[categoryIndex],
+    }
+
     this.setData({
       categoryIndex,
-      form: {
-        ...this.data.form,
-        category: this.data.categoryOptions[categoryIndex],
-      },
+      form,
+      ...buildRecommendationState(
+        form,
+        this.data.smartRecommendEnabled,
+        this.data.locationOptions,
+      ),
     })
   },
 
   handleCategoryTap(event) {
     this.selectCategory(Number(event.currentTarget.dataset.index))
+  },
+
+  handleLocationTap(event) {
+    const locationIndex = Number(event.currentTarget.dataset.index)
+    const storageLocation = this.data.locationOptions[locationIndex]
+    const form = {
+      ...this.data.form,
+      storageLocation,
+    }
+
+    this.setData({
+      locationIndex,
+      form,
+      ...buildRecommendationState(
+        form,
+        this.data.smartRecommendEnabled,
+        this.data.locationOptions,
+      ),
+    })
+  },
+
+  handleApplyRecommendedLocation() {
+    const storageLocation = this.data.recommendedStorageLocation
+
+    if (!storageLocation) {
+      return
+    }
+
+    this.setData({
+      form: {
+        ...this.data.form,
+        storageLocation,
+      },
+      locationIndex: getOptionIndex(this.data.locationOptions, storageLocation),
+      showLocationRecommend: false,
+    })
   },
 
   renderDateCalendar() {

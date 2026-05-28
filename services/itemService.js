@@ -45,7 +45,10 @@ function cleanItemPayload(payload) {
 }
 
 function decorateItems(items) {
-  return items.sort((left, right) => {
+  return items.map((item) => ({
+    ...item,
+    storageLocation: normalizeStorageLocation(item.storageLocation),
+  })).sort((left, right) => {
     if (left.expireDate !== right.expireDate) {
       return left.expireDate.localeCompare(right.expireDate)
     }

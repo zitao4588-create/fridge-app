@@ -1,11 +1,11 @@
 const itemService = require('../../services/itemService')
 const parseService = require('../../services/parseService')
+const zoneConfigService = require('../../services/zoneConfigService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
   SOURCE_LABELS,
   STORAGE_LOCATION_OPTIONS,
-  UNIT_OPTIONS,
 } = require('../../utils/constants')
 
 function decodeOptionValue(value) {
@@ -20,11 +20,17 @@ function getOptionIndex(options, value) {
   return Math.max(0, options.indexOf(value))
 }
 
+function getSupportedStorageLocation(location, options) {
+  const storageLocation = normalizeStorageLocation(location)
+
+  return options.includes(storageLocation) ? storageLocation : options[0] || '冷藏'
+}
+
 function getSelectedCount(items) {
   return items.filter((item) => item.checked).length
 }
 
-function decorateBatchItem(entry, index) {
+function decorateBatchItem(entry, index, locationOptions = STORAGE_LOCATION_OPTIONS) {
   const normalized = parseService.normalizeParseResult({
     source: 'receipt',
     confidence: entry.confidence,
@@ -32,14 +38,18 @@ function decorateBatchItem(entry, index) {
     recommendedStorageLocation: entry.recommendedStorageLocation,
     providerStatus: entry.providerStatus,
     fallbackReason: entry.fallbackReason,
-    fields: entry.fields || entry,
+    fields: entry.fields || entry.form || entry,
   })
   const form = {
     ...normalized.fields,
-    storageLocation: normalizeStorageLocation(normalized.fields.storageLocation),
+    storageLocation: getSupportedStorageLocation(
+      normalized.fields.storageLocation,
+      locationOptions,
+    ),
   }
-  const recommendedStorageLocation = normalizeStorageLocation(
+  const recommendedStorageLocation = getSupportedStorageLocation(
     entry.recommendedStorageLocation || normalized.recommendedStorageLocation,
+    locationOptions,
   )
 
   return {
@@ -56,9 +66,33 @@ function decorateBatchItem(entry, index) {
       recommendedStorageLocation !== form.storageLocation,
     form,
     categoryIndex: getOptionIndex(CATEGORY_OPTIONS, form.category),
-    locationIndex: getOptionIndex(STORAGE_LOCATION_OPTIONS, form.storageLocation),
-    unitIndex: getOptionIndex(UNIT_OPTIONS, form.unit),
+    locationIndex: getOptionIndex(locationOptions, form.storageLocation),
   }
+}
+
+function createManualBatchItem(index, locationOptions) {
+  return decorateBatchItem(
+    {
+      id: `manual-receipt-${Date.now()}-${index}`,
+      checked: true,
+      providerStatus: 'manual',
+      confidence: 1,
+      rawText: '手动补充',
+      fields: {
+        name: '',
+        category: '其他',
+        quantity: 1,
+        unit: '份',
+        productionDate: '',
+        shelfLifeDays: '',
+        expireDate: '',
+        storageLocation: locationOptions[0] || '冷藏',
+        note: '',
+      },
+    },
+    index,
+    locationOptions,
+  )
 }
 
 function buildBatchRecognitionAlert(payload = {}, items = []) {
@@ -71,10 +105,11 @@ function buildBatchRecognitionAlert(payload = {}, items = []) {
     (firstFallbackItem && firstFallbackItem.providerStatus) ||
     (firstRealItem && firstRealItem.providerStatus) ||
     ''
-  const fallbackReason =
+  const fallbackReason = parseService.formatFallbackReason(
     payload.fallbackReason ||
-    (firstFallbackItem && firstFallbackItem.fallbackReason) ||
-    ''
+      (firstFallbackItem && firstFallbackItem.fallbackReason) ||
+      '',
+  )
 
   if (providerStatus === 'real' && !fallbackReason) {
     return {
@@ -90,7 +125,7 @@ function buildBatchRecognitionAlert(payload = {}, items = []) {
       recognitionAlertType: 'fallback',
       recognitionAlertTitle: '已使用备用小票识别',
       recognitionAlertDesc: fallbackReason
-        ? `真实识别暂不可用，已使用预填结果。原因：${fallbackReason}`
+        ? `${fallbackReason}。请按购物小票和包装信息核对。`
         : '真实识别暂不可用，已使用预填结果。请按购物小票和包装信息核对。',
     }
   }
@@ -99,7 +134,7 @@ function buildBatchRecognitionAlert(payload = {}, items = []) {
     recognitionAlertType: 'unknown',
     recognitionAlertTitle: '小票识别状态待确认',
     recognitionAlertDesc:
-      '云端没有返回识别来源，请逐条核对名称、数量、日期和分区后保存。',
+      '云端没有返回识别来源，请逐条核对名称、日期和分区后保存。',
   }
 }
 
@@ -116,7 +151,6 @@ Page({
     selectedCount: 0,
     categoryOptions: CATEGORY_OPTIONS,
     locationOptions: STORAGE_LOCATION_OPTIONS,
-    unitOptions: UNIT_OPTIONS,
   },
 
   onLoad(options) {
@@ -139,6 +173,25 @@ Page({
         icon: 'none',
       })
     }
+
+    this.loadLocationOptions()
+  },
+
+  loadLocationOptions() {
+    return zoneConfigService.getZoneConfig().then((config) => {
+      const locationOptions = zoneConfigService.getEnabledStorageLocationOptions(
+        config.zones,
+      )
+      const items = this.data.items.map((item, index) =>
+        decorateBatchItem(item, index, locationOptions),
+      )
+
+      this.setData({
+        locationOptions,
+        items,
+        selectedCount: getSelectedCount(items),
+      })
+    })
   },
 
   setBatchItems(items) {
@@ -163,10 +216,9 @@ Page({
       ...nextItem,
       categoryIndex: getOptionIndex(CATEGORY_OPTIONS, form.category),
       locationIndex: getOptionIndex(
-        STORAGE_LOCATION_OPTIONS,
+        this.data.locationOptions,
         form.storageLocation,
       ),
-      unitIndex: getOptionIndex(UNIT_OPTIONS, form.unit),
       showLocationRecommend:
         !!nextItem.recommendedStorageLocation &&
         nextItem.recommendedStorageLocation !== form.storageLocation,
@@ -200,14 +252,6 @@ Page({
     this.updateItemField(Number(index), field, event.detail.value)
   },
 
-  handleQuantityInput(event) {
-    this.updateItemField(
-      Number(event.currentTarget.dataset.index),
-      'quantity',
-      event.detail.value,
-    )
-  },
-
   handleCategoryChange(event) {
     const index = Number(event.currentTarget.dataset.index)
     const categoryIndex = Number(event.detail.value)
@@ -224,13 +268,6 @@ Page({
       'storageLocation',
       this.data.locationOptions[locationIndex],
     )
-  },
-
-  handleUnitChange(event) {
-    const index = Number(event.currentTarget.dataset.index)
-    const unitIndex = Number(event.detail.value)
-
-    this.updateItemField(index, 'unit', this.data.unitOptions[unitIndex])
   },
 
   handleExpireDateChange(event) {
@@ -254,6 +291,14 @@ Page({
       'storageLocation',
       item.recommendedStorageLocation,
     )
+  },
+
+  handleAddManualItem() {
+    const items = this.data.items.concat(
+      createManualBatchItem(this.data.items.length, this.data.locationOptions),
+    )
+
+    this.setBatchItems(items)
   },
 
   validateItems() {

@@ -52,6 +52,29 @@ function getDefaultConfig() {
   }
 }
 
+function getZoneDefinition(key) {
+  return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
+}
+
+function getEnabledStorageLocationOptions(zones) {
+  const options = sanitizeZones(zones)
+    .filter((zone) => zone.enabled)
+    .map((zone) => {
+      const definition = getZoneDefinition(zone.key)
+
+      return definition && definition.location
+    })
+    .filter(Boolean)
+
+  if (options.length > 0) {
+    return options
+  }
+
+  const fallback = getZoneDefinition(DEFAULT_HOME_ZONE_CONFIG[0].key)
+
+  return fallback ? [fallback.location] : ['冷藏']
+}
+
 function getZoneConfig() {
   if (!wx.cloud) {
     return Promise.resolve(getDefaultConfig())
@@ -115,6 +138,7 @@ function saveZoneConfig(config) {
 }
 
 module.exports = {
+  getEnabledStorageLocationOptions,
   getDefaultConfig,
   getZoneConfig,
   sanitizeZones,
