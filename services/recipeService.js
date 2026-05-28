@@ -218,6 +218,26 @@ const HEALTHY_DRINK_BOX = [
   },
 ]
 
+const BASIC_PANTRY_INGREDIENTS = [
+  '水',
+  '清水',
+  '盐',
+  '食用油',
+  '油',
+  '白糖',
+  '糖',
+  '生抽',
+  '酱油',
+  '香油',
+  '葱花',
+  '葱',
+  '姜',
+  '蒜',
+  '水淀粉',
+  '黑胡椒',
+  '胡椒粉',
+]
+
 function getNearestReminderDate(items) {
   const usableItems = getUsableItems(Array.isArray(items) ? items : [])
     .map((item) => ({
@@ -439,15 +459,34 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase()
 }
 
+function normalizeIngredientText(value) {
+  return normalizeText(value)
+    .replace(/\s+/g, '')
+    .replace(/临期|库存|现有|已有|新鲜|剩余/g, '')
+    .replace(/[0-9０-９]+(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺)?/gi, '')
+    .replace(/适量|少许|少量|半个|半颗|一份|一小把|一把/g, '')
+    .replace(/[()（）【】\[\]，,、:：；;]/g, '')
+}
+
 function getItemKey(item) {
   return item && (item._id || item.id || item.name)
 }
 
 function itemMatchesIngredient(item, ingredient) {
-  const itemText = normalizeText(`${item.name} ${item.category}`)
-  const target = normalizeText(ingredient)
+  const itemName = normalizeIngredientText(item.name)
+  const itemCategory = normalizeIngredientText(item.category)
+  const target = normalizeIngredientText(ingredient)
 
-  return itemText.includes(target) || target.includes(itemText)
+  return (
+    (itemName && (itemName.includes(target) || target.includes(itemName))) ||
+    (itemCategory && (itemCategory.includes(target) || target.includes(itemCategory)))
+  )
+}
+
+function isBasicPantryIngredient(ingredient) {
+  const target = normalizeIngredientText(ingredient)
+
+  return BASIC_PANTRY_INGREDIENTS.some((item) => normalizeIngredientText(item) === target)
 }
 
 function findMatchingItem(items, ingredient, usedKeys) {
@@ -510,7 +549,9 @@ function matchRecipeToItems(recipe, items, sourceType, context) {
       return
     }
 
-    missingItems.push(ingredient)
+    if (!isBasicPantryIngredient(ingredient)) {
+      missingItems.push(ingredient)
+    }
   })
 
   const priorityItems = availableItems.filter(
@@ -560,88 +601,6 @@ function sortRecommendations(recommendations) {
 
     return left.missingItems.length - right.missingItems.length
   })
-}
-
-function buildExpiryFallbackRecipe(item, index) {
-  const templates = [
-    {
-      id: 'expiry-fast-plate',
-      title: `${item.name}快手小炒`,
-      timeCost: '12 分钟',
-      difficulty: '简单',
-      tags: ['AI mock', '临期去化', '快手'],
-      steps: [
-        `先检查${item.name}状态，确认无异味、变色或包装异常。`,
-        `将${item.name}按适合方式清洗、切块或预处理。`,
-        '热锅少油快速翻炒，出锅前简单调味。',
-      ],
-    },
-    {
-      id: 'expiry-warm-bowl',
-      title: `${item.name}热汤碗`,
-      timeCost: '15 分钟',
-      difficulty: '简单',
-      tags: ['AI mock', '临期去化', '热食'],
-      steps: [
-        `先检查${item.name}是否仍适合食用。`,
-        `把${item.name}切成适口大小。`,
-        '加水煮成热汤，可搭配鸡蛋、豆腐或主食。',
-      ],
-    },
-    {
-      id: 'expiry-rice-bowl',
-      title: `${item.name}拌饭`,
-      timeCost: '10 分钟',
-      difficulty: '简单',
-      tags: ['AI mock', '临期去化', '主食'],
-      steps: [
-        `确认${item.name}状态正常后加热或焯熟。`,
-        '铺在米饭或主食上。',
-        '按口味加入少量酱汁，拌匀后食用。',
-      ],
-    },
-  ]
-  const template = templates[index % templates.length]
-  const formattedItem = formatItemForRecipe(item)
-
-  return {
-    id: `${template.id}-${getItemKey(item)}-${index}`,
-    title: template.title,
-    image: DEFAULT_RECIPE_IMAGE,
-    sourceType: 'expiry',
-    reason: `AI 根据临期食材${item.name}生成，建议优先用掉。`,
-    availableItems: [formattedItem],
-    missingItems: [],
-    priorityItems: [formattedItem],
-    matchScore: 8 - index,
-    matchLabel: '可直接做',
-    canCook: true,
-    timeCost: template.timeCost,
-    difficulty: template.difficulty,
-    tags: template.tags,
-    seasonTags: [],
-    steps: template.steps,
-    safetyNote: '临期食品食用前请先检查气味、颜色、包装和保存状态；如有异常请直接丢弃。',
-  }
-}
-
-function fillExpiryRecommendations(recommendations, baseItems) {
-  const result = recommendations.slice(0, 3)
-  let fallbackIndex = 0
-
-  while (result.length < 3 && baseItems.length > 0 && fallbackIndex < 9) {
-    const item = baseItems[fallbackIndex % baseItems.length]
-    const fallbackRecipe = buildExpiryFallbackRecipe(item, fallbackIndex)
-    const duplicated = result.some((recipe) => recipe.title === fallbackRecipe.title)
-
-    if (!duplicated) {
-      result.push(fallbackRecipe)
-    }
-
-    fallbackIndex += 1
-  }
-
-  return result
 }
 
 function getAIRecipeRecommendations(items, options) {
@@ -743,18 +702,6 @@ function getExpiryUsageRecommendations(items) {
   const threeDayItems = getPriorityItems(safeItems, 3)
   const sevenDayItems = getPriorityItems(safeItems, 7)
   const overdueItems = getOverdueItems(safeItems)
-  const recommendationBaseItems =
-    threeDayItems.length > 0 ? threeDayItems : sevenDayItems
-  const matchedRecommendations = sortRecommendations(
-    AI_RECIPE_LIBRARY.map((recipe) =>
-      matchRecipeToItems(recipe, recommendationBaseItems, 'expiry'),
-    ),
-  )
-    .filter((recipe) => recipe.availableItems.length > 0)
-  const recommendations = fillExpiryRecommendations(
-    matchedRecommendations,
-    recommendationBaseItems,
-  )
 
   return {
     todayItems: todayItems.map(formatItemForRecipe),
@@ -762,13 +709,74 @@ function getExpiryUsageRecommendations(items) {
     sevenDayItems: sevenDayItems.map(formatItemForRecipe),
     overdueItems: overdueItems.map(formatItemForRecipe),
     usableCount: usableItems.length,
-    recommendations,
+    recommendations: [],
     safetyTips: overdueItems.map((item) => ({
       id: getItemKey(item),
       name: item.name,
       text: `${item.name}已过期，先检查气味、颜色、包装和保存状态；如有异常请直接丢弃，不建议作为菜谱原料。`,
     })),
   }
+}
+
+function getPriorityRecipeItemIds(expiryUsage) {
+  const safeExpiryUsage = expiryUsage || {}
+  const priorityItems = Array.isArray(safeExpiryUsage.threeDayItems)
+    && safeExpiryUsage.threeDayItems.length > 0
+    ? safeExpiryUsage.threeDayItems
+    : safeExpiryUsage.sevenDayItems || []
+
+  return priorityItems
+    .map((item) => item.id || item._id || item.name)
+    .filter(Boolean)
+}
+
+function getCloudExpiryRecipeRecommendations(items, expiryUsage, options = {}) {
+  const safeItems = Array.isArray(items) ? items : []
+  const safeExpiryUsage = expiryUsage || getExpiryUsageRecommendations(safeItems)
+
+  if (typeof wx === 'undefined' || !wx.cloud) {
+    return Promise.reject(new Error('当前环境不支持云端菜谱生成'))
+  }
+
+  if (!safeExpiryUsage.usableCount) {
+    return Promise.resolve({
+      context: {},
+      selectedItems: [],
+      recommendations: [],
+      providerStatus: 'empty',
+      fallbackReason: '暂无可用库存，先添加食材或处理过期食品。',
+    })
+  }
+
+  return wx.cloud
+    .callFunction({
+      name: 'generateRecipes',
+      data: {
+        scene: 'expiryRadar',
+        items: safeItems,
+        priorityItemIds: getPriorityRecipeItemIds(safeExpiryUsage),
+        city: options.city || '',
+      },
+    })
+    .then((res) => {
+      const payload = res.result || {}
+      const isRealProvider = payload.providerStatus === 'real'
+      const recommendations = isRealProvider && Array.isArray(payload.recommendations)
+        ? payload.recommendations.map(normalizeCloudRecipe)
+        : []
+
+      return {
+        context: payload.context || {},
+        selectedItems: Array.isArray(payload.selectedItems)
+          ? payload.selectedItems
+          : [],
+        recommendations,
+        providerStatus: payload.providerStatus || '',
+        fallbackReason: recommendations.length > 0
+          ? ''
+          : payload.fallbackReason || '云端 AI 暂未生成可用菜谱。',
+      }
+    })
 }
 
 function getDailyIndex(list, type) {
@@ -835,6 +843,7 @@ module.exports = {
   fallbackAIRecipes,
   getAIRecipeRecommendations,
   getCloudAIRecipeRecommendations,
+  getCloudExpiryRecipeRecommendations,
   getBlindBoxRecommendation,
   getExpiryUsageRecommendations,
   getMockRecommendationContext,

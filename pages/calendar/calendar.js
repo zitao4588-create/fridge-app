@@ -31,7 +31,7 @@ const EMPTY_MEAL_RADAR_REPORT = {
   levelLabel: '低',
   levelTitle: '先处理风险或补货',
   levelClass: 'low',
-  recipeHint: '暂无可匹配菜谱',
+  recipeHint: '等待云端 AI 生成',
   inventoryCount: 0,
   expiringCount: 0,
   overdueCount: 0,
@@ -87,27 +87,6 @@ function clampScore(value) {
   return Math.max(0, Math.min(99, Math.round(value)))
 }
 
-function getRecipeMatchRate(recommendations) {
-  const safeRecommendations = Array.isArray(recommendations)
-    ? recommendations
-    : []
-  const rates = safeRecommendations
-    .map((recipe) => {
-      const availableCount = (recipe.availableItems || []).length
-      const missingCount = (recipe.missingItems || []).length
-      const totalCount = availableCount + missingCount
-
-      return totalCount > 0 ? availableCount / totalCount : 0
-    })
-    .filter((rate) => rate > 0)
-
-  if (rates.length === 0) {
-    return 0
-  }
-
-  return rates.reduce((sum, rate) => sum + rate, 0) / rates.length
-}
-
 function getMealRadarLevel(score) {
   if (score >= 80) {
     return {
@@ -155,29 +134,25 @@ function getPriorityPreviewItems(expiryUsage) {
 function buildMealRadarReport(items, expiryUsage) {
   const safeItems = Array.isArray(items) ? items : []
   const safeExpiryUsage = expiryUsage || EMPTY_EXPIRY_USAGE
-  const recommendations = Array.isArray(safeExpiryUsage.recommendations)
-    ? safeExpiryUsage.recommendations
-    : []
   const usableCount = Number(safeExpiryUsage.usableCount) || 0
   const expiringCount = (safeExpiryUsage.threeDayItems || []).length
   const overdueCount = (safeExpiryUsage.overdueItems || []).length
-  const directRecipeCount = recommendations.filter(
-    (recipe) => (recipe.missingItems || []).length === 0,
-  ).length
-  const matchScore = getRecipeMatchRate(recommendations) * 60
-  const inventoryScore = Math.min(usableCount / 8, 1) * 20
-  const expiryValueScore = Math.min(expiringCount * 3, 10)
-  const overduePenalty = Math.min(overdueCount * 8, 25)
+  const usableItems = safeItems.filter((item) => getDaysUntil(item.expireDate) >= 0)
+  const categoryCount = new Set(usableItems.map((item) => item.category).filter(Boolean)).size
+  const inventoryScore = Math.min(usableCount / 8, 1) * 45
+  const diversityScore = Math.min(categoryCount / 4, 1) * 25
+  const expiryValueScore = expiringCount > 0 ? Math.min(expiringCount * 5, 15) : 8
+  const overduePenalty = Math.min(overdueCount * 10, 30)
   const score = clampScore(
-    matchScore + inventoryScore + expiryValueScore - overduePenalty,
+    inventoryScore + diversityScore + expiryValueScore - overduePenalty,
   )
   const level = getMealRadarLevel(score)
-  const recipeHint =
-    directRecipeCount > 0
-      ? `已有 ${directRecipeCount} 道可直接做`
-      : recommendations.length > 0
-        ? `推荐 ${recommendations.length} 个去化方案`
-        : '暂无可匹配菜谱'
+  const recommendationCount = Array.isArray(safeExpiryUsage.recommendations)
+    ? safeExpiryUsage.recommendations.length
+    : 0
+  const recipeHint = recommendationCount > 0
+    ? `云端 AI 已生成 ${recommendationCount} 道菜`
+    : '等待云端 AI 生成'
 
   return {
     ...EMPTY_MEAL_RADAR_REPORT,
@@ -189,7 +164,22 @@ function buildMealRadarReport(items, expiryUsage) {
     expiringCount,
     overdueCount,
     priorityItems: getPriorityPreviewItems(safeExpiryUsage),
+    explanation: `本地已扫描 ${usableCount} 个可用库存、${expiringCount} 个临期和 ${overdueCount} 个过期风险`,
   }
+}
+
+function getInitialRadarRecipeStatus(expiryUsage) {
+  const safeExpiryUsage = expiryUsage || EMPTY_EXPIRY_USAGE
+
+  if (!safeExpiryUsage.usableCount) {
+    return '暂无未过期库存，先添加食材或处理过期食品。'
+  }
+
+  if ((safeExpiryUsage.threeDayItems || []).length > 0) {
+    return '正在结合临期食材和全量库存调用云端 AI...'
+  }
+
+  return '正在结合当前库存调用云端 AI 生成菜谱...'
 }
 
 Page({
@@ -205,6 +195,8 @@ Page({
     stats: EMPTY_STATS,
     expiryUsage: EMPTY_EXPIRY_USAGE,
     mealRadarReport: EMPTY_MEAL_RADAR_REPORT,
+    radarRecipeLoading: false,
+    radarRecipeStatusText: '',
     selectedDate: '',
     selectedItems: [],
     inventoryPanelVisible: false,
@@ -241,6 +233,7 @@ Page({
         const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
         const stats = buildStats(items)
         const mealRadarReport = buildMealRadarReport(items, expiryUsage)
+        const shouldLoadRecipes = expiryUsage.usableCount > 0
 
         this.setData({
           events,
@@ -248,19 +241,78 @@ Page({
           stats,
           expiryUsage,
           mealRadarReport,
+          radarRecipeLoading: shouldLoadRecipes,
+          radarRecipeStatusText: getInitialRadarRecipeStatus(expiryUsage),
           loading: false,
         })
         this.renderCalendar()
+        this.loadMealRadarRecipes(items, expiryUsage)
       })
       .catch(() => {
+        this.mealRadarRecipeRequestId = ''
         this.setData({
           loading: false,
+          radarRecipeLoading: false,
+          radarRecipeStatusText: '',
         })
         wx.showToast({
           title: '读取失败',
           icon: 'none',
         })
         this.renderCalendar()
+      })
+  },
+
+  loadMealRadarRecipes(items, expiryUsage) {
+    const safeExpiryUsage = expiryUsage || EMPTY_EXPIRY_USAGE
+
+    if (!safeExpiryUsage.usableCount) {
+      this.mealRadarRecipeRequestId = ''
+      this.setData({
+        radarRecipeLoading: false,
+        radarRecipeStatusText: getInitialRadarRecipeStatus(safeExpiryUsage),
+      })
+      return
+    }
+
+    const requestId = `${Date.now()}-${Math.random()}`
+    this.mealRadarRecipeRequestId = requestId
+
+    recipeService
+      .getCloudExpiryRecipeRecommendations(items, safeExpiryUsage)
+      .then((result) => {
+        if (this.mealRadarRecipeRequestId !== requestId) {
+          return
+        }
+
+        const recommendations = Array.isArray(result.recommendations)
+          ? result.recommendations
+          : []
+        const nextExpiryUsage = {
+          ...this.data.expiryUsage,
+          recommendations,
+        }
+        const statusText = recommendations.length > 0
+          ? '云端 AI 已结合临期食材和库存生成菜谱。'
+          : result.fallbackReason || '云端 AI 暂未生成可用菜谱，请稍后再试。'
+
+        this.setData({
+          expiryUsage: nextExpiryUsage,
+          mealRadarReport: buildMealRadarReport(this.data.items, nextExpiryUsage),
+          radarRecipeLoading: false,
+          radarRecipeStatusText: statusText,
+        })
+      })
+      .catch((error) => {
+        if (this.mealRadarRecipeRequestId !== requestId) {
+          return
+        }
+
+        this.setData({
+          radarRecipeLoading: false,
+          radarRecipeStatusText:
+            (error && error.message) || '云端 AI 暂不可用，本次不使用本地菜谱兜底。',
+        })
       })
   },
 
@@ -364,6 +416,52 @@ Page({
       inventoryPanelVisible: false,
       inventoryPanelTitle: '',
       inventoryPanelItems: [],
+    })
+  },
+
+  handleDeleteInventoryItem(event) {
+    const { id, name } = event.currentTarget.dataset
+
+    if (!id) {
+      return
+    }
+
+    wx.showModal({
+      title: '确认删除',
+      content: `确定删除「${name}」吗？`,
+      confirmText: '删除',
+      confirmColor: '#d95d55',
+      success: (res) => {
+        if (!res.confirm) {
+          return
+        }
+
+        wx.showLoading({
+          title: '删除中',
+        })
+        itemService
+          .deleteItem(id)
+          .then(() => {
+            wx.hideLoading()
+            this.setData({
+              inventoryPanelVisible: false,
+              inventoryPanelTitle: '',
+              inventoryPanelItems: [],
+            })
+            wx.showToast({
+              title: '已删除',
+              icon: 'success',
+            })
+            this.loadItems()
+          })
+          .catch(() => {
+            wx.hideLoading()
+            wx.showToast({
+              title: '删除失败',
+              icon: 'none',
+            })
+          })
+      },
     })
   },
 

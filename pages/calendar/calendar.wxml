@@ -93,12 +93,11 @@
       <text wx:else class="meal-radar-priority-empty">暂无临期压力，可以按心情安排一顿。</text>
     </view>
 
-    <view wx:if="{{expiryUsage.recommendations.length > 0}}" class="expiry-recipe-list">
-      <view class="expiry-section-head">
-        <text class="expiry-food-title">推荐去化方案</text>
-        <text class="expiry-recipe-hint">{{mealRadarReport.recipeHint}}</text>
-      </view>
+    <view wx:if="{{radarRecipeLoading}}" class="expiry-ai-status loading">
+      <text>{{radarRecipeStatusText}}</text>
+    </view>
 
+    <view wx:elif="{{expiryUsage.recommendations.length > 0}}" class="expiry-recipe-list">
       <view
         class="meal-recipe-card"
         wx:for="{{expiryUsage.recommendations}}"
@@ -112,11 +111,6 @@
             <text class="meal-recipe-title">{{item.title}}</text>
             <text class="meal-recipe-action">查看做法</text>
           </view>
-          <view class="meal-recipe-meta">
-            <text>{{item.timeCost}}</text>
-            <text>{{item.difficulty}}</text>
-            <text class="{{item.canCook ? 'ready' : 'missing'}}">{{item.matchLabel}}</text>
-          </view>
           <view class="expiry-chip-row">
             <text wx:if="{{item.availableItems.length === 0}}" class="expiry-empty-chip">暂无可用库存</text>
             <text class="expiry-food-chip" wx:for="{{item.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
@@ -125,7 +119,7 @@
         </view>
       </view>
     </view>
-    <view wx:else class="expiry-empty">暂无可去化临期食材，菜谱页仍可给日常灵感。</view>
+    <view wx:else class="expiry-empty">{{radarRecipeStatusText || '云端 AI 暂未生成可用菜谱，请稍后再试。'}}</view>
 
     <view wx:if="{{expiryUsage.safetyTips.length > 0}}" class="safety-box">
       <text class="safety-title">已过期提醒</text>
@@ -180,11 +174,14 @@
       <view wx:if="{{inventoryPanelItems.length === 0}}" class="inventory-empty">暂无食品</view>
       <view wx:else class="inventory-list">
         <view class="inventory-item" wx:for="{{inventoryPanelItems}}" wx:key="id">
-          <view>
+          <view class="inventory-item-main">
             <text class="inventory-name">{{item.name}}</text>
             <text class="inventory-meta">{{item.category}} · {{item.storageLocation}} · {{item.expiryHint}}</text>
           </view>
-          <text class="status-chip {{item.statusClass}}">{{item.statusLabel}}</text>
+          <view class="inventory-actions">
+            <text class="status-chip {{item.statusClass}}">{{item.statusLabel}}</text>
+            <text class="inventory-delete" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="handleDeleteInventoryItem">删除</text>
+          </view>
         </view>
       </view>
     </view>

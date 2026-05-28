@@ -515,14 +515,6 @@
   line-height: 1.35;
 }
 
-.expiry-food-title {
-  display: block;
-  color: var(--color-text-title, #24352f);
-  font-size: 28rpx;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
 .expiry-food-chip {
   padding: 8rpx 14rpx;
   border-radius: 999rpx;
@@ -541,22 +533,24 @@
   margin-top: 22rpx;
 }
 
-.expiry-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
+.expiry-ai-status {
+  position: relative;
+  z-index: 1;
+  margin-top: 22rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx dashed rgba(88, 201, 139, 0.22);
+  border-radius: 28rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fff6 100%);
+  color: var(--color-text-sub, #778781);
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
-.expiry-recipe-hint {
-  flex-shrink: 0;
-  padding: 8rpx 14rpx;
-  border-radius: 999rpx;
-  background: #ffffff;
-  color: var(--mint-700, #087a49);
-  font-size: 21rpx;
-  font-weight: 900;
-  box-shadow: 0 8rpx 16rpx rgba(82, 124, 94, 0.08);
+.expiry-ai-status.loading {
+  border-style: solid;
+  background: linear-gradient(180deg, #f9fffb 0%, #edfff5 100%);
+  color: var(--color-primary-deep, #1f9f73);
 }
 
 .meal-recipe-card {
@@ -607,33 +601,6 @@
   font-size: 21rpx;
   font-weight: 900;
   line-height: 1;
-}
-
-.meal-recipe-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 10rpx;
-}
-
-.meal-recipe-meta text {
-  padding: 7rpx 10rpx;
-  border-radius: 999rpx;
-  background: var(--ice-50, #f5fcff);
-  color: var(--ice-700, #22789e);
-  font-size: 20rpx;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.meal-recipe-meta .ready {
-  background: var(--mint-100, #ddf8e8);
-  color: var(--mint-700, #087a49);
-}
-
-.meal-recipe-meta .missing {
-  background: var(--honey-100, #fff1c9);
-  color: var(--honey-700, #c86f13);
 }
 
 .expiry-match-grid {
@@ -1017,13 +984,18 @@
 
 .inventory-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 18rpx;
   padding: 18rpx;
   border: 2rpx solid rgba(100, 181, 246, 0.1);
   border-radius: 24rpx;
   background: #ffffff;
+}
+
+.inventory-item-main {
+  min-width: 0;
+  flex: 1;
 }
 
 .inventory-name {
@@ -1038,4 +1010,26 @@
   margin-top: 8rpx;
   color: var(--color-text-sub, #778781);
   font-size: 23rpx;
+}
+
+.inventory-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10rpx;
+}
+
+.inventory-delete {
+  min-width: 96rpx;
+  height: 46rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999rpx;
+  background: var(--color-peach-light, #ffe7e3);
+  color: #d95d55;
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 1;
 }

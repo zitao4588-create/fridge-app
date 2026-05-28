@@ -37,6 +37,26 @@ const MOCK_RECIPES = [
   },
 ]
 
+const BASIC_PANTRY_INGREDIENTS = [
+  '水',
+  '清水',
+  '盐',
+  '食用油',
+  '油',
+  '白糖',
+  '糖',
+  '生抽',
+  '酱油',
+  '香油',
+  '葱花',
+  '葱',
+  '姜',
+  '蒜',
+  '水淀粉',
+  '黑胡椒',
+  '胡椒粉',
+]
+
 function isEnabled(value) {
   return String(value || '').toLowerCase() === 'true'
 }
@@ -79,15 +99,34 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase()
 }
 
+function normalizeIngredientText(value) {
+  return normalizeText(value)
+    .replace(/\s+/g, '')
+    .replace(/临期|库存|现有|已有|新鲜|剩余/g, '')
+    .replace(/[0-9０-９]+(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺)?/gi, '')
+    .replace(/适量|少许|少量|半个|半颗|一份|一小把|一把/g, '')
+    .replace(/[()（）【】\[\]，,、:：；;]/g, '')
+}
+
 function getItemKey(item) {
   return item && (item._id || item.id || item.name)
 }
 
 function itemMatchesIngredient(item, ingredient) {
-  const itemText = normalizeText(`${item.name} ${item.category}`)
-  const target = normalizeText(ingredient)
+  const itemName = normalizeIngredientText(item.name)
+  const itemCategory = normalizeIngredientText(item.category)
+  const target = normalizeIngredientText(ingredient)
 
-  return itemText.includes(target) || target.includes(itemText)
+  return (
+    (itemName && (itemName.includes(target) || target.includes(itemName))) ||
+    (itemCategory && (itemCategory.includes(target) || target.includes(itemCategory)))
+  )
+}
+
+function isBasicPantryIngredient(ingredient) {
+  const target = normalizeIngredientText(ingredient)
+
+  return BASIC_PANTRY_INGREDIENTS.some((item) => normalizeIngredientText(item) === target)
 }
 
 function formatItem(item) {
@@ -124,6 +163,18 @@ function getSelectedItems(items, selectedItemIds) {
     : []
 }
 
+function getPriorityItems(items, maxDays) {
+  return items.filter((item) => {
+    const daysUntil = getDaysUntil(item.expireDate)
+
+    return daysUntil >= 0 && daysUntil <= maxDays
+  })
+}
+
+function getOverdueItems(items) {
+  return items.filter((item) => getDaysUntil(item.expireDate) < 0)
+}
+
 function matchRecipe(recipe, items, sourceType = 'ai') {
   const usedKeys = new Set()
   const availableItems = []
@@ -143,7 +194,9 @@ function matchRecipe(recipe, items, sourceType = 'ai') {
       return
     }
 
-    missingItems.push(ingredient)
+    if (!isBasicPantryIngredient(ingredient)) {
+      missingItems.push(ingredient)
+    }
   })
 
   const priorityItems = availableItems.filter(
@@ -355,7 +408,24 @@ function getAiText(result = {}) {
   )
 }
 
-function buildRecipePrompt(items, context, selectedItems) {
+function buildInventoryScanSummary(items) {
+  const usableItems = getUsableItems(items)
+  const threeDayItems = getPriorityItems(items, 3)
+  const sevenDayItems = getPriorityItems(items, 7)
+  const overdueItems = getOverdueItems(items)
+
+  return {
+    usableCount: usableItems.length,
+    threeDayCount: threeDayItems.length,
+    sevenDayCount: sevenDayItems.length,
+    overdueCount: overdueItems.length,
+    threeDayNames: threeDayItems.map((item) => item.name).slice(0, 10),
+    sevenDayNames: sevenDayItems.map((item) => item.name).slice(0, 10),
+    overdueNames: overdueItems.map((item) => item.name).slice(0, 10),
+  }
+}
+
+function buildRecipePrompt(items, context, selectedItems, scene = '') {
   const compactItems = items.slice(0, 30).map((item) => ({
     name: item.name,
     category: item.category,
@@ -366,6 +436,28 @@ function buildRecipePrompt(items, context, selectedItems) {
     daysUntil: getDaysUntil(item.expireDate),
   }))
   const selectedNames = selectedItems.map((item) => item.name).join('、')
+
+  if (scene === 'expiryRadar') {
+    const scanSummary = context.inventoryScan || buildInventoryScanSummary(items)
+
+    return [
+      '请为微信小程序“冰箱雷达”的“开饭雷达检测报告”生成 3 道家常菜谱。',
+      '这是云端 AI 菜谱生成，必须基于本地传入的真实冰箱库存和临期扫描结果，不要编造库存里没有的“已有食材”。',
+      '优先消耗 3 天内到期的食材；如果 3 天内食材不适合单独成菜，可以搭配其他未过期库存食材。',
+      '绝对不要把已过期食材作为菜谱原料；已过期食材只可在 safetyNote 中提醒直接丢弃，不要写“检查是否可食用/可饮用”。',
+      '可以列出 1-3 个需要补买的常见主料或关键辅料，但不要把盐、油、水、糖、酱油、葱姜蒜这类基础调味列入 ingredients。',
+      'ingredients 必须包含完整主料和关键辅料，方便前端继续显示“已有 / 缺哪样”。',
+      'ingredients 里的食材名请使用纯食材名，不要带“临期、库存、1份、少许、适量”等修饰；数量和状态写在 reason 或 steps 里。',
+      '不要生成“葱快手小炒”这类只把葱、调料、配菜当主菜的方案；菜名需要像真实家常菜。',
+      '步骤要比模板更具体，每道菜 3-5 步，说明关键处理方式和临期食材怎么用掉。',
+      selectedNames ? `本轮优先处理食材：${selectedNames}` : '本轮没有明显临期食材，请根据全部未过期库存生成。',
+      `库存扫描结果：${JSON.stringify(scanSummary)}`,
+      '只返回 JSON，格式如下：',
+      '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"15 分钟","difficulty":"简单","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结"}',
+      `今日上下文：${JSON.stringify(context)}`,
+      `未过期库存：${JSON.stringify(compactItems)}`,
+    ].join('\n')
+  }
 
   return [
     '请为冰箱库存生成 5 道家常菜谱。',
@@ -378,7 +470,7 @@ function buildRecipePrompt(items, context, selectedItems) {
   ].join('\n')
 }
 
-async function callCloudBaseAI(items, context, selectedItems) {
+async function callCloudBaseAI(items, context, selectedItems, scene = '') {
   if (!isEnabled(process.env.FRIDGE_ENABLE_REAL_AI)) {
     throw new Error('未启用 FRIDGE_ENABLE_REAL_AI')
   }
@@ -404,7 +496,7 @@ async function callCloudBaseAI(items, context, selectedItems) {
       },
       {
         role: 'user',
-        content: buildRecipePrompt(items, context, selectedItems),
+        content: buildRecipePrompt(items, context, selectedItems, scene),
       },
     ],
   })
@@ -418,7 +510,7 @@ function buildMockRecommendations(baseItems) {
   )
 }
 
-function normalizeAiRecommendations(aiResult, baseItems) {
+function normalizeAiRecommendations(aiResult, baseItems, maxCount = 5) {
   const recipes = Array.isArray(aiResult.recipes) ? aiResult.recipes : []
 
   if (recipes.length === 0) {
@@ -426,25 +518,47 @@ function normalizeAiRecommendations(aiResult, baseItems) {
   }
 
   return sortRecommendations(
-    recipes.slice(0, 5).map((recipe) => matchRecipe(recipe, baseItems, 'ai')),
+    recipes.slice(0, maxCount).map((recipe) => matchRecipe(recipe, baseItems, 'ai')),
   )
 }
 
 exports.main = async (event = {}) => {
   const items = Array.isArray(event.items) ? event.items : []
   const usableItems = getUsableItems(items)
-  const selectedItems = getSelectedItems(usableItems, event.selectedItemIds)
-  const baseItems = selectedItems.length > 0 ? selectedItems : usableItems
+  const scene = event.scene || event.mode || ''
+  const isExpiryRadar = scene === 'expiryRadar'
+  const selectedItems = isExpiryRadar
+    ? getSelectedItems(usableItems, event.priorityItemIds)
+    : getSelectedItems(usableItems, event.selectedItemIds)
+  const baseItems = isExpiryRadar
+    ? usableItems
+    : selectedItems.length > 0 ? selectedItems : usableItems
   const city = event.city || process.env.FRIDGE_DEFAULT_CITY || '上海'
   const searchInsight = await getSearchInsight(city)
   const context = {
     ...getMockContext(searchInsight),
     city,
+    scene,
+    inventoryScan: isExpiryRadar ? buildInventoryScanSummary(items) : null,
+  }
+
+  if (isExpiryRadar && baseItems.length === 0) {
+    return {
+      context,
+      selectedItems: [],
+      recommendations: [],
+      providerStatus: 'empty',
+      fallbackReason: '暂无未过期库存，云端 AI 未生成菜谱。',
+    }
   }
 
   try {
-    const aiResult = await callCloudBaseAI(baseItems, context, selectedItems)
-    const recommendations = normalizeAiRecommendations(aiResult, baseItems)
+    const aiResult = await callCloudBaseAI(baseItems, context, selectedItems, scene)
+    const recommendations = normalizeAiRecommendations(
+      aiResult,
+      baseItems,
+      isExpiryRadar ? 3 : 5,
+    )
 
     return {
       context: {
@@ -457,6 +571,17 @@ exports.main = async (event = {}) => {
       fallbackReason: '',
     }
   } catch (error) {
+    if (isExpiryRadar) {
+      return {
+        context,
+        selectedItems: selectedItems.map(formatItem),
+        recommendations: [],
+        providerStatus: 'failed',
+        fallbackReason:
+          error.message || error.code || '云端 AI 暂不可用，本次不使用本地菜谱兜底',
+      }
+    }
+
     return {
       context,
       selectedItems: selectedItems.map(formatItem),
