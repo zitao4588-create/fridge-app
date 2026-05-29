@@ -67,19 +67,14 @@ button::after {
   justify-content: center;
   border-radius: 999rpx;
   border: 4rpx solid rgba(255, 255, 255, 0.82);
-  background: linear-gradient(
-    180deg,
-    #7edfa7 0%,
-    var(--mint-500, #21a86b) 50%,
-    var(--mint-700, #087a49) 100%
-  );
-  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-mint-soft, #EAF8EE) 100%);
+  color: var(--brand-mint-deep, #087A49);
   font-size: 30rpx;
   font-weight: 800;
   box-shadow:
-    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.35),
-    inset 0 -6rpx 12rpx rgba(8, 122, 73, 0.18),
-    var(--shadow-button-green, 0 10rpx 20rpx rgba(21, 154, 91, 0.24));
+    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.58),
+    inset 0 -6rpx 12rpx rgba(40, 185, 120, 0.08),
+    var(--shadow-button-green, 0 8rpx 16rpx rgba(40, 185, 120, 0.16));
 }
 
 .secondary-button {
@@ -102,13 +97,13 @@ button::after {
   justify-content: center;
   border-radius: 999rpx;
   border: 4rpx solid rgba(255, 255, 255, 0.82);
-  background: linear-gradient(180deg, #ffad96 0%, #ff8d76 54%, #e85242 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, var(--coral-bg, #FFECE6) 100%);
+  color: var(--coral-deep, #C94238);
   font-size: 30rpx;
   font-weight: 800;
   box-shadow:
-    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.28),
-    0 10rpx 20rpx rgba(232, 82, 66, 0.22);
+    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.52),
+    0 8rpx 16rpx rgba(243, 108, 91, 0.14);
 }
 
 .field {

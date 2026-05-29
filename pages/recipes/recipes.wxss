@@ -170,19 +170,26 @@
   justify-content: center;
   border: 3rpx solid rgba(255, 255, 255, 0.86);
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #fff9ea 100%);
-  color: var(--text-sub, #6d7e76);
+  background: #ffffff;
+  color: var(--ice-ink, #1F6D89);
   font-size: 27rpx;
   font-weight: 800;
   box-shadow: 0 8rpx 16rpx rgba(82, 124, 94, 0.08);
 }
 
 .recipe-tab.active {
-  background: linear-gradient(180deg, #ffe7a9 0%, var(--honey-500, #ffb23e) 55%, #ee8d23 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, var(--honey-soft, #FFE7B2) 0%, var(--honey-mid, #FFC76B) 100%);
+  color: #8A520E;
   box-shadow:
-    inset 0 4rpx 8rpx rgba(255, 255, 255, 0.32),
+    inset 0 4rpx 8rpx rgba(255, 255, 255, 0.42),
     var(--shadow-button-honey);
+}
+
+.recipe-tab.active:last-child {
+  border-color: rgba(169, 221, 241, 0.72);
+  background: #ffffff;
+  color: var(--ice-ink, #1F6D89);
+  box-shadow: 0 8rpx 16rpx rgba(58, 175, 216, 0.10);
 }
 
 .record-entry {
@@ -394,12 +401,8 @@
 }
 
 .recipe-save.saved {
-  background: linear-gradient(
-    180deg,
-    var(--ai-lilac-bg, #F2EFFF) 0%,
-    var(--ai-300, #d8cffb) 100%
-  );
-  color: var(--ai-lilac-deep, #5D46A3);
+  background: var(--honey-bg, #FFF5DC);
+  color: var(--honey-deep, #B96A12);
 }
 
 .recipe-title-group {
@@ -530,7 +533,7 @@
   border: 4rpx solid rgba(255, 255, 255, 0.88);
   border-radius: 42rpx;
   background: linear-gradient(180deg, var(--cream-surface, #fffef8) 0%, var(--cream-bg, #fff6e8) 100%);
-  box-shadow: 0 18rpx 54rpx rgba(31, 45, 42, 0.18);
+  box-shadow: 0 18rpx 46rpx rgba(31, 45, 42, 0.14);
 }
 
 .detail-image {
@@ -577,12 +580,8 @@
 }
 
 .detail-save.saved {
-  background: linear-gradient(
-    180deg,
-    var(--ai-lilac-bg, #F2EFFF) 0%,
-    var(--ai-300, #d8cffb) 100%
-  );
-  color: var(--ai-lilac-deep, #5D46A3);
+  background: var(--honey-bg, #FFF5DC);
+  color: var(--honey-deep, #B96A12);
 }
 
 .detail-meta {
@@ -632,7 +631,7 @@
   overflow-y: auto;
   border: 4rpx solid rgba(255, 255, 255, 0.88);
   background: linear-gradient(180deg, var(--cream-surface, #fffef8) 0%, var(--cream-bg, #fff6e8) 100%);
-  box-shadow: 0 -14rpx 44rpx rgba(31, 45, 42, 0.14);
+  box-shadow: 0 -14rpx 38rpx rgba(31, 45, 42, 0.12);
 }
 
 .picker-desc {
@@ -826,8 +825,8 @@
 }
 
 .pot-chip.manual {
-  background: linear-gradient(180deg, var(--honey-100, #fff4d7) 0%, var(--honey-300, #ffd68c) 100%);
-  color: var(--honey-700, #c97814);
+  background: linear-gradient(180deg, var(--honey-bg, #FFF5DC) 0%, var(--honey-soft, #FFE7B2) 100%);
+  color: var(--honey-deep, #B96A12);
 }
 
 .pot-chip > text:first-child {
@@ -877,11 +876,11 @@
   padding: 14rpx 18rpx;
   border: 3rpx solid rgba(255, 255, 255, 0.86);
   border-radius: 26rpx;
-  background: linear-gradient(180deg, var(--honey-100, #fff4d7) 0%, var(--honey-300, #ffd68c) 100%);
-  color: var(--honey-700, #c97814);
+  background: linear-gradient(180deg, var(--honey-bg, #FFF5DC) 0%, var(--honey-soft, #FFE7B2) 100%);
+  color: var(--honey-deep, #B96A12);
   font-size: 25rpx;
   font-weight: 800;
-  box-shadow: 0 10rpx 20rpx rgba(255, 177, 61, 0.14);
+  box-shadow: 0 8rpx 16rpx rgba(255, 178, 62, 0.12);
 }
 
 .picker-add-manual text:first-child {
@@ -1015,9 +1014,11 @@
 
 .picker-button.primary {
   border: 4rpx solid rgba(255, 255, 255, 0.82);
-  background: linear-gradient(180deg, #7edfa7 0%, var(--mint-500, #21a86b) 50%, var(--mint-700, #087a49) 100%);
-  color: #ffffff;
-  box-shadow: var(--shadow-button-green);
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-mint-soft, #EAF8EE) 100%);
+  color: var(--brand-mint-deep, #087A49);
+  box-shadow:
+    inset 0 4rpx 10rpx rgba(255, 255, 255, 0.56),
+    var(--shadow-button-green);
 }
 
 .picker-button.disabled {
@@ -1033,7 +1034,7 @@
   border: 4rpx solid rgba(255, 255, 255, 0.9);
   border-radius: 38rpx;
   background: linear-gradient(180deg, var(--cream-surface, #fffef8) 0%, var(--cream-bg, #fff6e8) 100%);
-  box-shadow: 0 18rpx 54rpx rgba(31, 45, 42, 0.18);
+  box-shadow: 0 18rpx 46rpx rgba(31, 45, 42, 0.14);
 }
 
 .city-input {
@@ -1071,9 +1072,11 @@
 }
 
 .city-button.primary {
-  background: linear-gradient(180deg, #7edfa7 0%, var(--mint-500, #21a86b) 50%, var(--mint-700, #087a49) 100%);
-  color: #ffffff;
-  box-shadow: var(--shadow-button-green);
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-mint-soft, #EAF8EE) 100%);
+  color: var(--brand-mint-deep, #087A49);
+  box-shadow:
+    inset 0 4rpx 10rpx rgba(255, 255, 255, 0.56),
+    var(--shadow-button-green);
 }
 
 .record-panel {
@@ -1087,7 +1090,7 @@
   border: 4rpx solid rgba(255, 255, 255, 0.9);
   border-radius: 38rpx;
   background: linear-gradient(180deg, var(--cream-surface, #fffef8) 0%, var(--cream-bg, #fff6e8) 100%);
-  box-shadow: 0 18rpx 54rpx rgba(31, 45, 42, 0.18);
+  box-shadow: 0 18rpx 46rpx rgba(31, 45, 42, 0.14);
 }
 
 .record-empty {

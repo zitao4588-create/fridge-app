@@ -51,16 +51,11 @@
 .btn-gummy-green {
   border: 4rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 28rpx;
-  background: linear-gradient(
-    180deg,
-    #7edfa7 0%,
-    var(--mint-500, #21a86b) 50%,
-    var(--mint-700, #087a49) 100%
-  );
-  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-mint-soft, #EAF8EE) 100%);
+  color: var(--brand-mint-deep, #087A49);
   box-shadow:
-    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.35),
-    inset 0 -6rpx 12rpx rgba(8, 122, 73, 0.18),
+    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.58),
+    inset 0 -6rpx 12rpx rgba(40, 185, 120, 0.08),
     var(--shadow-button-green);
 }
 
@@ -68,11 +63,11 @@
 .btn-gummy-honey {
   border: 4rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 28rpx;
-  background: linear-gradient(180deg, #ffe7a9 0%, var(--honey-500, #ffb23e) 55%, #ee8d23 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, var(--honey-soft, #FFE7B2) 0%, var(--honey-mid, #FFC76B) 100%);
+  color: #8A520E;
   box-shadow:
-    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.35),
-    inset 0 -6rpx 12rpx rgba(200, 111, 19, 0.16),
+    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.42),
+    inset 0 -6rpx 12rpx rgba(185, 106, 18, 0.08),
     var(--shadow-button-honey);
 }
 
@@ -88,11 +83,11 @@
 .btn-danger {
   border: 4rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 28rpx;
-  background: linear-gradient(180deg, #ffad96 0%, #ff8d76 54%, #e85242 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, var(--coral-bg, #FFECE6) 100%);
+  color: var(--coral-deep, #C94238);
   box-shadow:
-    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.28),
-    0 10rpx 20rpx rgba(232, 82, 66, 0.22);
+    inset 0 5rpx 10rpx rgba(255, 255, 255, 0.52),
+    0 8rpx 16rpx rgba(243, 108, 91, 0.14);
 }
 
 .tag,

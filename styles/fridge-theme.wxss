@@ -6,7 +6,7 @@
     linear-gradient(180deg, var(--ice-50, #f5fcff) 0%, var(--ice-100, #e4f7ff) 100%);
   box-shadow:
     inset 0 10rpx 20rpx rgba(255, 255, 255, 0.94),
-    inset 0 -16rpx 28rpx rgba(56, 166, 215, 0.16),
+    inset 0 -16rpx 28rpx rgba(58, 175, 216, 0.12),
     var(--shadow-ice);
 }
 
@@ -32,7 +32,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(199, 237, 252, 0.48));
   box-shadow:
     inset 0 6rpx 16rpx rgba(255, 255, 255, 0.94),
-    0 10rpx 24rpx rgba(56, 166, 215, 0.14);
+    0 10rpx 22rpx rgba(58, 175, 216, 0.10);
 }
 
 .fridge-glass-line {
@@ -55,7 +55,7 @@
   background: linear-gradient(180deg, #f7fff8 0%, var(--mint-200, #ccefd9) 100%);
   box-shadow:
     inset 0 5rpx 10rpx rgba(255, 255, 255, 0.86),
-    0 8rpx 18rpx rgba(33, 168, 107, 0.16);
+    0 8rpx 16rpx rgba(40, 185, 120, 0.12);
 }
 
 .fridge-mascot::before {

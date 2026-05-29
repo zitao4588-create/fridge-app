@@ -2625,3 +2625,69 @@ type FridgeItem = {
 
 - 本轮没有修改数据库字段、云函数接口、业务流程、页面入口或核心逻辑。
 - 不要提交 `/private/tmp` 下的预览二维码、预览信息和临时自动化目录。
+
+## 2026-05-30 按钮配色柔化微调收尾
+
+本轮完成：
+
+- 按用户要求只做配色微调，不改功能、不改 JS、不改 WXML、不改图片、不改布局结构。
+- 大面积按钮从深色实心渐变调整为浅底深字，降低橙色、绿色、蓝色按钮大面积出现时的突兀感。
+- `styles/tokens.wxss` 新增并接入更柔和的语义变量：
+  - `--brand-mint`
+  - `--brand-mint-deep`
+  - `--brand-mint-soft`
+  - `--ice-bg`
+  - `--ice-soft`
+  - `--ice-mid`
+  - `--ice-strong`
+  - `--ice-ink`
+  - `--honey-bg`
+  - `--honey-soft`
+  - `--honey-mid`
+  - `--honey`
+  - `--honey-deep`
+  - `--coral-bg`
+  - `--coral`
+  - `--coral-deep`
+- 首页“按分区添加”改为浅蜂蜜渐变 + 橙棕字。
+- 首页“智能录入”改为浅冰蓝渐变 + 深蓝字。
+- 搜索按钮保留绿色，但去掉深绿收尾。
+- 首页分区加号、分区添加弹窗按钮、分区配置保存按钮整体变柔和。
+- 日历选中日期、临期统计、开饭雷达优先处理区、查看做法按钮和步骤编号降低饱和度。
+- AI 菜谱页“菜谱盲盒”改为浅蜂蜜软糖感，“我来选食材”选中态改为白底 / 冰蓝边 / 深蓝字。
+- 收藏按钮未收藏保持淡紫，已收藏改为浅蜂蜜底 + 橙棕字。
+- 大按钮阴影和卡片阴影整体降低，大按钮阴影透明度控制在约 `0.16` 以内。
+
+本轮修改文件：
+
+- `styles/tokens.wxss`
+- `app.wxss`
+- `styles/components.wxss`
+- `styles/fridge-theme.wxss`
+- `pages/index/index.wxss`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.wxss`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+
+当前还没解决的问题：
+
+- 本轮没有重新生成微信预览二维码，需要真机查看时再单独生成。
+- 柔化后是否足够“肉眼明显”，仍需要真机截图判断。
+
+下一步建议：
+
+- 真机重点看首页两个大入口、AI 菜谱页两个入口、日历选中日期和“查看做法”按钮是否更奶油、更统一。
+- 如果仍觉得按钮抢眼，下一轮继续只在 WXSS 内降低边框和阴影，不动业务逻辑。
+
+重要注意事项：
+
+- 本轮没有修改 JS、WXML、图片、数据库、云函数、业务流程、页面入口或核心逻辑。
+- BUG_NOTES 本轮不更新，因为没有新增报错或失败尝试。

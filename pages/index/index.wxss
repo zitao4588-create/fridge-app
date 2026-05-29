@@ -254,13 +254,13 @@
   justify-content: center;
   border: 3rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #7edfa7 0%, var(--mint-500, #21a86b) 50%, var(--mint-700, #087a49) 100%);
+  background: linear-gradient(180deg, #7EDDAA 0%, var(--brand-mint, #28B978) 100%);
   color: #ffffff;
   font-size: 25rpx;
   font-weight: 800;
   box-shadow:
     inset 0 3rpx 8rpx rgba(255, 255, 255, 0.32),
-    var(--shadow-button-green, 0 10rpx 20rpx rgba(21, 154, 91, 0.24));
+    var(--shadow-button-green, 0 8rpx 16rpx rgba(40, 185, 120, 0.16));
 }
 
 /* Add guide */
@@ -284,17 +284,24 @@
   border-radius: 30rpx;
   box-shadow:
     inset 0 5rpx 10rpx rgba(255, 255, 255, 0.35),
-    inset 0 -6rpx 12rpx rgba(120, 92, 60, 0.08),
-    0 10rpx 20rpx rgba(135, 105, 64, 0.12);
+    inset 0 -6rpx 12rpx rgba(120, 92, 60, 0.06),
+    0 8rpx 16rpx rgba(135, 105, 64, 0.10);
 }
 
 .decision-sign.known {
-  background: linear-gradient(180deg, #ffe7a9 0%, var(--honey-500, #ffb23e) 58%, #ee8d23 100%);
+  background: linear-gradient(180deg, var(--honey-soft, #FFE7B2) 0%, var(--honey-mid, #FFC76B) 100%);
+  color: #8A520E;
 }
 
 .decision-sign.unknown {
-  background: linear-gradient(180deg, #ffffff 0%, var(--ice-100, #ddf4ff) 44%, var(--ice-200, #a9ddf1) 100%);
+  background: linear-gradient(180deg, var(--ice-bg, #F2FBFF) 0%, #BFE9F8 100%);
   color: var(--ice-700, #1f6d89);
+}
+
+.decision-sign.known .decision-title,
+.decision-sign.known .decision-desc,
+.decision-sign.known .decision-pointer {
+  color: #8A520E;
 }
 
 .decision-sign.unknown .decision-title,
@@ -699,13 +706,13 @@
   padding: 0 16rpx;
   border: 3rpx solid rgba(255, 255, 255, 0.72);
   border-radius: 999rpx;
-  background: linear-gradient(180deg, var(--ice-200, #a9ddf1) 0%, var(--ice-500, #2e9cc8) 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, var(--ice-bg, #F2FBFF) 0%, var(--ice-soft, #DDF4FF) 100%);
+  color: var(--ice-ink, #1F6D89);
   font-size: 22rpx;
   font-weight: 800;
   box-shadow:
-    inset 0 3rpx 6rpx rgba(255, 255, 255, 0.28),
-    0 8rpx 14rpx rgba(56, 166, 215, 0.18);
+    inset 0 3rpx 6rpx rgba(255, 255, 255, 0.56),
+    0 6rpx 12rpx rgba(58, 175, 216, 0.12);
 }
 
 .home-zone-add-mark {
@@ -717,12 +724,12 @@
   justify-content: center;
   border: 4rpx solid rgba(255, 255, 255, 0.84);
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #ffe7a9 0%, var(--honey-500, #ffb23e) 56%, #ee8d23 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, var(--honey-soft, #FFE7B2) 0%, var(--honey-mid, #FFC76B) 100%);
+  color: #8A520E;
   font-size: 40rpx;
   font-weight: 800;
   box-shadow:
-    inset 0 3rpx 8rpx rgba(255, 255, 255, 0.34),
+    inset 0 3rpx 8rpx rgba(255, 255, 255, 0.42),
     var(--shadow-button-honey);
 }
 
@@ -998,15 +1005,15 @@
 }
 
 .add-action-panel .zone-add-card.photo {
-  background: linear-gradient(180deg, #7edfa7 0%, var(--mint-500, #21a86b) 52%, var(--mint-700, #087a49) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-mint-soft, #EAF8EE) 100%);
 }
 
 .add-action-panel .zone-add-card.package {
-  background: linear-gradient(180deg, #ffe7a9 0%, var(--honey-500, #ffb23e) 58%, #ee8d23 100%);
+  background: linear-gradient(180deg, var(--honey-bg, #FFF5DC) 0%, var(--honey-soft, #FFE7B2) 100%);
 }
 
 .add-action-panel .zone-add-card.manual {
-  background: linear-gradient(180deg, #ffffff 0%, #e4f7ff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--ice-bg, #F2FBFF) 100%);
 }
 
 .zone-add-icon {
@@ -1057,7 +1064,7 @@
 
 .zone-add-card.photo .zone-add-title,
 .zone-add-card.package .zone-add-title {
-  color: #ffffff;
+  color: var(--text-main, #253730);
 }
 
 .zone-add-desc {
@@ -1070,7 +1077,7 @@
 
 .zone-add-card.photo .zone-add-desc,
 .zone-add-card.package .zone-add-desc {
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--text-sub, #6f7c74);
 }
 
 .zone-add-arrow {
@@ -1091,7 +1098,7 @@
 /* Zone and stat lists */
 .zone-panel-empty {
   padding: 44rpx 28rpx;
-  border: 2rpx dashed rgba(21, 154, 91, 0.18);
+  border: 2rpx dashed rgba(234, 219, 196, 0.9);
   border-radius: 28rpx;
   background: rgba(255, 254, 248, 0.78);
   text-align: center;
@@ -1468,8 +1475,8 @@
 }
 
 .zone-config-show.active {
-  background: linear-gradient(180deg, #7edfa7 0%, var(--mint-500, #21a86b) 50%, var(--mint-700, #087a49) 100%);
-  color: #ffffff;
+  background: var(--brand-mint-soft, #EAF8EE);
+  color: var(--brand-mint-deep, #087A49);
 }
 
 .zone-config-delete {
@@ -1489,13 +1496,15 @@
   box-sizing: border-box;
   border: 4rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #7edfa7 0%, var(--mint-500, #21a86b) 50%, var(--mint-700, #087a49) 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-mint-soft, #EAF8EE) 100%);
+  color: var(--brand-mint-deep, #087A49);
   font-size: 28rpx;
   font-weight: 800;
   line-height: 1;
   text-align: center;
-  box-shadow: var(--shadow-button-green);
+  box-shadow:
+    inset 0 4rpx 10rpx rgba(255, 255, 255, 0.56),
+    var(--shadow-button-green);
 }
 
 .zone-config-save.loading {
@@ -1528,7 +1537,7 @@
   bottom: 42rpx;
   left: 24rpx;
   padding: 18rpx 22rpx;
-  border: 2rpx solid rgba(33, 168, 107, 0.22);
+  border: 2rpx solid rgba(40, 185, 120, 0.16);
   border-radius: 28rpx;
   background: var(--mint-50, #eaf8ee);
   color: var(--mint-700, #087a49);

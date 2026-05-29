@@ -6,33 +6,54 @@ page {
   --cream-surface-2: #ffffff;
   --cream-line: #eadbc4;
 
+  /* Semantic soft accents */
+  --brand-mint: #28B978;
+  --brand-mint-deep: #087A49;
+  --brand-mint-soft: #EAF8EE;
+
+  --ice-bg: #F2FBFF;
+  --ice-soft: #DDF4FF;
+  --ice-mid: #A9DDF1;
+  --ice-strong: #3AAFD8;
+  --ice-ink: #1F6D89;
+
+  --honey-bg: #FFF5DC;
+  --honey-soft: #FFE7B2;
+  --honey-mid: #FFC76B;
+  --honey: #FFB23E;
+  --honey-deep: #B96A12;
+
+  --coral-bg: #FFECE6;
+  --coral: #F36C5B;
+  --coral-deep: #C94238;
+
   /* Brand mint */
-  --mint-50: #eaf8ee;
-  --mint-100: #eaf8ee;
+  --mint-50: var(--brand-mint-soft);
+  --mint-100: var(--brand-mint-soft);
   --mint-200: #ccefd9;
   --mint-300: #8fdcb3;
-  --mint-500: #21a86b;
-  --mint-600: #087a49;
-  --mint-700: #087a49;
+  --mint-500: var(--brand-mint);
+  --mint-600: var(--brand-mint-deep);
+  --mint-700: var(--brand-mint-deep);
 
   /* Ice fridge */
-  --ice-50: #f5fcff;
-  --ice-100: #ddf4ff;
-  --ice-200: #a9ddf1;
+  --ice-50: var(--ice-bg);
+  --ice-100: var(--ice-soft);
+  --ice-200: var(--ice-mid);
   --ice-300: #78c5e2;
-  --ice-500: #2e9cc8;
-  --ice-700: #1f6d89;
+  --ice-500: var(--ice-strong);
+  --ice-700: var(--ice-ink);
 
   /* Honey CTA */
-  --honey-100: #fff4d7;
-  --honey-300: #ffd68c;
-  --honey-500: #ffb23e;
-  --honey-700: #c97814;
+  --honey-100: var(--honey-bg);
+  --honey-300: var(--honey-mid);
+  --honey-500: var(--honey);
+  --honey-700: var(--honey-deep);
 
   /* Coral danger */
-  --coral-100: #ffece6;
-  --coral-400: #f36c5b;
-  --coral-600: #c94238;
+  --coral-100: var(--coral-bg);
+  --coral-400: var(--coral);
+  --coral-600: var(--coral-deep);
 
   /* AI and saved recipes */
   --ai-lilac-bg: #F2EFFF;
@@ -50,15 +71,15 @@ page {
   --text-inverse: #ffffff;
 
   /* Material shadows */
-  --shadow-soft: 0 10rpx 24rpx rgba(135, 105, 64, 0.09);
-  --shadow-card: 0 12rpx 28rpx rgba(135, 105, 64, 0.10);
-  --shadow-toy: 0 16rpx 34rpx rgba(135, 105, 64, 0.14);
-  --shadow-float: 0 22rpx 52rpx rgba(37, 55, 48, 0.16);
-  --shadow-ice: 0 18rpx 38rpx rgba(46, 156, 200, 0.18);
-  --shadow-button-green: 0 10rpx 20rpx rgba(33, 168, 107, 0.22);
-  --shadow-button-honey: 0 10rpx 22rpx rgba(255, 178, 62, 0.26);
-  --shadow-button-ai: 0 10rpx 22rpx rgba(124, 98, 199, 0.18);
-  --shadow-warning: 0 8rpx 18rpx rgba(255, 178, 62, 0.18);
+  --shadow-soft: 0 10rpx 22rpx rgba(135, 105, 64, 0.08);
+  --shadow-card: 0 12rpx 26rpx rgba(135, 105, 64, 0.09);
+  --shadow-toy: 0 16rpx 32rpx rgba(135, 105, 64, 0.10);
+  --shadow-float: 0 20rpx 46rpx rgba(37, 55, 48, 0.12);
+  --shadow-ice: 0 14rpx 30rpx rgba(58, 175, 216, 0.12);
+  --shadow-button-green: 0 8rpx 16rpx rgba(40, 185, 120, 0.16);
+  --shadow-button-honey: 0 8rpx 16rpx rgba(255, 178, 62, 0.16);
+  --shadow-button-ai: 0 8rpx 16rpx rgba(124, 98, 199, 0.14);
+  --shadow-warning: 0 6rpx 14rpx rgba(255, 178, 62, 0.14);
 
   /* Rounded toy geometry */
   --radius-xs: 12rpx;
