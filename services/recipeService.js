@@ -1,44 +1,5 @@
 const { getDaysUntil, getTodayString } = require('../utils/date')
-
-const DEFAULT_RECIPE_IMAGE = '/images/recipe/default.png'
-
-const RECIPE_IMAGE_MAP = {
-  'tomato-egg': '/images/recipe/tomato-egg.png',
-  'vegetable-tofu-soup': '/images/recipe/vegetable-tofu-soup.png',
-  'egg-fried-rice': '/images/recipe/egg-fried-rice.png',
-  'warm-noodle': '/images/recipe/warm-noodle.png',
-  'yogurt-fruit-bowl': '/images/recipe/yogurt-fruit-bowl.png',
-  'milk-oat-cup': '/images/recipe/milk-oat-cup.png',
-  'stir-fry-greens': '/images/recipe/stir-fry-greens.png',
-  'cucumber-egg-salad': '/images/recipe/cucumber-egg-salad.png',
-  'blind-rice-bowl': '/images/recipe/blind-rice-bowl.png',
-  'blind-soup': '/images/recipe/blind-soup.png',
-  'blind-sandwich': '/images/recipe/blind-sandwich.png',
-  'seasonal-mung-bean-soup': '/images/recipe/blind-soup.png',
-  'seasonal-lotus-pear-soup': '/images/recipe/blind-soup.png',
-  'seasonal-yam-congee': '/images/recipe/warm-noodle.png',
-  'seasonal-tomato-tofu-soup': '/images/recipe/vegetable-tofu-soup.png',
-  'seasonal-ginger-noodle': '/images/recipe/warm-noodle.png',
-  'tipsy-peach-tea': '/images/recipe/tipsy-peach-tea.png',
-  'tipsy-citrus-soda': '/images/recipe/tipsy-citrus-soda.png',
-  'healthy-apple-yogurt': '/images/recipe/healthy-apple-yogurt.png',
-  'healthy-banana-milk': '/images/recipe/healthy-banana-milk.png',
-}
-
-const RECIPE_IMAGE_KEYWORDS = [
-  { keywords: ['虾', '海鲜', '鲫鱼', '鱼', '贝', '蛤'], image: '/images/recipe/shrimp-broccoli.png' },
-  { keywords: ['汤', '羹', '煲', '炖'], image: '/images/recipe/blind-soup.png' },
-  { keywords: ['粥', '小米', '燕麦'], image: '/images/recipe/warm-noodle.png' },
-  { keywords: ['面', '粉', '米线'], image: '/images/recipe/warm-noodle.png' },
-  { keywords: ['豆腐', '青菜', '菠菜'], image: '/images/recipe/vegetable-tofu-soup.png' },
-  { keywords: ['番茄', '西红柿'], image: '/images/recipe/tomato-egg.png' },
-  { keywords: ['鸡蛋', '滑蛋', '蛋'], image: '/images/recipe/egg-fried-rice.png' },
-  { keywords: ['饭', '米饭', '焖饭'], image: '/images/recipe/blind-rice-bowl.png' },
-  { keywords: ['黄瓜', '凉拌', '沙拉'], image: '/images/recipe/cucumber-egg-salad.png' },
-  { keywords: ['苹果', '香蕉', '水果', '酸奶'], image: '/images/recipe/yogurt-fruit-bowl.png' },
-  { keywords: ['菌', '菇', '木耳'], image: '/images/recipe/mushroom-soup.png' },
-  { keywords: ['菜', '笋', '瓜', '藕', '萝卜'], image: '/images/recipe/stir-fry-greens.png' },
-]
+const { getRecipeVisual } = require('../utils/visualAssets')
 
 const AI_RECIPE_LIBRARY = [
   {
@@ -164,8 +125,14 @@ const BLIND_BOX_RECIPES = [
     timeCost: '35 分钟',
     difficulty: '简单',
     tags: ['应季', '清爽', '少油'],
-    steps: ['绿豆提前浸泡后冲洗干净。', '加清水煮至绿豆开花。', '加入百合和少量冰糖，煮到汤色清亮后放温食用。'],
-    safetyNote: '普通食养灵感，不替代医疗或营养治疗建议；血糖控制人群可不放糖。',
+    steps: [
+      '绿豆提前浸泡后冲洗干净。',
+      '加清水煮至绿豆开花。',
+      '加入百合和少量冰糖，煮到汤色清亮后放温食用。',
+    ],
+    safetyNote:
+      '普通食养灵感，不替代医疗或营养治疗建议；' +
+      '血糖控制人群可不放糖。',
   },
   {
     id: 'seasonal-lotus-pear-soup',
@@ -175,7 +142,11 @@ const BLIND_BOX_RECIPES = [
     timeCost: '40 分钟',
     difficulty: '简单',
     tags: ['应季', '温润', '热汤'],
-    steps: ['莲藕去皮切片，雪梨去核切块。', '锅中加水放入莲藕和红枣，小火煮 25 分钟。', '加入雪梨再煮 10 分钟，温热饮用。'],
+    steps: [
+      '莲藕去皮切片，雪梨去核切块。',
+      '锅中加水放入莲藕和红枣，小火煮 25 分钟。',
+      '加入雪梨再煮 10 分钟，温热饮用。',
+    ],
     safetyNote: '普通家常饮食建议，不替代医疗建议。',
   },
   {
@@ -186,7 +157,11 @@ const BLIND_BOX_RECIPES = [
     timeCost: '30 分钟',
     difficulty: '简单',
     tags: ['应季', '暖胃', '主食'],
-    steps: ['小米淘洗后加水煮开。', '山药和南瓜切小块，转小火同煮。', '煮到粥体绵软后关火，放温食用。'],
+    steps: [
+      '小米淘洗后加水煮开。',
+      '山药和南瓜切小块，转小火同煮。',
+      '煮到粥体绵软后关火，放温食用。',
+    ],
     safetyNote: '普通食谱建议，不替代医疗或营养治疗建议。',
   },
   {
@@ -197,7 +172,11 @@ const BLIND_BOX_RECIPES = [
     timeCost: '18 分钟',
     difficulty: '简单',
     tags: ['应季', '清淡', '低负担'],
-    steps: ['番茄切块，豆腐切小块。', '番茄少油炒出汁后加水煮开。', '放入豆腐和青菜，煮熟后少量调味。'],
+    steps: [
+      '番茄切块，豆腐切小块。',
+      '番茄少油炒出汁后加水煮开。',
+      '放入豆腐和青菜，煮熟后少量调味。',
+    ],
     safetyNote: '普通家常菜建议，不替代医疗建议。',
   },
   {
@@ -208,7 +187,11 @@ const BLIND_BOX_RECIPES = [
     timeCost: '15 分钟',
     difficulty: '简单',
     tags: ['应季', '热食', '暖胃'],
-    steps: ['清水煮开后放入少量姜丝。', '下面条煮到八成熟，再加入青菜。', '用盐或少量生抽调味，趁热食用。'],
+    steps: [
+      '清水煮开后放入少量姜丝。',
+      '下面条煮到八成熟，再加入青菜。',
+      '用盐或少量生抽调味，趁热食用。',
+    ],
     safetyNote: '普通家常热食建议，不替代医疗建议。',
   },
 ]
@@ -222,7 +205,11 @@ const TIPSY_BOX = [
     timeCost: '6 分钟',
     difficulty: '简单',
     tags: ['微醺', '清爽'],
-    steps: ['茶汤冷却', '加入冰块和气泡水', '最后加入少量低度酒并轻轻搅匀'],
+    steps: [
+      '茶汤冷却',
+      '加入冰块和气泡水',
+      '最后加入少量低度酒并轻轻搅匀',
+    ],
     safetyNote: '酒精饮品仅限成年人，适量饮用，饮酒后不要驾驶。',
   },
   {
@@ -317,7 +304,8 @@ function getWeatherProfile(season) {
       weather: '晴热',
       temperature: 31,
       humidity: 66,
-      healthTip: '气温偏高，饮食可以清爽些，优先选择少油、补水感强的搭配。',
+      healthTip:
+        '气温偏高，饮食可以清爽些，优先选择少油、补水感强的搭配。',
       searchInsight: '搜索趋势偏向凉拌、清炒、酸奶水果和气泡饮品。',
     },
     秋季: {
@@ -344,10 +332,14 @@ function buildRadarDietPrompt(context) {
     '你是冰箱雷达的饮食建议助手。',
     '请结合中医饮食理论，但不要做医疗诊断或治疗承诺。',
     `所在城市：${context.city || '未知'}。`,
-    `今日节气：${context.solarTermName || '未知'}（${context.solarTermHint || '节气信息未知'}）。`,
+    `今日节气：${context.solarTermName || '未知'}（${
+      context.solarTermHint || '节气信息未知'
+    }）。`,
     `今日季节：${context.season || '未知'}。`,
-    `气候信息：${context.weather || '未知'}，${context.temperature || '--'}℃，湿度 ${context.humidity || '--'}%。`,
-    '请给出一句适合今天气候和地域特点的家常饮食建议，要求温和、具体，不要引用库存或选中食材。',
+    `气候信息：${context.weather || '未知'}，` +
+      `${context.temperature || '--'}℃，湿度 ${context.humidity || '--'}%。`,
+    '请给出一句适合今天气候和地域特点的家常饮食建议，' +
+      '要求温和、具体，不要引用库存或选中食材。',
   ].join('\n')
 }
 
@@ -364,18 +356,30 @@ function buildRadarDietAdvice(context) {
     : ''
 
   if (humidity >= 70) {
-    return `${termText}${mealText}建议走健脾祛湿路线，优先蒸煮、汤菜、豆腐和绿叶菜，少油少辣，避开厚重煎炸。`
+    return (
+      `${termText}${mealText}建议走健脾祛湿路线，` +
+      '优先蒸煮、汤菜、豆腐和绿叶菜，少油少辣，避开厚重煎炸。'
+    )
   }
 
   if (humidity <= 45) {
-    return `${termText}${mealText}建议多一点汤水和润燥食材，选菌菇、瓜果、蒸菜或低盐蛋白，少煎烤辛辣。`
+    return (
+      `${termText}${mealText}建议多一点汤水和润燥食材，` +
+      '选菌菇、瓜果、蒸菜或低盐蛋白，少煎烤辛辣。'
+    )
   }
 
   if (temperature >= 28) {
-    return `${termText}${mealText}建议清热生津，主菜选蒸煮或快炒时蔬，搭配豆腐鱼虾，少放辣油和甜腻饮品。`
+    return (
+      `${termText}${mealText}建议清热生津，` +
+      '主菜选蒸煮或快炒时蔬，搭配豆腐鱼虾，少放辣油和甜腻饮品。'
+    )
   }
 
-  return `${termText}${mealText}建议做一顿轻负担家常菜，主菜选蒸煮或清炒，搭配绿叶菜和温和蛋白，口味别太重。`
+  return (
+    `${termText}${mealText}建议做一顿轻负担家常菜，` +
+    '主菜选蒸煮或清炒，搭配绿叶菜和温和蛋白，口味别太重。'
+  )
 }
 
 function getContextLabel(context) {
@@ -385,7 +389,11 @@ function getContextLabel(context) {
 
   const cityText = context.city ? `${context.city} · ` : ''
 
-  return `${cityText}${context.solarTermName || context.season || '今日'} · ${context.weather || '天气'} · ${context.temperature || '--'}℃ · 湿度 ${context.humidity || '--'}%`
+  return (
+    `${cityText}${context.solarTermName || context.season || '今日'} · ` +
+    `${context.weather || '天气'} · ${context.temperature || '--'}℃ · ` +
+    `湿度 ${context.humidity || '--'}%`
+  )
 }
 
 function getClimateRecipeScore(recipe, context) {
@@ -410,7 +418,10 @@ function getClimateRecipeScore(recipe, context) {
     score += 3
   }
 
-  if (temperature >= 28 && (tags.has('清爽') || tags.has('轻食') || tags.has('免开火'))) {
+  if (
+    temperature >= 28 &&
+    (tags.has('清爽') || tags.has('轻食') || tags.has('免开火'))
+  ) {
     score += 4
   }
 
@@ -418,7 +429,10 @@ function getClimateRecipeScore(recipe, context) {
     score += 4
   }
 
-  if (humidity >= 65 && (tags.has('清爽') || tags.has('少油') || tags.has('低负担'))) {
+  if (
+    humidity >= 65 &&
+    (tags.has('清爽') || tags.has('少油') || tags.has('低负担'))
+  ) {
     score += 3
   }
 
@@ -448,7 +462,10 @@ function buildContextRecipeReason(recipe, context) {
       ? `还能顺手用掉${recipe.priorityItems.map((item) => item.name).join('、')}。`
       : '适合作为今天的轻负担备选。'
 
-  return `结合${getContextLabel(context)}和雷达建议，${inventoryText}${missingText}推荐这道${recipe.title}，${priorityText}`
+  return (
+    `结合${getContextLabel(context)}和雷达建议，` +
+    `${inventoryText}${missingText}推荐这道${recipe.title}，${priorityText}`
+  )
 }
 
 function buildSeasonalRecipeReason(recipe, context) {
@@ -456,7 +473,10 @@ function buildSeasonalRecipeReason(recipe, context) {
     return recipe.reason || '根据今日气候推荐的应季家常食谱。'
   }
 
-  return `结合${getContextLabel(context)}，推荐这道${recipe.title}，适合作为今天的应季养生家常备选。`
+  return (
+    `结合${getContextLabel(context)}，推荐这道${recipe.title}，` +
+    '适合作为今天的应季养生家常备选。'
+  )
 }
 
 function buildSeasonalRecipeRecommendation(recipe, sourceType, context) {
@@ -467,7 +487,7 @@ function buildSeasonalRecipeRecommendation(recipe, sourceType, context) {
   return {
     id: recipe.id,
     title: recipe.title,
-    image: recipe.image || RECIPE_IMAGE_MAP[recipe.id] || DEFAULT_RECIPE_IMAGE,
+    image: getRecipeVisual(recipe),
     sourceType,
     reason: buildSeasonalRecipeReason(recipe, context),
     availableItems: [],
@@ -532,7 +552,9 @@ function getMockRecommendationContext(items) {
     mealTime,
     healthTip: weatherProfile.healthTip,
     searchInsight: weatherProfile.searchInsight,
-    summary: `${season}${mealTime}，${weatherProfile.temperature}℃，湿度 ${weatherProfile.humidity}%，适合做轻负担、步骤少的家常菜。`,
+    summary:
+      `${season}${mealTime}，${weatherProfile.temperature}℃，` +
+      `湿度 ${weatherProfile.humidity}%，适合做轻负担、步骤少的家常菜。`,
   }
 }
 
@@ -544,7 +566,10 @@ function normalizeIngredientText(value) {
   return normalizeText(value)
     .replace(/\s+/g, '')
     .replace(/临期|库存|现有|已有|新鲜|剩余/g, '')
-    .replace(/[0-9０-９]+(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺)?/gi, '')
+    .replace(
+      /[0-9０-９]+(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺)?/gi,
+      '',
+    )
     .replace(/适量|少许|少量|半个|半颗|一份|一小把|一把/g, '')
     .replace(/[()（）【】\[\]，,、:：；;]/g, '')
 }
@@ -553,32 +578,20 @@ function getCleanIngredientName(value) {
   return String(value || '')
     .replace(/[.。…]+$/g, '')
     .replace(/\s+/g, ' ')
-    .replace(/\s*[0-9０-９]+(?:\.\d+)?\s*(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺|条)/gi, '')
+    .replace(
+      /\s*[0-9０-９]+(?:\.\d+)?\s*(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺|条)/gi,
+      '',
+    )
     .replace(/\s*(?:各|约|大约|左右)\s*$/g, '')
     .replace(/[，,、:：；;]\s*$/g, '')
     .trim()
 }
 
 function getRecipeImage(recipe, id) {
-  if (recipe.image) {
-    return recipe.image
-  }
-
-  if (RECIPE_IMAGE_MAP[id]) {
-    return RECIPE_IMAGE_MAP[id]
-  }
-
-  const text = [
-    recipe.title,
-    ...(Array.isArray(recipe.ingredients) ? recipe.ingredients : []),
-    ...(Array.isArray(recipe.missingItems) ? recipe.missingItems : []),
-  ].join(' ')
-
-  const matched = RECIPE_IMAGE_KEYWORDS.find((entry) =>
-    entry.keywords.some((keyword) => text.includes(keyword)),
-  )
-
-  return matched ? matched.image : DEFAULT_RECIPE_IMAGE
+  return getRecipeVisual({
+    ...recipe,
+    id: id || (recipe && recipe.id),
+  })
 }
 
 function getItemKey(item) {
@@ -688,7 +701,7 @@ function matchRecipeToItems(recipe, items, sourceType, context) {
   return {
     id: recipe.id,
     title: recipe.title,
-    image: recipe.image || RECIPE_IMAGE_MAP[recipe.id] || DEFAULT_RECIPE_IMAGE,
+    image: getRecipeVisual(recipe),
     sourceType,
     reason,
     availableItems,
@@ -860,7 +873,9 @@ function getExpiryUsageRecommendations(items) {
     safetyTips: overdueItems.map((item) => ({
       id: getItemKey(item),
       name: item.name,
-      text: `${item.name}已过期，先检查气味、颜色、包装和保存状态；如有异常请直接丢弃，不建议作为菜谱原料。`,
+      text:
+        `${item.name}已过期，先检查气味、颜色、包装和保存状态；` +
+        '如有异常请直接丢弃，不建议作为菜谱原料。',
     })),
   }
 }
@@ -977,8 +992,12 @@ function getBlindBoxRecommendation(items, type, context) {
   const sortedRecipes = sortRecommendations(matchedRecipes)
   const topRecipes = sortedRecipes.slice(0, Math.min(2, sortedRecipes.length))
   const recipe =
-    topRecipes[getDailyIndex(topRecipes, `${type || 'blindBox'}-${context ? context.solarTermName : ''}`)]
-    || sortedRecipes[0]
+    topRecipes[
+      getDailyIndex(
+        topRecipes,
+        `${type || 'blindBox'}-${context ? context.solarTermName : ''}`,
+      )
+    ] || sortedRecipes[0]
 
   return applyRecommendationContext([recipe], context)[0]
 }

@@ -7,30 +7,7 @@ const {
 } = require('../../utils/constants')
 const { formatDate, getDaysUntil } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
-
-const CATEGORY_THUMB_CLASS = {
-  蔬菜: 'vegetable',
-  水果: 'fruit',
-  肉蛋: 'protein',
-  乳制品: 'dairy',
-  饮料: 'drink',
-  速冻: 'frozen',
-  调料: 'seasoning',
-  主食: 'staple',
-  其他: 'other',
-}
-
-const CATEGORY_ICON_MAP = {
-  蔬菜: '/images/foods/vegetable.png',
-  水果: '/images/foods/fruit.png',
-  肉蛋: '/images/foods/egg.png',
-  乳制品: '/images/foods/dairy.png',
-  饮料: '/images/foods/drink.png',
-  速冻: '/images/foods/dumpling.png',
-  调料: '/images/foods/seasoning.png',
-  主食: '/images/foods/rice.png',
-  其他: '/images/foods/default.png',
-}
+const { getIngredientVisual } = require('../../utils/visualAssets')
 
 function getZoneDefinition(key) {
   return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
@@ -74,19 +51,7 @@ function getExpiryTone(expireDate) {
 }
 
 function getFoodThumb(item) {
-  if (item.source === 'photo' && item.imageFileId) {
-    return {
-      type: 'photo',
-      image: item.imageFileId,
-      className: 'photo',
-    }
-  }
-
-  return {
-    type: 'icon',
-    image: CATEGORY_ICON_MAP[item.category] || CATEGORY_ICON_MAP.其他,
-    className: CATEGORY_THUMB_CLASS[item.category] || CATEGORY_THUMB_CLASS.其他,
-  }
+  return getIngredientVisual(item)
 }
 
 function buildZoneCategoryGroups(items) {
@@ -233,7 +198,8 @@ function buildSearchPanelData(keyword, items) {
   return {
     selectedStatType: 'search',
     statPanelTitle: '搜索结果',
-    statPanelSubtitle: `关键词：${String(keyword || '').trim()} · ${statPanelItems.length} 项食品`,
+    statPanelSubtitle:
+      `关键词：${String(keyword || '').trim()} · ${statPanelItems.length} 项食品`,
     statPanelItems,
     statPanelEmptyTitle: '没有找到相关食品',
     statPanelEmptyDesc: '换个食品名称试试。',
@@ -244,31 +210,35 @@ function buildHomeZones(items, configZones) {
   return buildZoneConfigDraft(configZones)
     .filter((zone) => zone.enabled)
     .map((zone) => {
-    const zoneItems = getZoneItems(items, zone)
-    const expiringSoon = zoneItems.filter((item) => {
-      const days = getDaysUntil(item.expireDate)
-      return days >= 0 && days <= 3
-    }).length
-    const overdue = zoneItems.filter(
-      (item) => getDaysUntil(item.expireDate) < 0,
-    ).length
-    const alertText = overdue
-      ? `${overdue} 已过期`
-      : expiringSoon
-        ? `${expiringSoon} 临期`
-        : '状态正常'
-    const alertClass = overdue ? 'danger' : expiringSoon ? 'warning' : 'normal'
+      const zoneItems = getZoneItems(items, zone)
+      const expiringSoon = zoneItems.filter((item) => {
+        const days = getDaysUntil(item.expireDate)
+        return days >= 0 && days <= 3
+      }).length
+      const overdue = zoneItems.filter(
+        (item) => getDaysUntil(item.expireDate) < 0,
+      ).length
+      const alertText = overdue
+        ? `${overdue} 已过期`
+        : expiringSoon
+          ? `${expiringSoon} 临期`
+          : '状态正常'
+      const alertClass = overdue
+        ? 'danger'
+        : expiringSoon
+          ? 'warning'
+          : 'normal'
 
-    return {
-      ...zone,
-      itemCount: zoneItems.length,
-      expiringSoon,
-      overdue,
-      items: zoneItems,
-      alertText,
-      alertClass,
-    }
-  })
+      return {
+        ...zone,
+        itemCount: zoneItems.length,
+        expiringSoon,
+        overdue,
+        items: zoneItems,
+        alertText,
+        alertClass,
+      }
+    })
 }
 
 Page({
@@ -413,7 +383,8 @@ Page({
       thumbType: thumb.type,
       thumbImage: thumb.image,
       thumbClass: thumb.className,
-      categoryIcon: thumb.image || CATEGORY_ICON_MAP.其他,
+      categoryIcon:
+        thumb.image || getIngredientVisual({ category: '其他' }).image,
     }
   },
 

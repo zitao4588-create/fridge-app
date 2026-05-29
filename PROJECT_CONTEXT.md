@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-05-29
+最后更新：2026-05-30
 
 ## 当前项目目标
 
@@ -2449,3 +2449,179 @@ type FridgeItem = {
 - 菜谱盲盒和我来选食材现在都走云端 AI；不要再恢复本地菜谱兜底。
 - 雷达建议是页面级气候食养建议，只应由城市 / 天气上下文刷新触发。
 - 腾讯位置服务 key、AI key 仍只能保存在云函数环境变量中，不允许写入前端或文档。
+
+## 2026-05-30 上线前视觉配色、配图系统与日历修复收尾
+
+本轮完成：
+
+- 完成 fridge-app 微信小程序上线前视觉配色实验，只做前端视觉、图片资产映射和轻量 view model 字段调整。
+- 重构 `styles/tokens.wxss` 配色 token：页面底色、奶油卡片、薄荷、冰蓝、蜂蜜、珊瑚、AI 淡紫和文本色已统一。
+- 保留旧变量别名，例如 `--mint-500`、`--honey-500`、`--ice-100`、`--color-primary` 等，避免老页面样式报错。
+- 调整首页、日历页、AI 菜谱页大面积绿色问题，改为奶油底 + 冰蓝 / 蜂蜜 / 淡紫分工。
+- 首页继续保留奶油玩具冰箱、玻璃抽屉、软糖按钮和冰箱吉祥物，不改成极简工具风。
+- 新增 `utils/visualAssets.js`，统一导出 `getIngredientVisual(item)` 和 `getRecipeVisual(recipe)`。
+- 首页食材缩略图改为通过 `getIngredientVisual` 生成 `thumbType`、`thumbImage`、`thumbClass`、`categoryIcon`。
+- 菜谱 service 图片 fallback 改为通过 `getRecipeVisual` 生成，不改数据库字段。
+- 新增食材和菜谱配图资产，并压缩新增 PNG，保证预览主包低于 2MB。
+- 修复微信开发者工具白屏问题：新增配图映射统一做字符串路径兜底，并改成更稳的写法。
+- 修复日历切到下个月再切回来后当天深色框落到 1 号的问题：切回当前月份时恢复选中今天。
+- 微信开发者工具自动化已确认首页能正常加载，日历切月回归通过。
+- 已生成本轮最新真机预览二维码：
+  - `/private/tmp/fridge-preview-color-refresh-calendar-fix-20260530.png`
+
+本轮修改文件：
+
+- `styles/tokens.wxss`
+- `styles/components.wxss`
+- `styles/fridge-theme.wxss`
+- `app.wxss`
+- `pages/index/index.js`
+- `pages/index/index.wxss`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.wxss`
+- `services/recipeService.js`
+- `utils/visualAssets.js`
+- `images/foods/*.png` 中本轮新增食材图
+- `images/recipe/*.png` 中本轮新增菜谱类型 / 食材族群图
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check app.js`
+- `node --check services/itemService.js`
+- `node --check services/parseService.js`
+- `node --check services/recipeService.js`
+- `node --check utils/visualAssets.js`
+- `node --check pages/index/index.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+- 微信开发者工具自动化首页 smoke test：
+  - `pages/index/index` 正常加载
+  - `exceptionCount: 0`
+  - dashboard 和分区可读取
+- 微信开发者工具自动化日历切月回归：
+  - 初始 `2026-05-30`
+  - 切到 `2026年6月` 后选中 `2026-06-01`
+  - 切回 `2026年5月` 后恢复选中 `2026-05-30`
+- 微信开发者工具 CLI 预览上传成功：
+  - 主包大小 `1,916,266 bytes`
+
+当前还没解决的问题：
+
+- 本轮是配色实验工作树，仍需要真机实际看首页、日历页、菜谱页的视觉效果和触控手感。
+- 新增配图已压缩以满足 2MB 主包限制，后续若继续增加图片，应优先考虑压缩、分包或云存储策略。
+- 日历日期事件口径仍保留全部到期食品；只有统计清单口径已按首页启用分区过滤。
+
+已尝试但失败 / 修正的方案：
+
+- 第一次预览上传失败，原因是新增图片后主包 `2082KB` 超过微信 2MB 限制；压缩新增 PNG 后预览成功。
+- `sips` 直接缩放 PNG 反而使透明 PNG 变大，已改用 Pillow 重新导出调色板 PNG。
+- 新增配图映射初版在微信开发者工具中触发路径参数类型错误，已改为统一字符串路径兜底。
+
+下一步建议：
+
+- 扫最新二维码真机检查首页食材卡图、分区玻璃抽屉、日历卡片、开饭雷达、AI 菜谱卡片和详情弹窗。
+- 若真机低端设备滚动或阴影有性能压力，再单独减少阴影层级和渐变复杂度。
+- 如继续扩展配图，先评估主包大小，避免再次超过 2MB。
+
+重要注意事项：
+
+- 本轮没有修改数据库字段、云函数接口、业务流程、页面入口或核心逻辑。
+- 不要把临时自动化目录 `/private/tmp/fridge-automator` 写入项目依赖。
+- 预览二维码和预览信息文件保留在 `/private/tmp`，不要提交到 Git。
+
+## 2026-05-30 UI 配色二次收敛、格式化与配图规则整理收尾
+
+本轮完成：
+
+- 按用户要求只做 UI 配色二次收敛、代码格式化和配图规则整理。
+- 将 `app.wxss`、`styles/tokens.wxss`、`styles/components.wxss`、`styles/fridge-theme.wxss`、`pages/index/index.js`、`services/recipeService.js` 展开为正常多行可读格式。
+- `styles/tokens.wxss` 新增 AI 淡紫变量：
+  - `--ai-lilac-bg: #F2EFFF`
+  - `--ai-lilac: #7C62C7`
+  - `--ai-lilac-deep: #5D46A3`
+- 继续保留奶油玩具冰箱风格，页面背景以奶油白为主，减少绿色面积。
+- 全局背景改为奶油底 + 少量冰蓝柔光 + 少量蜂蜜柔光。
+- 首页维持现有结构和强拟物冰箱，不推翻页面；搜索按钮继续绿色，“按分区添加”继续蜂蜜橙，“智能录入 / 不确定放哪”继续冰蓝。
+- 日历页维持冰蓝日历主体，开饭雷达继续奶油 + 蜂蜜语义。
+- AI 菜谱页收藏按钮改为 AI 淡紫，菜谱属性标签改为冰蓝，食材 chip 改为白底 / 冰蓝 / 蜂蜜为主，减少全绿色铺色。
+- `utils/visualAssets.js` 配图规则进一步整理，显式支持菜谱标题精确命中。
+- 首页 `getFoodThumb` 继续调用 `getIngredientVisual(item)`，菜谱 `getRecipeImage` 继续调用 `getRecipeVisual(recipe)`。
+- 确认只补通用系统资产，不继续增加随机图片。
+- 重新生成微信开发者工具真机预览二维码：
+  - `/private/tmp/fridge-preview-color-refresh-20260530-005453.png`
+
+本轮修改文件：
+
+- `app.wxss`
+- `styles/tokens.wxss`
+- `styles/components.wxss`
+- `styles/fridge-theme.wxss`
+- `pages/index/index.js`
+- `pages/index/index.wxss`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.wxss`
+- `services/recipeService.js`
+- `utils/visualAssets.js`
+- `images/foods/*.png` 中本轮通用系统食材图
+- `images/recipe/*.png` 中本轮通用菜谱类型 / 食材族群图
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check app.js`
+- `node --check services/itemService.js`
+- `node --check services/parseService.js`
+- `node --check services/recipeService.js`
+- `node --check pages/index/index.js`
+- `node --check pages/item-form/item-form.js`
+- `node --check pages/quick-add/quick-add.js`
+- `node --check pages/parse-confirm/parse-confirm.js`
+- `node --check pages/batch-parse-confirm/batch-parse-confirm.js`
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `node --check utils/visualAssets.js`
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+- 微信开发者工具 CLI 预览上传成功：
+  - 主包大小 `2,017,322 bytes`
+
+当前还没解决的问题：
+
+- 用户反馈二次收敛肉眼变化不明显；这是因为本轮按限制没有重做页面结构、布局、尺寸和核心视觉框架。
+- 若要做肉眼更明显的版本，下一轮应集中调整首页首屏 dashboard、冰箱分区卡、AI 菜谱卡片对比度和图片占比。
+- 新增图片仍让主包接近 2MB，需要继续控制后续图片增量。
+
+已尝试但失败 / 修正的方案：
+
+- 微信开发者工具 CLI 在普通沙盒内执行 `islogin` 时被本地端口权限拦截，报 `listen EPERM 127.0.0.1:3799`。
+- 改用用户已同意的开发者工具 `preview` 命令在授权环境中生成二维码，最终预览成功。
+
+下一步建议：
+
+- 真机扫码查看首页、日历页、AI 菜谱页，判断当前“二次收敛”是否足够。
+- 如果需要更明显的视觉提升，下一轮优先做首页和菜谱卡片的局部视觉强化，不动业务逻辑。
+- 继续观察主包大小，新增图片前先压缩或评估分包。
+
+重要注意事项：
+
+- 本轮没有修改数据库字段、云函数接口、业务流程、页面入口或核心逻辑。
+- 不要提交 `/private/tmp` 下的预览二维码、预览信息和临时自动化目录。

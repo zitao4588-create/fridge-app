@@ -1,53 +1,64 @@
 page {
   /* Scene */
-  --cream-bg: #fff4de;
-  --cream-bg-2: #fff9ea;
+  --cream-bg: #fff6e8;
+  --cream-bg-2: #fffaf0;
   --cream-surface: #fffef8;
-  --cream-line: #f1dec0;
+  --cream-surface-2: #ffffff;
+  --cream-line: #eadbc4;
 
   /* Brand mint */
-  --mint-50: #effcf3;
-  --mint-100: #ddf8e8;
-  --mint-200: #bdefd2;
-  --mint-300: #8fe1b3;
-  --mint-500: #35bf7a;
-  --mint-600: #159a5b;
+  --mint-50: #eaf8ee;
+  --mint-100: #eaf8ee;
+  --mint-200: #ccefd9;
+  --mint-300: #8fdcb3;
+  --mint-500: #21a86b;
+  --mint-600: #087a49;
   --mint-700: #087a49;
 
   /* Ice fridge */
   --ice-50: #f5fcff;
-  --ice-100: #e4f7ff;
-  --ice-200: #c7edfc;
-  --ice-300: #91d4ec;
-  --ice-500: #38a6d7;
-  --ice-700: #22789e;
+  --ice-100: #ddf4ff;
+  --ice-200: #a9ddf1;
+  --ice-300: #78c5e2;
+  --ice-500: #2e9cc8;
+  --ice-700: #1f6d89;
 
   /* Honey CTA */
-  --honey-100: #fff1c9;
-  --honey-300: #ffd16a;
-  --honey-500: #ffb13d;
-  --honey-700: #c86f13;
+  --honey-100: #fff4d7;
+  --honey-300: #ffd68c;
+  --honey-500: #ffb23e;
+  --honey-700: #c97814;
 
   /* Coral danger */
-  --coral-100: #ffe8df;
-  --coral-400: #ff8d76;
-  --coral-600: #e85242;
+  --coral-100: #ffece6;
+  --coral-400: #f36c5b;
+  --coral-600: #c94238;
+
+  /* AI and saved recipes */
+  --ai-lilac-bg: #F2EFFF;
+  --ai-lilac: #7C62C7;
+  --ai-lilac-deep: #5D46A3;
+  --ai-100: var(--ai-lilac-bg);
+  --ai-300: #d8cffb;
+  --ai-500: var(--ai-lilac);
+  --ai-700: var(--ai-lilac-deep);
 
   /* Text */
-  --text-main: #24352f;
-  --text-sub: #6d7e76;
-  --text-light: #a2b0aa;
+  --text-main: #253730;
+  --text-sub: #6f7c74;
+  --text-light: #9aa9a1;
   --text-inverse: #ffffff;
 
   /* Material shadows */
-  --shadow-soft: 0 10rpx 24rpx rgba(85, 106, 75, 0.10);
-  --shadow-card: 0 12rpx 28rpx rgba(82, 124, 94, 0.12);
-  --shadow-toy: 0 16rpx 34rpx rgba(82, 124, 94, 0.16);
-  --shadow-float: 0 22rpx 52rpx rgba(54, 76, 68, 0.18);
-  --shadow-ice: 0 18rpx 38rpx rgba(56, 166, 215, 0.20);
-  --shadow-button-green: 0 10rpx 20rpx rgba(21, 154, 91, 0.24);
-  --shadow-button-honey: 0 10rpx 22rpx rgba(255, 177, 61, 0.28);
-  --shadow-warning: 0 8rpx 18rpx rgba(255, 177, 61, 0.20);
+  --shadow-soft: 0 10rpx 24rpx rgba(135, 105, 64, 0.09);
+  --shadow-card: 0 12rpx 28rpx rgba(135, 105, 64, 0.10);
+  --shadow-toy: 0 16rpx 34rpx rgba(135, 105, 64, 0.14);
+  --shadow-float: 0 22rpx 52rpx rgba(37, 55, 48, 0.16);
+  --shadow-ice: 0 18rpx 38rpx rgba(46, 156, 200, 0.18);
+  --shadow-button-green: 0 10rpx 20rpx rgba(33, 168, 107, 0.22);
+  --shadow-button-honey: 0 10rpx 22rpx rgba(255, 178, 62, 0.26);
+  --shadow-button-ai: 0 10rpx 22rpx rgba(124, 98, 199, 0.18);
+  --shadow-warning: 0 8rpx 18rpx rgba(255, 178, 62, 0.18);
 
   /* Rounded toy geometry */
   --radius-xs: 12rpx;
@@ -79,9 +90,9 @@ page {
   --color-bg-soft: var(--cream-bg-2);
   --color-bg-ice: var(--ice-100);
   --color-surface: rgba(255, 254, 248, 0.94);
-  --color-surface-cream: rgba(255, 249, 234, 0.94);
-  --color-line: rgba(241, 222, 192, 0.72);
-  --color-line-ice: rgba(145, 212, 236, 0.32);
+  --color-surface-cream: rgba(255, 250, 240, 0.94);
+  --color-line: rgba(234, 219, 196, 0.78);
+  --color-line-ice: rgba(169, 221, 241, 0.34);
   --color-mint: var(--mint-100);
   --color-cream: var(--cream-bg);
   --color-orange: var(--honey-500);
@@ -99,6 +110,9 @@ page {
   --color-expiring: var(--honey-500);
   --color-expired: var(--coral-600);
   --color-info: var(--ice-500);
+  --color-ai: var(--ai-500);
+  --color-ai-deep: var(--ai-700);
+  --color-ai-light: var(--ai-100);
   --color-disabled: #d8e0dc;
   --shadow-button: var(--shadow-button-green);
 }

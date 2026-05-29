@@ -265,6 +265,29 @@ function getInitialRadarRecipeStatus(expiryUsage) {
   return '正在结合当前库存调用云端 AI 生成菜谱...'
 }
 
+function formatMonthDate(year, monthIndex, day = 1) {
+  return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function isDateInMonth(dateString, year, monthIndex) {
+  return typeof dateString === 'string' &&
+    dateString.startsWith(`${year}-${String(monthIndex + 1).padStart(2, '0')}-`)
+}
+
+function getMonthSelectedDate(year, monthIndex, currentSelectedDate) {
+  if (isDateInMonth(currentSelectedDate, year, monthIndex)) {
+    return currentSelectedDate
+  }
+
+  const today = getTodayString()
+
+  if (isDateInMonth(today, year, monthIndex)) {
+    return today
+  }
+
+  return formatMonthDate(year, monthIndex)
+}
+
 Page({
   data: {
     loading: false,
@@ -452,22 +475,34 @@ Page({
 
   handlePrevMonth() {
     const date = new Date(this.data.year, this.data.monthIndex - 1, 1)
+    const year = date.getFullYear()
+    const monthIndex = date.getMonth()
 
     this.setData({
-      year: date.getFullYear(),
-      monthIndex: date.getMonth(),
-      selectedDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`,
+      year,
+      monthIndex,
+      selectedDate: getMonthSelectedDate(
+        year,
+        monthIndex,
+        this.data.selectedDate,
+      ),
     })
     this.renderCalendar()
   },
 
   handleNextMonth() {
     const date = new Date(this.data.year, this.data.monthIndex + 1, 1)
+    const year = date.getFullYear()
+    const monthIndex = date.getMonth()
 
     this.setData({
-      year: date.getFullYear(),
-      monthIndex: date.getMonth(),
-      selectedDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`,
+      year,
+      monthIndex,
+      selectedDate: getMonthSelectedDate(
+        year,
+        monthIndex,
+        this.data.selectedDate,
+      ),
     })
     this.renderCalendar()
   },
