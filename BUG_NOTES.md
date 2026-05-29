@@ -1555,3 +1555,65 @@
 
 - 小程序 service 的运行环境和 Node ESM 快速 require 不完全一致。
 - 如需单元测试 service，需要单独设计适配 CommonJS / ESM 的测试入口。
+
+## 2026-05-29 菜谱页 UI 与日历统计收尾记录
+
+### 1. 日历页库存统计和首页分区加总不一致
+
+现象：
+
+- 首页当前启用分区库存加起来是 `10`。
+- 日历页三色统计里的库存显示为 `11`。
+
+原因：
+
+- 首页分区统计只统计 `fridgeZoneConfigs` 当前启用分区覆盖到的食品。
+- 日历页原来直接用数据库全部食品计算 `stats.total`，没有按启用分区过滤。
+
+处理：
+
+- 日历页读取 `zoneConfigService.getZoneConfig()`。
+- 根据 `HOME_ZONE_DEFINITIONS` 找到当前启用分区覆盖的 `storageLocation`。
+- 新增 `statItems`，专门用于日历页顶部库存 / 临期 / 过期统计和对应清单。
+- 保留 `items` 用于日历事件、开饭雷达和云端菜谱，避免本轮扩大影响范围。
+
+后续注意：
+
+- 现在日历页顶部三色统计和首页启用分区保持一致。
+- 日历日期标记仍按全部到期事件展示；如要完全同步，需要用户确认后再改。
+
+### 2. GitHub CLI token 当前失效
+
+现象：
+
+- 收尾前执行 `gh auth status`，返回当前账号 `zitao4588-create` 的 token invalid。
+
+处理：
+
+- 本轮不依赖 GitHub CLI 创建 PR。
+- 继续使用本地 `git commit` 和 `git push origin main` 流程。
+
+后续注意：
+
+- 如果后续需要用 `gh` 创建 PR、查 CI 或操作 issue，需要重新执行 `gh auth login -h github.com`。
+
+### 3. recipeRecords 收藏查询缺少组合索引
+
+现象：
+
+- 微信开发者工具控制台提示 `recipeRecords` 查询建议建立组合索引：
+  - `_openid` 升序、`createdAt` 降序。
+  - 早前也出现过 `recipeKey` 升序、`_openid` 升序的去重查询索引建议。
+
+原因：
+
+- 收藏列表按 `_openid` 查询并按 `createdAt` 倒序排序。
+- 收藏状态同步会按 `recipeKey` 和 `_openid` 查询。
+
+处理：
+
+- 本轮只记录为待办，未通过代码自动创建索引。
+
+后续注意：
+
+- 建议在 CloudBase 控制台手动创建 `recipeRecords` 组合索引，避免收藏数据增多后查询变慢或继续出现控制台警告。

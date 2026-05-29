@@ -1,4 +1,15 @@
 <view class="page recipes-page">
+  <view class="climate-panel card">
+    <view class="climate-city" bindtap="handleOpenCityEditor">
+      <view>
+        <text class="climate-city-name">{{context.city || city}}</text>
+        <text class="climate-city-meta">{{context.weatherSummary}}</text>
+        <text class="climate-city-submeta">{{context.climateSummary}}</text>
+      </view>
+      <text class="climate-city-action">修改城市</text>
+    </view>
+  </view>
+
   <view class="recipe-hero card">
     <image class="recipe-hero-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
     <view class="recipe-hero-main">
@@ -7,34 +18,9 @@
     </view>
   </view>
 
-  <view class="climate-panel card">
-    <view class="climate-city" bindtap="handleOpenCityEditor">
-      <view>
-        <text class="climate-city-name">{{context.city || city}}</text>
-        <text class="climate-city-meta">{{context.weatherStatusLabel}}</text>
-      </view>
-      <text class="climate-city-action">修改城市</text>
-    </view>
-    <text class="climate-warning">{{context.weatherUpdatedLabel}}</text>
-  </view>
-
-  <view class="context-strip">
-    <view class="context-chip">
-      <text class="context-value">{{context.solarTermName}}</text>
-      <text class="context-name">{{context.solarTermHint}}</text>
-    </view>
-    <view class="context-chip">
-      <text class="context-value">{{context.season}}</text>
-      <text class="context-name">季节</text>
-    </view>
-    <view class="context-chip">
-      <text class="context-value">{{context.temperature}}℃</text>
-      <text class="context-name">{{context.weather}}</text>
-    </view>
-    <view class="context-chip">
-      <text class="context-value">{{context.humidity}}%</text>
-      <text class="context-name">湿度</text>
-    </view>
+  <view class="record-entry" bindtap="handleOpenRecords">
+    <text>我的收藏</text>
+    <text>{{recipeRecords.length}} 道</text>
   </view>
 
   <view class="recipe-tab-grid">
@@ -46,17 +32,11 @@
     </view>
   </view>
 
-  <view class="record-entry" bindtap="handleOpenRecords">
-    <text>我的收藏</text>
-    <text>{{recipeRecords.length}} 道</text>
-  </view>
-
   <view wx:if="{{loading}}" class="empty card">正在生成推荐</view>
 
   <view wx:elif="{{guideRecipes.length > 0}}" class="guide-panel">
     <view class="guide-panel-head">
       <view class="guide-panel-copy">
-        <text class="guide-panel-title">{{guideTitle}}</text>
         <text class="guide-panel-desc">{{guideDesc}}</text>
       </view>
       <view class="guide-head-actions">
@@ -105,13 +85,9 @@
             <text class="recipe-title">{{item.title}}</text>
             <view class="meta-row">
               <text>{{item.timeCost}}</text>
-              <text>{{item.difficulty}}</text>
-              <text wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+              <text wx:for="{{item.displayTags}}" wx:key="*this">{{item}}</text>
             </view>
           </view>
-          <text class="match-pill {{item.canCook ? 'ready' : ''}}">{{item.matchLabel}}</text>
-        </view>
-        <view class="recipe-card-actions">
           <text
             class="recipe-save {{item.isSaved ? 'saved' : ''}}"
             data-id="{{item.id}}"
@@ -158,25 +134,16 @@
         <view class="modal-title-wrap">
           <text class="modal-title">{{activeRecipe.title}}</text>
           <view class="detail-meta">
-            <text>{{activeRecipe.matchLabel}}</text>
             <text>{{activeRecipe.timeCost}}</text>
-            <text>{{activeRecipe.difficulty}}</text>
-          </view>
-          <view class="detail-actions">
-            <text
-              class="detail-save {{activeRecipe.isSaved ? 'saved' : ''}}"
-              data-id="{{activeRecipe.id}}"
-              data-key="{{activeRecipe.recipeKey}}"
-              catchtap="handleToggleRecipeRecord"
-            >{{activeRecipe.isSaved ? '已收藏' : '收藏这道菜'}}</text>
+            <text wx:for="{{activeRecipe.displayTags}}" wx:key="*this">{{item}}</text>
           </view>
         </view>
-        <text class="modal-close" bindtap="handleCloseDetail">×</text>
-      </view>
-
-      <view wx:if="{{activeRecipe.reason}}" class="detail-section">
-        <text class="detail-title">推荐理由</text>
-        <text class="detail-reason">{{activeRecipe.reason}}</text>
+        <text
+          class="detail-save {{activeRecipe.isSaved ? 'saved' : ''}}"
+          data-id="{{activeRecipe.id}}"
+          data-key="{{activeRecipe.recipeKey}}"
+          catchtap="handleToggleRecipeRecord"
+        >{{activeRecipe.isSaved ? '已藏' : '收藏'}}</text>
       </view>
 
       <view wx:if="{{activeRecipe.sourceType === 'blindBox'}}" class="detail-section">
@@ -190,7 +157,7 @@
         <text class="detail-title">已有食材</text>
         <view class="chip-row">
           <text wx:if="{{activeRecipe.availableItems.length === 0}}" class="empty-chip">暂无</text>
-          <text class="food-chip" wx:for="{{activeRecipe.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}} {{food.expiryHint}}</text>
+          <text class="food-chip" wx:for="{{activeRecipe.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
         </view>
       </view>
 
@@ -206,8 +173,6 @@
         <text class="detail-title">简单步骤</text>
         <text class="step-line" wx:for="{{activeRecipe.steps}}" wx:for-item="step" wx:for-index="stepIndex" wx:key="*this">{{stepIndex + 1}}. {{step}}</text>
       </view>
-
-      <text wx:if="{{activeRecipe.safetyNote}}" class="safety-note">{{activeRecipe.safetyNote}}</text>
     </view>
   </view>
 
@@ -257,7 +222,6 @@
           <image class="record-image" src="{{item.image || '/images/recipe/default.png'}}" mode="aspectFill" />
           <view class="record-copy">
             <text class="record-title">{{item.title}}</text>
-            <text class="record-meta">{{item.contextSnapshot.city || '城市'}} · {{item.contextSnapshot.weather || '天气'}} · {{item.timeCost}}</text>
           </view>
         </view>
       </view>

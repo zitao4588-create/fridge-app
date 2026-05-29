@@ -1,6 +1,8 @@
 const itemService = require('../../services/itemService')
 const reminderService = require('../../services/reminderService')
 const recipeService = require('../../services/recipeService')
+const zoneConfigService = require('../../services/zoneConfigService')
+const { HOME_ZONE_DEFINITIONS } = require('../../utils/constants')
 const {
   buildMonthDays,
   getDaysUntil,
@@ -48,6 +50,43 @@ const EMPTY_RECIPE_DETAIL = {
   missingItems: [],
   steps: [],
   safetyNote: '',
+}
+
+function getZoneDefinition(key) {
+  return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
+}
+
+function getEnabledZoneLocationSet(configZones) {
+  const locationSet = new Set()
+
+  zoneConfigService
+    .sanitizeZones(configZones)
+    .filter((zone) => zone.enabled)
+    .forEach((zone) => {
+      const definition = getZoneDefinition(zone.key)
+      const locations = definition
+        ? definition.locations || [definition.location]
+        : []
+
+      locations.forEach((location) => {
+        if (location) {
+          locationSet.add(location)
+        }
+      })
+    })
+
+  return locationSet
+}
+
+function getEnabledZoneItems(items, configZones) {
+  const safeItems = Array.isArray(items) ? items : []
+  const enabledLocations = getEnabledZoneLocationSet(configZones)
+
+  if (enabledLocations.size === 0) {
+    return safeItems
+  }
+
+  return safeItems.filter((item) => enabledLocations.has(item.storageLocation))
 }
 
 function buildStats(items) {
@@ -192,6 +231,7 @@ Page({
     days: [],
     events: {},
     items: [],
+    statItems: [],
     stats: EMPTY_STATS,
     expiryUsage: EMPTY_EXPIRY_USAGE,
     mealRadarReport: EMPTY_MEAL_RADAR_REPORT,
@@ -226,18 +266,19 @@ Page({
       loading: true,
     })
 
-    itemService
-      .getItems()
-      .then((items) => {
+    Promise.all([itemService.getItems(), zoneConfigService.getZoneConfig()])
+      .then(([items, zoneConfig]) => {
+        const statItems = getEnabledZoneItems(items, zoneConfig && zoneConfig.zones)
         const events = reminderService.getCalendarEvents(items)
         const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
-        const stats = buildStats(items)
+        const stats = buildStats(statItems)
         const mealRadarReport = buildMealRadarReport(items, expiryUsage)
         const shouldLoadRecipes = expiryUsage.usableCount > 0
 
         this.setData({
           events,
           items,
+          statItems,
           stats,
           expiryUsage,
           mealRadarReport,
@@ -365,7 +406,7 @@ Page({
 
   handleOpenCalendarStats(event) {
     const type = event.currentTarget.dataset.type
-    const items = Array.isArray(this.data.items) ? this.data.items : []
+    const items = Array.isArray(this.data.statItems) ? this.data.statItems : []
     const titleMap = {
       total: '全部库存清单',
       expiring: '临期食品清单',

@@ -78,6 +78,7 @@
 
 .climate-panel {
   margin-top: 16rpx;
+  margin-bottom: 18rpx;
   padding: 20rpx;
   border: 3rpx solid rgba(255, 255, 255, 0.84);
   border-radius: 32rpx;
@@ -95,8 +96,8 @@
 
 .climate-city-name,
 .climate-city-meta,
-.climate-city-action,
-.climate-warning {
+.climate-city-submeta,
+.climate-city-action {
   display: block;
 }
 
@@ -108,10 +109,18 @@
 }
 
 .climate-city-meta {
-  margin-top: 6rpx;
+  margin-top: 8rpx;
   color: var(--ice-700, #22789e);
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 900;
+}
+
+.climate-city-submeta {
+  margin-top: 6rpx;
+  color: var(--text-sub, #6d7e76);
+  font-size: 22rpx;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .climate-city-action {
@@ -126,53 +135,6 @@
   color: var(--mint-700, #087a49);
   font-size: 22rpx;
   font-weight: 900;
-}
-
-.climate-warning {
-  margin-top: 12rpx;
-  color: var(--text-sub, #6d7e76);
-  font-size: 22rpx;
-  line-height: 1.45;
-}
-
-.context-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10rpx;
-  margin-top: 16rpx;
-}
-
-.context-chip {
-  min-height: 82rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 3rpx solid rgba(255, 255, 255, 0.78);
-  border-radius: 24rpx;
-  background: rgba(255, 254, 248, 0.78);
-  box-shadow: 0 8rpx 18rpx rgba(82, 124, 94, 0.08);
-}
-
-.context-value {
-  max-width: 100%;
-  overflow: hidden;
-  color: var(--text-main, #24352f);
-  font-size: 24rpx;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.context-name {
-  max-width: 100%;
-  margin-top: 6rpx;
-  overflow: hidden;
-  color: var(--text-light, #a2b0aa);
-  font-size: 19rpx;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .recipe-tab-grid {
@@ -241,19 +203,12 @@
   flex: 1;
 }
 
-.guide-panel-title,
 .guide-panel-desc {
   display: block;
 }
 
-.guide-panel-title {
-  color: var(--text-main, #24352f);
-  font-size: 32rpx;
-  font-weight: 900;
-}
-
 .guide-panel-desc {
-  margin-top: 8rpx;
+  margin-top: 0;
   color: var(--text-sub, #6d7e76);
   font-size: 24rpx;
   line-height: 1.45;
@@ -375,9 +330,9 @@
 .ai-recipe-card {
   overflow: hidden;
   display: flex;
-  gap: 18rpx;
-  margin-top: 20rpx;
-  padding: 14rpx;
+  gap: 14rpx;
+  margin-top: 16rpx;
+  padding: 12rpx;
   border: 3rpx solid rgba(255, 255, 255, 0.88);
   border-radius: 34rpx;
   background: rgba(255, 254, 248, 0.92);
@@ -386,35 +341,28 @@
 
 .recipe-card-image {
   flex-shrink: 0;
-  width: 190rpx;
-  height: 190rpx;
-  border-radius: 28rpx;
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 26rpx;
   background: var(--cream-bg-2, #fff9ea);
 }
 
 .recipe-card-body {
   min-width: 0;
   flex: 1;
-  padding: 4rpx 2rpx 2rpx 0;
+  padding: 2rpx 2rpx 2rpx 0;
 }
 
 .recipe-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12rpx;
+  gap: 10rpx;
 }
 
-.recipe-card-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10rpx;
-}
-
-.recipe-save,
-.detail-save {
-  min-width: 108rpx;
-  min-height: 46rpx;
+.recipe-save {
+  min-width: 96rpx;
+  min-height: 44rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -426,8 +374,7 @@
   font-weight: 900;
 }
 
-.recipe-save.saved,
-.detail-save.saved {
+.recipe-save.saved {
   background: linear-gradient(180deg, #fff1c9 0%, #ffe08b 100%);
   color: var(--honey-700, #c86f13);
 }
@@ -441,7 +388,7 @@
   display: block;
   overflow: hidden;
   color: var(--text-main, #24352f);
-  font-size: 31rpx;
+  font-size: 30rpx;
   font-weight: 900;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -466,12 +413,12 @@
 .meta-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 10rpx;
+  gap: 6rpx;
+  margin-top: 8rpx;
 }
 
 .meta-row text {
-  padding: 6rpx 10rpx;
+  padding: 5rpx 10rpx;
   border-radius: 999rpx;
   background: rgba(228, 247, 255, 0.9);
   color: var(--ice-700, #22789e);
@@ -480,7 +427,7 @@
 }
 
 .ingredient-line {
-  margin-top: 14rpx;
+  margin-top: 12rpx;
 }
 
 .ingredient-line.missing {
@@ -497,15 +444,15 @@
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 8rpx;
+  gap: 7rpx;
+  margin-top: 7rpx;
 }
 
 .food-chip,
 .empty-chip {
   max-width: 180rpx;
   overflow: hidden;
-  padding: 7rpx 12rpx;
+  padding: 6rpx 11rpx;
   border-radius: 999rpx;
   background: #ffffff;
   color: var(--mint-700, #087a49);
@@ -591,18 +538,24 @@
   line-height: 1.25;
 }
 
-.modal-close {
-  width: 56rpx;
-  height: 56rpx;
+.detail-save {
+  min-width: 78rpx;
+  height: 54rpx;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 18rpx;
   border-radius: 999rpx;
-  background: var(--mint-50, #effcf3);
-  color: var(--mint-700, #087a49);
-  font-size: 40rpx;
-  line-height: 1;
+  background: rgba(228, 247, 255, 0.92);
+  color: var(--ice-700, #22789e);
+  font-size: 22rpx;
+  font-weight: 900;
+}
+
+.detail-save.saved {
+  background: rgba(255, 241, 201, 0.96);
+  color: var(--honey-700, #c86f13);
 }
 
 .detail-meta {
@@ -621,11 +574,6 @@
   font-weight: 900;
 }
 
-.detail-actions {
-  display: flex;
-  margin-top: 14rpx;
-}
-
 .detail-section {
   margin-top: 24rpx;
 }
@@ -637,35 +585,12 @@
   font-weight: 900;
 }
 
-.detail-reason {
-  display: block;
-  margin-top: 10rpx;
-  padding: 18rpx;
-  border-radius: 24rpx;
-  background: var(--mint-50, #effcf3);
-  color: var(--text-sub, #6d7e76);
-  font-size: 25rpx;
-  line-height: 1.55;
-}
-
 .step-line {
   display: block;
   margin-top: 10rpx;
   color: var(--text-sub, #6d7e76);
   font-size: 25rpx;
   line-height: 1.6;
-}
-
-.safety-note {
-  display: block;
-  margin-top: 22rpx;
-  padding: 18rpx;
-  border: 2rpx solid rgba(232, 82, 66, 0.12);
-  border-radius: 24rpx;
-  background: linear-gradient(180deg, #fff8f6 0%, #ffe8df 100%);
-  color: var(--coral-600, #e85242);
-  font-size: 24rpx;
-  line-height: 1.55;
 }
 
 .picker-panel {
@@ -1150,16 +1075,16 @@
 .record-list {
   display: flex;
   flex-direction: column;
-  gap: 14rpx;
+  gap: 12rpx;
   margin-top: 22rpx;
 }
 
 .record-item {
-  min-height: 128rpx;
+  min-height: 104rpx;
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: 14rpx;
+  padding: 12rpx 14rpx;
   border: 3rpx solid rgba(255, 255, 255, 0.84);
   border-radius: 26rpx;
   background: rgba(255, 254, 248, 0.9);
@@ -1168,9 +1093,9 @@
 
 .record-image {
   flex-shrink: 0;
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 22rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
   background: var(--cream-bg-2, #fff9ea);
 }
 
@@ -1179,8 +1104,7 @@
   flex: 1;
 }
 
-.record-title,
-.record-meta {
+.record-title {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1191,10 +1115,4 @@
   color: var(--text-main, #24352f);
   font-size: 27rpx;
   font-weight: 900;
-}
-
-.record-meta {
-  margin-top: 8rpx;
-  color: var(--text-sub, #6d7e76);
-  font-size: 22rpx;
 }

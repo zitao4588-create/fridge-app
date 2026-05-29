@@ -339,6 +339,14 @@ function decorateGuideRecipes(recipes, label) {
   }))
 }
 
+function getRecipeDisplayTags(recipe) {
+  const hiddenTags = new Set(['简单', '应季', '盲盒'])
+
+  return (Array.isArray(recipe.tags) ? recipe.tags : [])
+    .filter((tag) => tag && !hiddenTags.has(tag))
+    .slice(0, 2)
+}
+
 function buildRecipeRecordMap(records) {
   const recordMap = {}
   const safeRecords = Array.isArray(records) ? records : []
@@ -364,12 +372,13 @@ function decorateRecipesWithRecords(recipes, records) {
       recipeKey,
       recordId: record ? record._id : '',
       isSaved: Boolean(record),
+      displayTags: getRecipeDisplayTags(recipe),
     }
   })
 }
 
 function recordToRecipe(record) {
-  return {
+  const recipe = {
     id: record.recipeId || record.recipeKey,
     recipeKey: record.recipeKey,
     recordId: record._id,
@@ -389,6 +398,11 @@ function recordToRecipe(record) {
     seasonTags: Array.isArray(record.seasonTags) ? record.seasonTags : [],
     steps: Array.isArray(record.steps) ? record.steps : [],
     safetyNote: record.safetyNote || '',
+  }
+
+  return {
+    ...recipe,
+    displayTags: getRecipeDisplayTags(recipe),
   }
 }
 
@@ -413,11 +427,25 @@ function decorateContext(context) {
     (nextContext.weatherUpdatedAt
       ? `更新 ${nextContext.weatherUpdatedAt}`
       : '根据当天气候生成建议')
+  const weatherTimeMatch = String(nextContext.weatherUpdatedAt || '').match(/\d{1,2}:\d{2}/)
+  const compactUpdatedLabel = nextContext.weatherFallbackReason ||
+    (weatherTimeMatch
+      ? `更新 ${weatherTimeMatch[0]}`
+      : nextContext.weatherUpdatedAt
+        ? `更新 ${nextContext.weatherUpdatedAt}`
+        : '根据当天气候生成')
+  const weatherSummary = `${nextContext.weather || '天气'} · ${nextContext.temperature || '--'}℃ · 湿度 ${nextContext.humidity || '--'}%`
+  const solarTermSummary = nextContext.solarTermName
+    ? `${nextContext.solarTermName}${nextContext.solarTermHint || ''}`
+    : '节气'
+  const climateSummary = `${nextContext.season || '季节'} · ${solarTermSummary} · ${compactUpdatedLabel}`
 
   return {
     ...nextContext,
     weatherStatusLabel,
     weatherUpdatedLabel,
+    weatherSummary,
+    climateSummary,
     aiAdvicePrompt: recipeService.buildRadarDietPrompt(nextContext),
     healthTip: recipeService.buildRadarDietAdvice(nextContext),
   }
