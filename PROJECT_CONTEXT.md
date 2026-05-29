@@ -2691,3 +2691,63 @@ type FridgeItem = {
 
 - 本轮没有修改 JS、WXML、图片、数据库、云函数、业务流程、页面入口或核心逻辑。
 - BUG_NOTES 本轮不更新，因为没有新增报错或失败尝试。
+
+## 2026-05-30 新图压缩替换与真机预览收尾
+
+本轮完成：
+
+- 按用户提供的新图，压缩并替换 20 个食材 / 菜谱图片资产。
+- 食材图替换：
+  - `images/foods/milk.png`
+  - `images/foods/tofu.png`
+  - `images/foods/fish.png`
+  - `images/foods/chicken.png`
+  - `images/foods/beef.png`
+  - `images/foods/egg.png`
+  - `images/foods/rice.png`
+  - `images/foods/fruit.png`
+  - `images/foods/mushroom.png`
+  - `images/foods/leafy.png`
+  - `images/foods/root.png`
+  - `images/foods/shrimp.png`
+- 菜谱图替换：
+  - `images/recipe/type-soup.png`
+  - `images/recipe/family-seafood.png`
+  - `images/recipe/family-meat.png`
+  - `images/recipe/type-salad.png`
+  - `images/recipe/type-steam.png`
+  - `images/recipe/type-noodle.png`
+  - `images/recipe/type-rice.png`
+  - `images/recipe/type-stir-fry.png`
+- 食材图做轻量透明背景处理，菜谱图保留暖色菜品背景。
+- 为满足微信预览包体限制，最终将这批新图压缩为主包可承受的缩略图尺寸。
+- 已重新生成真机预览二维码：
+  - `/private/tmp/fridge-preview.png`
+- 本次微信开发者工具预览包体：
+  - `2,080,048 bytes`
+
+本轮验证：
+
+- `npm run build`
+- 微信开发者工具 CLI `preview` 成功生成真机二维码
+
+当前还没解决的问题：
+
+- 当前预览包体已经贴近微信小程序主包 2MB 限制，后续继续加图会再次触发超限风险。
+- 新图经过强压缩以保证能预览，真机上仍需确认食品卡片和菜谱详情图是否足够清晰。
+
+已尝试但失败的方案：
+
+- 首次按较高尺寸压缩后，真机预览失败，包体提示 `2872KB exceed max limit 2MB`。
+- 二次压缩后仍失败，包体提示 `2055KB exceed max limit 2MB`。
+- 最终继续降低尺寸和调色板颜色数后，预览上传成功。
+
+下一步建议：
+
+- 真机扫码重点确认首页食材卡片图、AI 菜谱卡片图、菜谱详情图是否清晰、是否有错图。
+- 如果后续还要继续增加大量图片，优先做分包、云存储或更系统的图片压缩策略，不要继续无控制放入主包。
+
+重要注意事项：
+
+- 本轮没有修改 JS、WXML、WXSS、数据库、云函数、业务流程、页面入口或核心逻辑。
+- `/private/tmp/fridge-preview.png` 和 `/private/tmp/fridge-preview-info.json` 只是本地预览产物，不提交到 Git。
