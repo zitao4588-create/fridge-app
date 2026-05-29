@@ -1476,3 +1476,82 @@
 后续注意：
 
 - 如果未来要把调味品也纳入库存管理，需要单独设计，不应直接把基础调味重新显示为缺少项。
+
+## 2026-05-29 菜谱页雷达与部署收尾记录
+
+### 1. 菜谱页雷达建议会被选菜结果覆盖
+
+现象：
+
+- 用户要求雷达建议只根据当日天气、气候和地域信息生成。
+- 检查代码后发现，`refreshCloudRecommendations` 会把云端菜谱返回的 `context.radarAdvice` 合并回页面 `context`。
+- 当用户使用“我来选食材”生成菜谱时，云端结果可能把雷达建议改成围绕选中食材的文案。
+
+处理：
+
+- 新增页面级雷达上下文构建逻辑。
+- “我来选食材”云端刷新时保留原雷达建议，不用菜谱结果覆盖。
+- 修改云函数 prompt，要求 `radarAdvice` 只基于城市、天气、温度、湿度和节气，不引用库存、选中食材或菜谱结果。
+
+后续注意：
+
+- 雷达建议属于页面级气候建议，不属于某一道菜谱的推荐理由。
+- 后续新增菜谱入口时，不要把菜谱结果的上下文直接覆盖页面雷达上下文。
+
+### 2. 菜谱盲盒误用了库存匹配逻辑
+
+现象：
+
+- 用户明确要求菜谱盲盒不要考虑冰箱库存。
+- 检查后发现盲盒仍使用 `matchRecipeToItems`，会生成 `availableItems`、`missingItems`、`priorityItems` 等库存匹配结果。
+
+处理：
+
+- 菜谱盲盒改为应季养生菜谱池。
+- 盲盒推荐只按气候标签、季节、天气、温度和湿度排序。
+- 盲盒结果 `sourceType` 保持 `blindBox`，不再填充库存匹配食材。
+- 前端盲盒卡片改为显示“建议食材”，不再显示“有用食材 / 还差”。
+
+后续注意：
+
+- 菜谱盲盒和我来选食材是两个不同系列，不应共享同一套库存匹配展示。
+
+### 3. CloudBase CLI 首次部署进入交互确认
+
+现象：
+
+- 首次执行 `tcb fn deploy generateRecipes --dir cloudfunctions/generateRecipes --force` 时，CLI 没有从项目 `cloudbaserc.json` 找到函数配置。
+- CLI 提示将使用默认 `timeout: 15s`，并进入交互确认。
+
+处理：
+
+- 停止使用默认配置继续部署。
+- 在 `/private/tmp/fridge-generateRecipes.cloudbaserc.json` 写入临时配置，明确：
+  - `functionRoot: "cloudfunctions"`
+  - `generateRecipes`
+  - `timeout: 30`
+  - `runtime: "Nodejs18.15"`
+  - `handler: "index.main"`
+- 使用该配置重新部署成功。
+
+后续注意：
+
+- 部署 `generateRecipes` 时不要接受 CLI 默认 15 秒超时。
+- 优先使用明确函数配置的临时 CloudBase 配置文件。
+
+### 4. 本地快速 require 测试不适用于当前 service 文件
+
+现象：
+
+- 尝试用 `node -e "require('./services/recipeService')"` 快速调用 service 时失败。
+- 报错原因是项目 `package.json` 设置了 `"type": "module"`，而小程序 service 文件内部使用 CommonJS 相对路径。
+
+处理：
+
+- 不把该失败视为小程序运行问题。
+- 本轮验证仍以 `node --check`、`npm run lint`、`npm run build` 和云函数 smoke test 为准。
+
+后续注意：
+
+- 小程序 service 的运行环境和 Node ESM 快速 require 不完全一致。
+- 如需单元测试 service，需要单独设计适配 CommonJS / ESM 的测试入口。

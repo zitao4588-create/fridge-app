@@ -14,6 +14,11 @@ const RECIPE_IMAGE_MAP = {
   'blind-rice-bowl': '/images/recipe/blind-rice-bowl.png',
   'blind-soup': '/images/recipe/blind-soup.png',
   'blind-sandwich': '/images/recipe/blind-sandwich.png',
+  'seasonal-mung-bean-soup': '/images/recipe/blind-soup.png',
+  'seasonal-lotus-pear-soup': '/images/recipe/blind-soup.png',
+  'seasonal-yam-congee': '/images/recipe/warm-noodle.png',
+  'seasonal-tomato-tofu-soup': '/images/recipe/vegetable-tofu-soup.png',
+  'seasonal-ginger-noodle': '/images/recipe/warm-noodle.png',
   'tipsy-peach-tea': '/images/recipe/tipsy-peach-tea.png',
   'tipsy-citrus-soda': '/images/recipe/tipsy-citrus-soda.png',
   'healthy-apple-yogurt': '/images/recipe/healthy-apple-yogurt.png',
@@ -137,34 +142,59 @@ const AI_RECIPE_LIBRARY = [
 
 const BLIND_BOX_RECIPES = [
   {
-    id: 'blind-rice-bowl',
-    title: '今日随手拌饭',
-    ingredients: ['米饭', '鸡蛋', '青菜'],
-    seasonTags: ['午餐', '晚餐'],
-    timeCost: '12 分钟',
+    id: 'seasonal-mung-bean-soup',
+    title: '绿豆百合清润汤',
+    ingredients: ['绿豆', '百合', '冰糖'],
+    seasonTags: ['夏季', '晴热', '加餐'],
+    timeCost: '35 分钟',
     difficulty: '简单',
-    tags: ['盲盒', '主食'],
-    steps: ['处理一种蔬菜', '煎一个鸡蛋', '和米饭拌在一起调味'],
+    tags: ['应季', '清爽', '少油'],
+    steps: ['绿豆提前浸泡后冲洗干净。', '加清水煮至绿豆开花。', '加入百合和少量冰糖，煮到汤色清亮后放温食用。'],
+    safetyNote: '普通食养灵感，不替代医疗或营养治疗建议；血糖控制人群可不放糖。',
   },
   {
-    id: 'blind-soup',
-    title: '今日温暖汤碗',
-    ingredients: ['豆腐', '青菜', '鸡蛋'],
-    seasonTags: ['雨天', '晚餐'],
-    timeCost: '16 分钟',
+    id: 'seasonal-lotus-pear-soup',
+    title: '莲藕雪梨润燥汤',
+    ingredients: ['莲藕', '雪梨', '红枣'],
+    seasonTags: ['秋季', '干爽', '温润'],
+    timeCost: '40 分钟',
     difficulty: '简单',
-    tags: ['盲盒', '热汤'],
-    steps: ['锅中烧水', '加入豆腐和蔬菜', '最后打入鸡蛋并调味'],
+    tags: ['应季', '温润', '热汤'],
+    steps: ['莲藕去皮切片，雪梨去核切块。', '锅中加水放入莲藕和红枣，小火煮 25 分钟。', '加入雪梨再煮 10 分钟，温热饮用。'],
+    safetyNote: '普通家常饮食建议，不替代医疗建议。',
   },
   {
-    id: 'blind-sandwich',
-    title: '今日快手三明治',
-    ingredients: ['面包', '鸡蛋', '生菜'],
-    seasonTags: ['早餐', '午餐'],
-    timeCost: '10 分钟',
+    id: 'seasonal-yam-congee',
+    title: '山药南瓜小米粥',
+    ingredients: ['山药', '南瓜', '小米'],
+    seasonTags: ['秋季', '冬季', '早餐', '温润'],
+    timeCost: '30 分钟',
     difficulty: '简单',
-    tags: ['盲盒', '快手'],
-    steps: ['煎好鸡蛋', '处理蔬菜', '夹入面包后压紧'],
+    tags: ['应季', '暖胃', '主食'],
+    steps: ['小米淘洗后加水煮开。', '山药和南瓜切小块，转小火同煮。', '煮到粥体绵软后关火，放温食用。'],
+    safetyNote: '普通食谱建议，不替代医疗或营养治疗建议。',
+  },
+  {
+    id: 'seasonal-tomato-tofu-soup',
+    title: '番茄豆腐清汤',
+    ingredients: ['番茄', '豆腐', '青菜'],
+    seasonTags: ['春季', '夏季', '午餐', '晚餐', '清爽'],
+    timeCost: '18 分钟',
+    difficulty: '简单',
+    tags: ['应季', '清淡', '低负担'],
+    steps: ['番茄切块，豆腐切小块。', '番茄少油炒出汁后加水煮开。', '放入豆腐和青菜，煮熟后少量调味。'],
+    safetyNote: '普通家常菜建议，不替代医疗建议。',
+  },
+  {
+    id: 'seasonal-ginger-noodle',
+    title: '姜丝青菜热汤面',
+    ingredients: ['面条', '青菜', '姜丝'],
+    seasonTags: ['冬季', '雨天', '阴冷', '晚餐'],
+    timeCost: '15 分钟',
+    difficulty: '简单',
+    tags: ['应季', '热食', '暖胃'],
+    steps: ['清水煮开后放入少量姜丝。', '下面条煮到八成熟，再加入青菜。', '用盐或少量生抽调味，趁热食用。'],
+    safetyNote: '普通家常热食建议，不替代医疗建议。',
   },
 ]
 
@@ -265,7 +295,7 @@ function getWeatherProfile(season) {
       weather: '微风',
       temperature: 22,
       humidity: 58,
-      healthTip: '今天适合吃得清爽一点，先把临期食材安排进一顿轻负担的家常菜。',
+      healthTip: '今天适合吃得清爽一点，安排一顿轻负担的家常菜。',
       searchInsight: '搜索趋势偏向快手家常、清爽热菜和少油搭配。',
     },
     夏季: {
@@ -286,7 +316,7 @@ function getWeatherProfile(season) {
       weather: '阴冷',
       temperature: 8,
       humidity: 54,
-      healthTip: '天冷时先照顾胃口，安排一碗热食，再顺手消耗快到期食材。',
+      healthTip: '天冷时先照顾胃口，适合安排一碗温热熟食。',
       searchInsight: '搜索趋势偏向热汤面、锅物、焖煮和暖饮。',
     },
   }
@@ -298,20 +328,30 @@ function buildRadarDietPrompt(context) {
   return [
     '你是冰箱雷达的饮食建议助手。',
     '请结合中医饮食理论，但不要做医疗诊断或治疗承诺。',
+    `所在城市：${context.city || '未知'}。`,
     `今日节气：${context.solarTermName || '未知'}（${context.solarTermHint || '节气信息未知'}）。`,
     `今日季节：${context.season || '未知'}。`,
     `气候信息：${context.weather || '未知'}，${context.temperature || '--'}℃，湿度 ${context.humidity || '--'}%。`,
-    '请给出一句适合今天的家常饮食建议，要求温和、具体、适合库存食材管理。',
+    '请给出一句适合今天气候和地域特点的家常饮食建议，要求温和、具体，不要引用库存或选中食材。',
   ].join('\n')
 }
 
 function buildRadarDietAdvice(context) {
+  if (context && context.radarAdvice && context.radarAdviceSource === 'ai') {
+    return context.radarAdvice
+  }
+
   const seasonAdviceMap = {
     春季: '春季饮食宜清爽舒展',
     夏季: '夏季饮食宜清淡生津',
     秋季: '秋季饮食宜润燥少辛',
     冬季: '冬季饮食宜温热护胃',
   }
+  const cityText = context.city ? `${context.city}今日` : ''
+  const sourceText =
+    context.weatherStatus === 'real'
+      ? ''
+      : '天气暂用估算，'
   const termText = context.solarTermName
     ? `临近${context.solarTermName}，`
     : ''
@@ -331,7 +371,7 @@ function buildRadarDietAdvice(context) {
         ? '空气偏干，可安排汤羹、蒸煮或带水分的食材。'
         : '湿度适中，注意荤素搭配和不过量。'
 
-  return `${termText}${seasonText}；${tempText}${humidityText}先用掉临期食材，避免浪费。`
+  return `${cityText}${sourceText}${termText}${seasonText}；${tempText}${humidityText}`
 }
 
 function getContextLabel(context) {
@@ -339,7 +379,9 @@ function getContextLabel(context) {
     return ''
   }
 
-  return `${context.solarTermName || context.season || '今日'} · ${context.weather || '天气'} · ${context.temperature || '--'}℃ · 湿度 ${context.humidity || '--'}%`
+  const cityText = context.city ? `${context.city} · ` : ''
+
+  return `${cityText}${context.solarTermName || context.season || '今日'} · ${context.weather || '天气'} · ${context.temperature || '--'}℃ · 湿度 ${context.humidity || '--'}%`
 }
 
 function getClimateRecipeScore(recipe, context) {
@@ -403,6 +445,41 @@ function buildContextRecipeReason(recipe, context) {
       : '适合作为今天的轻负担备选。'
 
   return `结合${getContextLabel(context)}和雷达建议，${inventoryText}${missingText}推荐这道${recipe.title}，${priorityText}`
+}
+
+function buildSeasonalRecipeReason(recipe, context) {
+  if (!context) {
+    return recipe.reason || '根据今日气候推荐的应季家常食谱。'
+  }
+
+  return `结合${getContextLabel(context)}，推荐这道${recipe.title}，适合作为今天的应季养生家常备选。`
+}
+
+function buildSeasonalRecipeRecommendation(recipe, sourceType, context) {
+  const ingredients = (recipe.ingredients || []).filter(
+    (ingredient) => !isBasicPantryIngredient(ingredient),
+  )
+
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    image: recipe.image || RECIPE_IMAGE_MAP[recipe.id] || DEFAULT_RECIPE_IMAGE,
+    sourceType,
+    reason: buildSeasonalRecipeReason(recipe, context),
+    availableItems: [],
+    missingItems: ingredients,
+    priorityItems: [],
+    matchScore: getClimateRecipeScore(recipe, context),
+    matchLabel: '应季推荐',
+    canCook: false,
+    timeCost: recipe.timeCost,
+    difficulty: recipe.difficulty,
+    tags: recipe.tags || [],
+    seasonTags: recipe.seasonTags || [],
+    steps: recipe.steps,
+    safetyNote: recipe.safetyNote || '普通饮食建议，不替代医疗或营养治疗建议。',
+    aiPrompt: buildRadarDietPrompt(context || {}),
+  }
 }
 
 function applyRecommendationContext(recommendations, context) {
@@ -806,6 +883,18 @@ function getBlindBoxRecommendation(items, type, context) {
     },
   }
   const config = sourceMap[type] || sourceMap.blindBox
+  if (config.sourceType === 'blindBox') {
+    const matchedRecipes = config.list.map((recipe) =>
+      buildSeasonalRecipeRecommendation(recipe, config.sourceType, context),
+    )
+    const sortedRecipes = matchedRecipes.sort((left, right) => right.matchScore - left.matchScore)
+    const topRecipes = sortedRecipes.slice(0, Math.min(2, sortedRecipes.length))
+
+    return topRecipes[
+      getDailyIndex(topRecipes, `${type || 'blindBox'}-${context ? context.solarTermName : ''}`)
+    ] || sortedRecipes[0]
+  }
+
   const usableItems = getUsableItems(Array.isArray(items) ? items : [])
   const matchedRecipes = config.list.map((recipe) => {
     const matchedRecipe = matchRecipeToItems(recipe, usableItems, config.sourceType, context)
@@ -822,6 +911,68 @@ function getBlindBoxRecommendation(items, type, context) {
     || sortedRecipes[0]
 
   return applyRecommendationContext([recipe], context)[0]
+}
+
+function getBlindBoxRecommendations(items, type, context, count = 3, offset = 0) {
+  const sourceMap = {
+    tipsy: {
+      list: TIPSY_BOX,
+      sourceType: 'tipsy',
+    },
+    healthyDrink: {
+      list: HEALTHY_DRINK_BOX,
+      sourceType: 'healthyDrink',
+    },
+    blindBox: {
+      list: BLIND_BOX_RECIPES,
+      sourceType: 'blindBox',
+    },
+  }
+  const config = sourceMap[type] || sourceMap.blindBox
+  if (config.sourceType === 'blindBox') {
+    const matchedRecipes = config.list.map((recipe) =>
+      buildSeasonalRecipeRecommendation(recipe, config.sourceType, context),
+    )
+    const sortedRecipes = matchedRecipes.sort((left, right) => right.matchScore - left.matchScore)
+    const dailyOffset = getDailyIndex(
+      sortedRecipes.length > 0 ? sortedRecipes : config.list,
+      `${type || 'blindBox'}-${context ? context.solarTermName : ''}`,
+    )
+    const rotateOffset = sortedRecipes.length > 0
+      ? (dailyOffset + Number(offset || 0)) % sortedRecipes.length
+      : 0
+    const rotatedRecipes = sortedRecipes
+      .slice(rotateOffset)
+      .concat(sortedRecipes.slice(0, rotateOffset))
+
+    return rotatedRecipes.slice(0, Math.max(1, Number(count) || 3))
+  }
+
+  const usableItems = getUsableItems(Array.isArray(items) ? items : [])
+  const matchedRecipes = config.list.map((recipe) => {
+    const matchedRecipe = matchRecipeToItems(recipe, usableItems, config.sourceType, context)
+
+    return {
+      ...matchedRecipe,
+      matchScore: matchedRecipe.matchScore + getClimateRecipeScore(recipe, context),
+    }
+  })
+  const sortedRecipes = sortRecommendations(matchedRecipes)
+  const dailyOffset = getDailyIndex(
+    sortedRecipes.length > 0 ? sortedRecipes : config.list,
+    `${type || 'blindBox'}-${context ? context.solarTermName : ''}`,
+  )
+  const rotateOffset = sortedRecipes.length > 0
+    ? (dailyOffset + Number(offset || 0)) % sortedRecipes.length
+    : 0
+  const rotatedRecipes = sortedRecipes
+    .slice(rotateOffset)
+    .concat(sortedRecipes.slice(0, rotateOffset))
+
+  return applyRecommendationContext(
+    rotatedRecipes.slice(0, Math.max(1, Number(count) || 3)),
+    context,
+  )
 }
 
 function ruleBasedRecipes(items) {
@@ -845,6 +996,7 @@ module.exports = {
   getCloudAIRecipeRecommendations,
   getCloudExpiryRecipeRecommendations,
   getBlindBoxRecommendation,
+  getBlindBoxRecommendations,
   getExpiryUsageRecommendations,
   getMockRecommendationContext,
   getRecipeRecommendations,

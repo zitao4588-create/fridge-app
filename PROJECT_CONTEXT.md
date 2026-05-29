@@ -2154,3 +2154,81 @@ type FridgeItem = {
 
 - 日历页 `开饭雷达检测报告` 现在不再使用本地 mock / 规则菜谱兜底。
 - 菜谱页的 `菜谱盲盒 / 我来选食材` 仍保留原有本地先出结果、云端刷新、失败保留本地推荐的体验，不属于本轮变更范围。
+
+## 2026-05-29 菜谱页雷达与双入口重构收尾
+
+本轮完成：
+
+- 系统性优化菜谱页，新增城市展示和修改入口。
+- 菜谱页雷达建议改为独立气候养生建议：
+  - 根据城市、腾讯实时天气、温度、湿度、季节 / 节气综合生成。
+  - 不再随“我来选食材”的下方菜谱结果变化。
+  - 小程序前端不保存腾讯位置服务 API key，真实天气通过 `generateRecipes` 云函数获取。
+- 新增菜谱收藏记录能力：
+  - 新增 `recipeRecords` 集合对应 service。
+  - 菜谱卡片和详情支持收藏 / 取消收藏。
+  - 菜谱页增加“我的收藏”入口。
+- 明确拆分两个菜谱入口：
+  - `菜谱盲盒`：不读取冰箱库存，只根据雷达气候信息推荐 3 道应季养生家常菜。
+  - `我来选食材`：只围绕料理碗里的库存 / 临时食材生成菜谱。
+- `我来选食材` 体验优化：
+  - 切到菜谱盲盒再切回时，保留上一次选择和生成结果。
+  - 只有点击“清空”才清掉料理碗和生成结果。
+  - 移除所有“换一批”入口。
+  - 点击生成后显示“正在生成菜谱”，并持续到云端刷新完成。
+- 菜谱盲盒展示层同步调整：
+  - 不再展示“有用食材 / 还差”库存匹配。
+  - 改为展示“建议食材”。
+- 已重新部署 `generateRecipes` 云函数到 CloudBase。
+
+本轮修改文件：
+
+- `AGENTS.md`
+- `README.md`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+- `cloudfunctions/generateRecipes/index.js`
+- `pages/recipes/recipes.js`
+- `pages/recipes/recipes.wxml`
+- `pages/recipes/recipes.wxss`
+- `services/recipeService.js`
+- `services/recipeRecordService.js`
+
+本轮验证：
+
+- `node --check services/recipeService.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+- CloudBase CLI 部署 `generateRecipes` 成功。
+- CloudBase CLI 云端 smoke test 通过：
+  - 返回 `weatherSource: "tencent"`、`weatherStatus: "real"`。
+  - 返回上海实时天气、温度、湿度。
+  - `radarAdvice` 已按城市天气气候生成。
+
+当前还没解决的问题：
+
+- 尚未在微信开发者工具或真机完整点验菜谱页新交互。
+- `recipeRecords` 集合权限已在本轮前配置过，但还需要真机确认收藏 / 取消收藏在真实用户 `_openid` 下读写正常。
+- `菜谱盲盒` 目前使用本地应季养生菜谱池，不走云端 AI 动态生成；后续如要更丰富，再单独接云端盲盒生成。
+- `generateRecipes` 真实 AI 仍可能受模型额度 / 频率影响；失败时菜谱页仍保留本地推荐兜底。
+
+下一步建议：
+
+- 在微信开发者工具中点验菜谱页：
+  - 修改城市。
+  - 点菜谱盲盒，确认不展示库存匹配。
+  - 点我来选食材，确认加载提示持续到云端刷新完成。
+  - 切换两个入口，确认我来选食材结果保留。
+  - 收藏 / 取消收藏菜谱，确认“我的收藏”列表同步。
+- 真机确认菜谱页卡片和弹窗文字不拥挤。
+
+重要注意事项：
+
+- 菜谱盲盒和我来选食材是两个独立系列，后续不要再共用同一组 `recommendations` 作为展示来源。
+- 雷达建议是页面级气候建议，不应被下方菜谱生成结果覆盖。
+- 腾讯位置服务 key 只能配置在云函数环境变量里，不能写入小程序前端。

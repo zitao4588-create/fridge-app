@@ -7,6 +7,17 @@
     </view>
   </view>
 
+  <view class="climate-panel card">
+    <view class="climate-city" bindtap="handleOpenCityEditor">
+      <view>
+        <text class="climate-city-name">{{context.city || city}}</text>
+        <text class="climate-city-meta">{{context.weatherStatusLabel}}</text>
+      </view>
+      <text class="climate-city-action">修改城市</text>
+    </view>
+    <text class="climate-warning">{{context.weatherUpdatedLabel}}</text>
+  </view>
+
   <view class="context-strip">
     <view class="context-chip">
       <text class="context-value">{{context.solarTermName}}</text>
@@ -35,6 +46,11 @@
     </view>
   </view>
 
+  <view class="record-entry" bindtap="handleOpenRecords">
+    <text>我的收藏</text>
+    <text>{{recipeRecords.length}} 道</text>
+  </view>
+
   <view wx:if="{{loading}}" class="empty card">正在生成推荐</view>
 
   <view wx:elif="{{guideRecipes.length > 0}}" class="guide-panel">
@@ -44,19 +60,18 @@
         <text class="guide-panel-desc">{{guideDesc}}</text>
       </view>
       <view class="guide-head-actions">
-        <text wx:if="{{selectedItems.length > 0}}" class="guide-clear" bindtap="handleClearSelected">清空</text>
-        <text class="guide-refresh" bindtap="handleRefreshGuide">换一批</text>
+        <text wx:if="{{activeGuideType === 'picker' && selectedItems.length > 0}}" class="guide-clear" bindtap="handleClearSelected">清空</text>
       </view>
     </view>
 
-    <view wx:if="{{selectedItems.length > 0}}" class="guide-selected">
+    <view wx:if="{{activeGuideType === 'picker' && selectedItems.length > 0}}" class="guide-selected">
       <text class="guide-selected-label">已选食材</text>
       <view class="chip-row compact">
         <text class="food-chip selected" wx:for="{{selectedItems}}" wx:key="id">{{item.name}}</text>
       </view>
     </view>
 
-    <view wx:if="{{generatedManualIngredients.length > 0}}" class="manual-save-panel">
+    <view wx:if="{{activeGuideType === 'picker' && generatedManualIngredients.length > 0}}" class="manual-save-panel">
       <view class="manual-save-copy">
         <text class="manual-save-title">这些新食材只参与了本次生成</text>
         <text class="manual-save-desc">想下次也能从冰箱里点选，可以补齐到期日后加入库存。</text>
@@ -96,8 +111,23 @@
           </view>
           <text class="match-pill {{item.canCook ? 'ready' : ''}}">{{item.matchLabel}}</text>
         </view>
+        <view class="recipe-card-actions">
+          <text
+            class="recipe-save {{item.isSaved ? 'saved' : ''}}"
+            data-id="{{item.id}}"
+            data-key="{{item.recipeKey}}"
+            catchtap="handleToggleRecipeRecord"
+          >{{item.isSaved ? '已收藏' : '收藏'}}</text>
+        </view>
 
-        <view class="ingredient-line">
+        <view wx:if="{{item.sourceType === 'blindBox'}}" class="ingredient-line">
+          <text class="ingredient-label">建议食材</text>
+          <view class="chip-row">
+            <text class="food-chip" wx:for="{{item.missingItems}}" wx:for-item="food" wx:key="*this">{{food}}</text>
+          </view>
+        </view>
+
+        <view wx:else class="ingredient-line">
           <text class="ingredient-label">有用食材</text>
           <view class="chip-row">
             <text wx:if="{{item.availableItems.length === 0}}" class="empty-chip">暂无</text>
@@ -105,7 +135,7 @@
           </view>
         </view>
 
-        <view class="ingredient-line missing">
+        <view wx:if="{{item.sourceType !== 'blindBox'}}" class="ingredient-line missing">
           <text class="ingredient-label">还差</text>
           <view class="chip-row">
             <text wx:if="{{item.missingItems.length === 0}}" class="empty-chip">不缺</text>
@@ -113,7 +143,7 @@
           </view>
         </view>
 
-        <view wx:if="{{item.priorityItems.length > 0}}" class="priority-line">
+        <view wx:if="{{item.sourceType !== 'blindBox' && item.priorityItems.length > 0}}" class="priority-line">
           <text>建议优先用掉：</text>
           <text wx:for="{{item.priorityItems}}" wx:for-item="food" wx:for-index="priorityIndex" wx:key="id">{{food.name}}{{priorityIndex + 1 < item.priorityItems.length ? '、' : ''}}</text>
         </view>
@@ -132,6 +162,14 @@
             <text>{{activeRecipe.timeCost}}</text>
             <text>{{activeRecipe.difficulty}}</text>
           </view>
+          <view class="detail-actions">
+            <text
+              class="detail-save {{activeRecipe.isSaved ? 'saved' : ''}}"
+              data-id="{{activeRecipe.id}}"
+              data-key="{{activeRecipe.recipeKey}}"
+              catchtap="handleToggleRecipeRecord"
+            >{{activeRecipe.isSaved ? '已收藏' : '收藏这道菜'}}</text>
+          </view>
         </view>
         <text class="modal-close" bindtap="handleCloseDetail">×</text>
       </view>
@@ -141,7 +179,14 @@
         <text class="detail-reason">{{activeRecipe.reason}}</text>
       </view>
 
-      <view class="detail-section">
+      <view wx:if="{{activeRecipe.sourceType === 'blindBox'}}" class="detail-section">
+        <text class="detail-title">建议食材</text>
+        <view class="chip-row">
+          <text class="food-chip" wx:for="{{activeRecipe.missingItems}}" wx:for-item="food" wx:key="*this">{{food}}</text>
+        </view>
+      </view>
+
+      <view wx:else class="detail-section">
         <text class="detail-title">已有食材</text>
         <view class="chip-row">
           <text wx:if="{{activeRecipe.availableItems.length === 0}}" class="empty-chip">暂无</text>
@@ -149,7 +194,7 @@
         </view>
       </view>
 
-      <view class="detail-section">
+      <view wx:if="{{activeRecipe.sourceType !== 'blindBox'}}" class="detail-section">
         <text class="detail-title">缺少食材</text>
         <view class="chip-row">
           <text wx:if="{{activeRecipe.missingItems.length === 0}}" class="empty-chip">不缺</text>
@@ -163,6 +208,59 @@
       </view>
 
       <text wx:if="{{activeRecipe.safetyNote}}" class="safety-note">{{activeRecipe.safetyNote}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{cityModalVisible}}" class="modal-mask" bindtap="handleCloseCityEditor">
+    <view class="city-modal card" catchtap="noop">
+      <view class="modal-head">
+        <view class="modal-title-wrap">
+          <text class="modal-title">修改城市</text>
+          <text class="picker-desc">城市会用于腾讯实时天气和气候养生雷达建议。</text>
+        </view>
+        <text class="modal-close" bindtap="handleCloseCityEditor">×</text>
+      </view>
+      <input
+        class="city-input"
+        value="{{cityInput}}"
+        placeholder="例如：上海、广州、成都"
+        confirm-type="done"
+        bindinput="handleCityInput"
+        bindconfirm="handleSaveCity"
+      />
+      <view class="city-actions">
+        <view class="city-button secondary" bindtap="handleCloseCityEditor">取消</view>
+        <view class="city-button primary" bindtap="handleSaveCity">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{recordListVisible}}" class="modal-mask" bindtap="handleCloseRecords">
+    <view class="record-panel card" catchtap="noop">
+      <view class="modal-head">
+        <view class="modal-title-wrap">
+          <text class="modal-title">我的收藏</text>
+          <text class="picker-desc">只保存你主动收藏的菜谱。</text>
+        </view>
+        <text class="modal-close" bindtap="handleCloseRecords">×</text>
+      </view>
+
+      <view wx:if="{{recipeRecords.length === 0}}" class="record-empty">还没有收藏菜谱</view>
+      <view wx:else class="record-list">
+        <view
+          class="record-item"
+          wx:for="{{recipeRecords}}"
+          wx:key="_id"
+          data-id="{{item._id}}"
+          bindtap="handleOpenRecordDetail"
+        >
+          <image class="record-image" src="{{item.image || '/images/recipe/default.png'}}" mode="aspectFill" />
+          <view class="record-copy">
+            <text class="record-title">{{item.title}}</text>
+            <text class="record-meta">{{item.contextSnapshot.city || '城市'}} · {{item.contextSnapshot.weather || '天气'}} · {{item.timeCost}}</text>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 
@@ -250,8 +348,8 @@
 
       <view class="picker-actions">
         <view class="picker-button secondary" bindtap="handleClosePicker">取消</view>
-        <view class="picker-button primary" bindtap="handleGenerateFromSelected">
-          {{pickerSelectedItems.length > 0 ? '用这些生成菜谱' : '先选食材'}}
+        <view class="picker-button primary {{pickerGenerating ? 'disabled' : ''}}" bindtap="handleGenerateFromSelected">
+          {{pickerGenerating ? '正在生成菜谱' : pickerSelectedItems.length > 0 ? '用这些生成菜谱' : '先选食材'}}
         </view>
       </view>
     </view>

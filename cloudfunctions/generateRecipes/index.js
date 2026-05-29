@@ -57,6 +57,43 @@ const BASIC_PANTRY_INGREDIENTS = [
   '胡椒粉',
 ]
 
+const CITY_ADCODE_MAP = {
+  上海: '310000',
+  北京: '110000',
+  天津: '120000',
+  重庆: '500000',
+  广州: '440100',
+  深圳: '440300',
+  杭州: '330100',
+  南京: '320100',
+  苏州: '320500',
+  成都: '510100',
+  武汉: '420100',
+  西安: '610100',
+  郑州: '410100',
+  长沙: '430100',
+  合肥: '340100',
+  福州: '350100',
+  厦门: '350200',
+  青岛: '370200',
+  济南: '370100',
+  沈阳: '210100',
+  大连: '210200',
+  哈尔滨: '230100',
+  长春: '220100',
+  昆明: '530100',
+  贵阳: '520100',
+  南宁: '450100',
+  海口: '460100',
+  太原: '140100',
+  石家庄: '130100',
+  兰州: '620100',
+  银川: '640100',
+  西宁: '630100',
+  乌鲁木齐: '650100',
+  拉萨: '540100',
+}
+
 function isEnabled(value) {
   return String(value || '').toLowerCase() === 'true'
 }
@@ -241,7 +278,7 @@ function sortRecommendations(recommendations) {
   })
 }
 
-function getMockContext(searchInsight = '') {
+function getMockContext(searchInsight = '', city = '') {
   const now = new Date()
   const month = now.getMonth() + 1
   const hour = now.getHours()
@@ -257,14 +294,19 @@ function getMockContext(searchInsight = '') {
 
   return {
     date: getTodayString(),
-    city: process.env.FRIDGE_DEFAULT_CITY || '上海',
+    city: city || process.env.FRIDGE_DEFAULT_CITY || '上海',
     season,
     weather: season === '夏季' ? '晴热' : season === '冬季' ? '阴冷' : '微风',
     temperature: season === '夏季' ? 31 : season === '冬季' ? 8 : 22,
     humidity: season === '秋季' ? 48 : 58,
     mealTime: hour < 10 ? '早餐' : hour < 15 ? '午餐' : '晚餐',
-    summary: searchInsight || '云端菜谱会优先消耗临期食材，并按当前季节给出轻负担搭配。',
-    searchInsight: searchInsight || '联网搜索未启用时，使用季节和库存规则生成建议。',
+    weatherSource: 'mock',
+    weatherStatus: 'fallback',
+    weatherUpdatedAt: getTodayString(),
+    radarAdvice: '天气数据暂用季节估算，今天饮食以清淡均衡、顺应温湿度为主。',
+    radarAdviceSource: 'rule',
+    summary: searchInsight || '云端菜谱会结合当日气候和季节给出轻负担搭配。',
+    searchInsight: searchInsight || '联网搜索未启用时，使用季节和气候规则生成建议。',
   }
 }
 
@@ -309,6 +351,260 @@ function requestJson(options, payload) {
     req.write(body)
     req.end()
   })
+}
+
+function buildQuery(params) {
+  return Object.keys(params)
+    .filter((key) => params[key] !== undefined && params[key] !== '')
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+    .join('&')
+}
+
+function requestGetJson(hostname, pathname, params) {
+  return new Promise((resolve, reject) => {
+    const query = buildQuery(params || {})
+    const req = https.request(
+      {
+        hostname,
+        path: query ? `${pathname}?${query}` : pathname,
+        method: 'GET',
+      },
+      (res) => {
+        let data = ''
+
+        res.setEncoding('utf8')
+        res.on('data', (chunk) => {
+          data += chunk
+        })
+        res.on('end', () => {
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(new Error(`腾讯位置服务返回 ${res.statusCode}`))
+            return
+          }
+
+          try {
+            resolve(JSON.parse(data))
+          } catch (error) {
+            reject(error)
+          }
+        })
+      },
+    )
+
+    req.on('error', reject)
+    req.setTimeout(8000, () => {
+      req.destroy(new Error('腾讯位置服务超时'))
+    })
+    req.end()
+  })
+}
+
+function getTencentMapKey() {
+  return (
+    process.env.FRIDGE_TENCENT_MAP_KEY ||
+    process.env.TENCENT_MAP_KEY ||
+    process.env.QQ_MAP_KEY ||
+    ''
+  )
+}
+
+function normalizeCityName(city) {
+  const cleanCity = String(city || '').trim() || process.env.FRIDGE_DEFAULT_CITY || '上海'
+
+  return cleanCity.replace(/市$/, '')
+}
+
+function resolveKnownAdcode(city) {
+  const normalizedCity = normalizeCityName(city)
+
+  return CITY_ADCODE_MAP[normalizedCity] || CITY_ADCODE_MAP[`${normalizedCity}市`] || ''
+}
+
+function extractAdcode(response) {
+  const result = response && response.result ? response.result : {}
+  const adInfo = result.ad_info || result.address_components || result.address_component || {}
+
+  return String(
+    adInfo.adcode ||
+    result.adcode ||
+    (result.address_reference && result.address_reference.adcode) ||
+    '',
+  )
+}
+
+async function resolveCityAdcode(city, key) {
+  const knownAdcode = resolveKnownAdcode(city)
+
+  if (knownAdcode) {
+    return knownAdcode
+  }
+
+  const response = await requestGetJson(
+    'apis.map.qq.com',
+    '/ws/geocoder/v1/',
+    {
+      address: city,
+      key,
+    },
+  )
+
+  if (response.status !== 0) {
+    throw new Error(response.message || '城市解析失败')
+  }
+
+  const adcode = extractAdcode(response)
+
+  if (!adcode) {
+    throw new Error('城市解析未返回行政区划代码')
+  }
+
+  return adcode
+}
+
+function pickWeatherNode(result) {
+  if (!result) {
+    return {}
+  }
+
+  if (Array.isArray(result.realtime) && result.realtime[0]) {
+    return result.realtime[0]
+  }
+
+  if (Array.isArray(result.weather) && result.weather[0]) {
+    return result.weather[0]
+  }
+
+  if (Array.isArray(result.now) && result.now[0]) {
+    return result.now[0]
+  }
+
+  if (Array.isArray(result.current) && result.current[0]) {
+    return result.current[0]
+  }
+
+  return (
+    result.now ||
+    result.realtime ||
+    result.current ||
+    result.live ||
+    result.weather ||
+    result
+  )
+}
+
+function pickFirstValue(values) {
+  const matched = values.find((value) => value !== undefined && value !== null && value !== '')
+
+  return matched === undefined ? '' : matched
+}
+
+function normalizeWeatherPayload(response, city, adcode) {
+  const result = response && response.result ? response.result : {}
+  const node = pickWeatherNode(result)
+  const infos = node.infos || node.info || {}
+  const temperature = pickFirstValue([
+    infos.temperature,
+    node.temperature,
+    infos.temp,
+    node.temp,
+    node.degree,
+    node.tem,
+  ])
+  const humidity = pickFirstValue([
+    infos.humidity,
+    node.humidity,
+    infos.hum,
+    node.hum,
+    node.sd,
+  ])
+  const weather = pickFirstValue([
+    infos.weather,
+    node.weather,
+    infos.text,
+    node.text,
+    node.condition,
+    node.phenomena,
+  ])
+  const updatedAt =
+    node.update_time ||
+    node.updateTime ||
+    result.update_time ||
+    result.updateTime ||
+    response.update_time ||
+    ''
+
+  if (!weather && temperature === '' && humidity === '') {
+    throw new Error('天气接口未返回实时天气')
+  }
+
+  return {
+    city,
+    adcode,
+    weather: String(weather || '实时天气'),
+    temperature,
+    humidity,
+    weatherSource: 'tencent',
+    weatherStatus: 'real',
+    weatherUpdatedAt: updatedAt || getTodayString(),
+    weatherFallbackReason: '',
+  }
+}
+
+async function getTencentWeatherProfile(city) {
+  if (!isEnabled(process.env.FRIDGE_ENABLE_REAL_WEATHER)) {
+    throw new Error('未启用 FRIDGE_ENABLE_REAL_WEATHER')
+  }
+
+  const key = getTencentMapKey()
+
+  if (!key) {
+    throw new Error('未配置 FRIDGE_TENCENT_MAP_KEY')
+  }
+
+  const safeCity = normalizeCityName(city)
+  const adcode = await resolveCityAdcode(safeCity, key)
+  const response = await requestGetJson(
+    'apis.map.qq.com',
+    '/ws/weather/v1/',
+    {
+      adcode,
+      type: 'now',
+      key,
+    },
+  )
+
+  if (response.status !== 0) {
+    throw new Error(response.message || '天气查询失败')
+  }
+
+  return normalizeWeatherPayload(response, safeCity, adcode)
+}
+
+async function buildRecommendationContext(city, searchInsight, items, scene) {
+  const baseContext = {
+    ...getMockContext(searchInsight, city),
+    city,
+    scene,
+    inventoryScan: scene === 'expiryRadar' ? buildInventoryScanSummary(items) : null,
+  }
+
+  try {
+    const weatherProfile = await getTencentWeatherProfile(city)
+
+    return {
+      ...baseContext,
+      ...weatherProfile,
+      summary: `${weatherProfile.city}${weatherProfile.weather}，${weatherProfile.temperature || '--'}℃，湿度 ${weatherProfile.humidity || '--'}%，适合按气候安排低负担家常菜。`,
+      radarAdvice: `${weatherProfile.city}${weatherProfile.weather}，${weatherProfile.temperature || '--'}℃、湿度 ${weatherProfile.humidity || '--'}%，今天适合按温湿度安排清淡均衡的一餐。`,
+      radarAdviceSource: 'rule',
+    }
+  } catch (error) {
+    return {
+      ...baseContext,
+      weatherFallbackReason: '真实天气暂不可用，已使用季节估算。',
+      weatherError: error.message || '真实天气暂不可用',
+    }
+  }
 }
 
 async function getSearchInsight(city) {
@@ -443,6 +739,9 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
     return [
       '请为微信小程序“冰箱雷达”的“开饭雷达检测报告”生成 3 道家常菜谱。',
       '这是云端 AI 菜谱生成，必须基于本地传入的真实冰箱库存和临期扫描结果，不要编造库存里没有的“已有食材”。',
+      '雷达建议要偏气候养生：只结合城市、当天真实天气或兜底天气、温度、湿度和节气，给出温和具体的家常饮食建议。',
+      'radarAdvice 不要引用库存、选中食材、临期食材或菜谱结果。',
+      '可以参考中医食养表达，但不要做医疗诊断、治疗承诺，不要说能治疗疾病。',
       '优先消耗 3 天内到期的食材；如果 3 天内食材不适合单独成菜，可以搭配其他未过期库存食材。',
       '绝对不要把已过期食材作为菜谱原料；已过期食材只可在 safetyNote 中提醒直接丢弃，不要写“检查是否可食用/可饮用”。',
       '可以列出 1-3 个需要补买的常见主料或关键辅料，但不要把盐、油、水、糖、酱油、葱姜蒜这类基础调味列入 ingredients。',
@@ -453,7 +752,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
       selectedNames ? `本轮优先处理食材：${selectedNames}` : '本轮没有明显临期食材，请根据全部未过期库存生成。',
       `库存扫描结果：${JSON.stringify(scanSummary)}`,
       '只返回 JSON，格式如下：',
-      '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"15 分钟","difficulty":"简单","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结"}',
+      '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"15 分钟","difficulty":"简单","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结","radarAdvice":"一句只根据城市天气气候生成的养生雷达建议"}',
       `今日上下文：${JSON.stringify(context)}`,
       `未过期库存：${JSON.stringify(compactItems)}`,
     ].join('\n')
@@ -462,9 +761,12 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
   return [
     '请为冰箱库存生成 5 道家常菜谱。',
     '要求：优先使用 3 天内到期的食材；不要使用已过期食材；步骤简单；缺少食材可以列出。',
+    '请结合今日城市、天气、温度、湿度和节气，让推荐理由更偏气候养生和家常饮食管理。',
+    'radarAdvice 只能根据城市、天气、温度、湿度和节气生成，不要引用库存、选中食材、临期食材或菜谱结果。',
+    '可以参考中医食养表达，但不要做医疗诊断、治疗承诺，不要说能治疗疾病。',
     selectedNames ? `用户点选的重点食材：${selectedNames}` : '用户未点选食材，请根据库存整体推荐。',
     '只返回 JSON，格式如下：',
-    '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"15 分钟","difficulty":"简单","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结"}',
+    '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"15 分钟","difficulty":"简单","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结","radarAdvice":"一句只根据城市天气气候生成的养生雷达建议"}',
     `今日上下文：${JSON.stringify(context)}`,
     `库存：${JSON.stringify(compactItems)}`,
   ].join('\n')
@@ -535,12 +837,7 @@ exports.main = async (event = {}) => {
     : selectedItems.length > 0 ? selectedItems : usableItems
   const city = event.city || process.env.FRIDGE_DEFAULT_CITY || '上海'
   const searchInsight = await getSearchInsight(city)
-  const context = {
-    ...getMockContext(searchInsight),
-    city,
-    scene,
-    inventoryScan: isExpiryRadar ? buildInventoryScanSummary(items) : null,
-  }
+  const context = await buildRecommendationContext(city, searchInsight, items, scene)
 
   if (isExpiryRadar && baseItems.length === 0) {
     return {
@@ -564,6 +861,8 @@ exports.main = async (event = {}) => {
       context: {
         ...context,
         summary: aiResult.summary || context.summary,
+        radarAdvice: aiResult.radarAdvice || context.radarAdvice,
+        radarAdviceSource: aiResult.radarAdvice ? 'ai' : context.radarAdviceSource || 'rule',
       },
       selectedItems: selectedItems.map(formatItem),
       recommendations,
