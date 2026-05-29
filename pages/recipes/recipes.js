@@ -6,8 +6,12 @@ const { getExpiryStatus } = require('../../utils/status')
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const MANUAL_INGREDIENT_PREFIX = 'manual:'
-const RECIPE_PICKER_CACHE_KEY = 'fridge_recipe_picker_cache_v1'
-const RECIPE_PICKER_CACHE_VERSION = 1
+const RECIPE_PICKER_CACHE_KEY = 'fridge_recipe_picker_cache_v2'
+const RECIPE_PICKER_CACHE_VERSION = 2
+const RECIPE_BLIND_BOX_CACHE_KEY = 'fridge_recipe_blind_box_cache_v1'
+const RECIPE_BLIND_BOX_CACHE_VERSION = 1
+const RECIPE_CLIMATE_CACHE_KEY = 'fridge_recipe_climate_cache_v1'
+const RECIPE_CLIMATE_CACHE_VERSION = 1
 const RECIPE_CITY_CACHE_KEY = 'fridge_recipe_city_v1'
 const RECIPE_CITY_CACHE_VERSION = 1
 const DEFAULT_CITY = '上海'
@@ -112,16 +116,17 @@ function clearRecipePickerCache() {
   }
 }
 
+function normalizeCachedRecipes(recipes) {
+  return Array.isArray(recipes)
+    ? recipes.filter((recipe) => recipe && recipe.id && recipe.title)
+    : []
+}
+
 function readRecipePickerCache() {
   try {
     const cache = wx.getStorageSync(RECIPE_PICKER_CACHE_KEY)
 
     if (!cache || cache.version !== RECIPE_PICKER_CACHE_VERSION) {
-      return null
-    }
-
-    if (cache.date !== getTodayString()) {
-      clearRecipePickerCache()
       return null
     }
 
@@ -139,6 +144,9 @@ function readRecipePickerCache() {
         ? cache.manualIngredients
         : [],
       recipeRefreshIndex: Number(cache.recipeRefreshIndex) || 0,
+      recipes: normalizeCachedRecipes(cache.recipes),
+      context: cache.context || {},
+      statusText: cache.statusText || '',
     }
   } catch {
     return null
@@ -154,10 +162,122 @@ function saveRecipePickerCache(payload) {
       selectedItemIds: payload.selectedItemIds,
       manualIngredients: payload.manualIngredients,
       recipeRefreshIndex: payload.recipeRefreshIndex,
+      recipes: normalizeCachedRecipes(payload.recipes),
+      context: payload.context || {},
+      statusText: payload.statusText || '',
     })
   } catch {
     // 本地缓存写入失败时，继续保留页面内生成结果。
   }
+}
+
+function getRecipeBlindBoxStorageKey(city) {
+  const cityKey = normalizeCityName(city) || DEFAULT_CITY
+
+  return `${RECIPE_BLIND_BOX_CACHE_KEY}_${getTodayString()}_${cityKey}`
+}
+
+function readRecipeBlindBoxCache(city) {
+  try {
+    const cache = wx.getStorageSync(getRecipeBlindBoxStorageKey(city))
+
+    if (!cache || cache.version !== RECIPE_BLIND_BOX_CACHE_VERSION) {
+      return null
+    }
+
+    if (cache.date !== getTodayString()) {
+      return null
+    }
+
+    const cacheCity = normalizeCityName(cache.city)
+    const currentCity = normalizeCityName(city)
+
+    if (cacheCity && currentCity && cacheCity !== currentCity) {
+      return null
+    }
+
+    return {
+      recipes: normalizeCachedRecipes(cache.recipes),
+      context: cache.context || {},
+      statusText: cache.statusText || '',
+      city: cacheCity || currentCity,
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveRecipeBlindBoxCache(payload) {
+  try {
+    wx.setStorageSync(getRecipeBlindBoxStorageKey(payload.city), {
+      version: RECIPE_BLIND_BOX_CACHE_VERSION,
+      date: getTodayString(),
+      savedAt: Date.now(),
+      city: normalizeCityName(payload.city),
+      recipes: normalizeCachedRecipes(payload.recipes),
+      context: payload.context || {},
+      statusText: payload.statusText || '',
+    })
+  } catch {
+    // 盲盒缓存失败时不影响页面内结果展示。
+  }
+}
+
+function getRecipeClimateStorageKey(city) {
+  const cityKey = normalizeCityName(city) || DEFAULT_CITY
+
+  return `${RECIPE_CLIMATE_CACHE_KEY}_${getTodayString()}_${cityKey}`
+}
+
+function readRecipeClimateCache(city) {
+  try {
+    const cache = wx.getStorageSync(getRecipeClimateStorageKey(city))
+
+    if (!cache || cache.version !== RECIPE_CLIMATE_CACHE_VERSION) {
+      return null
+    }
+
+    if (cache.date !== getTodayString()) {
+      return null
+    }
+
+    const cachedContext = getCachedContextForCity(cache.context, city)
+
+    return cachedContext || null
+  } catch {
+    return null
+  }
+}
+
+function saveRecipeClimateCache(city, context) {
+  const cachedContext = getCachedContextForCity(context, city)
+
+  if (!cachedContext) {
+    return
+  }
+
+  try {
+    wx.setStorageSync(getRecipeClimateStorageKey(city), {
+      version: RECIPE_CLIMATE_CACHE_VERSION,
+      date: getTodayString(),
+      savedAt: Date.now(),
+      city: normalizeCityName(city),
+      context: cachedContext,
+    })
+  } catch {
+    // 气候上下文缓存失败时不影响当前页面展示。
+  }
+}
+
+function getCachedContextForCity(context, city) {
+  const contextCity = normalizeCityName(context && context.city)
+  const targetCity = normalizeCityName(city)
+
+  if (!context || !contextCity || !targetCity || contextCity !== targetCity) {
+    return null
+  }
+
+  return context
 }
 
 function getLocalDateOnly(date) {
@@ -295,6 +415,39 @@ function buildSelectedPreviewItems(items, manualIngredients, selectedItemIds) {
     .filter(Boolean)
 }
 
+function buildSelectedRecipeItems(items, manualIngredients, selectedItemIds) {
+  const itemMap = new Map()
+  const manualMap = new Map()
+
+  items.forEach((item) => {
+    itemMap.set(getItemId(item), {
+      id: getItemId(item),
+      _id: item._id || '',
+      name: item.name,
+      category: item.category,
+      expireDate: item.expireDate,
+      storageLocation: item.storageLocation,
+      daysUntil: getDaysUntil(item.expireDate),
+    })
+  })
+
+  manualIngredients.forEach((item) => {
+    manualMap.set(item.id, {
+      id: item.id,
+      name: item.name,
+      category: item.category || '其他',
+      expireDate: item.expireDate,
+      storageLocation: item.storageLocation || '临时食材',
+      daysUntil: getDaysUntil(item.expireDate),
+      isManual: true,
+    })
+  })
+
+  return selectedItemIds
+    .map((id) => manualMap.get(id) || itemMap.get(id))
+    .filter(Boolean)
+}
+
 function buildPickerState(items, selectedItemIds, manualIngredients, query) {
   const safeItems = Array.isArray(items) ? items : []
   const safeSelectedIds = Array.isArray(selectedItemIds) ? selectedItemIds : []
@@ -406,34 +559,22 @@ function recordToRecipe(record) {
   }
 }
 
-function buildBlindBoxRecipes(items, context, refreshIndex) {
-  return recipeService.getBlindBoxRecommendations(
-    [],
-    'blindBox',
-    context,
-    3,
-    refreshIndex,
-  )
-}
-
 function decorateContext(context) {
   const nextContext = {
     ...context,
     ...getDisplaySolarTerm(),
   }
   const weatherStatusLabel =
-    nextContext.weatherStatus === 'real' ? '腾讯实时天气' : '天气暂用估算'
-  const weatherUpdatedLabel = nextContext.weatherFallbackReason ||
-    (nextContext.weatherUpdatedAt
-      ? `更新 ${nextContext.weatherUpdatedAt}`
-      : '根据当天气候生成建议')
+    nextContext.weatherStatus === 'real' ? '实时天气' : '气候参考'
+  const weatherUpdatedLabel = nextContext.weatherUpdatedAt
+    ? `更新 ${nextContext.weatherUpdatedAt}`
+    : '根据城市气候生成建议'
   const weatherTimeMatch = String(nextContext.weatherUpdatedAt || '').match(/\d{1,2}:\d{2}/)
-  const compactUpdatedLabel = nextContext.weatherFallbackReason ||
-    (weatherTimeMatch
-      ? `更新 ${weatherTimeMatch[0]}`
-      : nextContext.weatherUpdatedAt
-        ? `更新 ${nextContext.weatherUpdatedAt}`
-        : '根据当天气候生成')
+  const compactUpdatedLabel = weatherTimeMatch
+    ? `更新 ${weatherTimeMatch[0]}`
+    : nextContext.weatherUpdatedAt
+      ? `更新 ${nextContext.weatherUpdatedAt}`
+      : '根据城市气候生成'
   const weatherSummary = `${nextContext.weather || '天气'} · ${nextContext.temperature || '--'}℃ · 湿度 ${nextContext.humidity || '--'}%`
   const solarTermSummary = nextContext.solarTermName
     ? `${nextContext.solarTermName}${nextContext.solarTermHint || ''}`
@@ -507,6 +648,8 @@ Page({
     guideDesc: '',
     guideAlgorithm: '',
     guideRecipes: [],
+    guideLoading: false,
+    guideStatusText: '',
     recipeRefreshIndex: 0,
     blindBoxRefreshIndex: 0,
     selectedItemIds: [],
@@ -552,12 +695,28 @@ Page({
       recipeRecordService.getRecipeRecords(),
     ])
       .then(([items, recipeRecords]) => {
+        const currentCity = this.data.city || readRecipeCity()
         const safePrefillItemIds = Array.isArray(prefillItemIds)
           ? prefillItemIds.filter(Boolean)
           : []
         const cachedPicker = safePrefillItemIds.length > 0
           ? null
           : readRecipePickerCache()
+        const cachedBlindBox = readRecipeBlindBoxCache(currentCity)
+        const cachedClimateContext = readRecipeClimateCache(currentCity)
+        const cachedPickerContext = getCachedContextForCity(
+          cachedPicker && cachedPicker.context,
+          currentCity,
+        )
+        const cachedBlindBoxContext = getCachedContextForCity(
+          cachedBlindBox && cachedBlindBox.context,
+          currentCity,
+        )
+        const stableCachedContext = cachedBlindBoxContext || cachedPickerContext || cachedClimateContext
+
+        if (stableCachedContext) {
+          saveRecipeClimateCache(currentCity, stableCachedContext)
+        }
 
         if (safePrefillItemIds.length > 0) {
           clearRecipePickerCache()
@@ -581,8 +740,19 @@ Page({
           cachedPicker ? cachedPicker.manualIngredients : this.data.manualIngredients,
           {
             recipeRecords,
+            pickerRecipes: cachedPicker ? cachedPicker.recipes : undefined,
+            blindBoxRecipes: cachedBlindBox ? cachedBlindBox.recipes : undefined,
+            cachedContext: this.data.activeGuideType === 'blindBox' && cachedBlindBoxContext
+              ? cachedBlindBoxContext
+              : stableCachedContext || undefined,
+            cachedGuideStatusText: this.data.activeGuideType === 'blindBox' && cachedBlindBox
+              ? cachedBlindBox.statusText
+              : cachedPicker
+                ? cachedPicker.statusText
+                : '',
           },
         )
+        this.refreshClimateContext(currentCity)
       })
       .catch(() => {
         this.setData({
@@ -613,44 +783,56 @@ Page({
       items,
       safeManualIngredients,
     )
-    const context = buildRadarContext(city, this.data.context)
-    const result = recipeService.getAIRecipeRecommendations(recommendationItems, {
-      selectedItemIds: safeSelectedIds,
-      context,
-    })
+    const context = options.cachedContext
+      ? mergeCloudContext(buildRadarContext(city, this.data.context), options.cachedContext, true)
+      : buildRadarContext(city, this.data.context)
     const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
     const currentGuideType = this.data.activeGuideType
+    const requestedGuideType = options.activeGuideType || ''
     const activeGuideType =
-      currentGuideType === 'blindBox'
+      requestedGuideType ||
+      (currentGuideType === 'blindBox'
         ? 'blindBox'
         : safeSelectedIds.length > 0
         ? 'picker'
         : currentGuideType === 'picker'
           ? ''
-          : currentGuideType
-    const pickerRecipes = safeSelectedIds.length > 0 ? result.recommendations : []
+          : currentGuideType)
+    const shouldClearGuideRecipes = Boolean(options.clearGuideRecipes)
+    const shouldClearPickerRecipes =
+      Boolean(options.clearPickerRecipes) ||
+      (shouldClearGuideRecipes && activeGuideType === 'picker')
+    const shouldClearBlindBoxRecipes =
+      Boolean(options.clearBlindBoxRecipes) ||
+      (shouldClearGuideRecipes && activeGuideType === 'blindBox')
+    const pickerRecipes = shouldClearPickerRecipes
+      ? []
+      : Array.isArray(options.pickerRecipes)
+        ? options.pickerRecipes
+        : this.data.pickerRecipes
     const decoratedPickerRecipes = decorateRecipesWithRecords(
       pickerRecipes,
       recipeRecords,
     )
-    const blindBoxContent = this.buildGuideContent(
-      'blindBox',
-      items,
-      [],
-      expiryUsage.recommendations,
-      context,
-      activeGuideType === 'blindBox' ? this.data.blindBoxRefreshIndex : 0,
-    )
+    const blindBoxRecipes = shouldClearBlindBoxRecipes
+      ? []
+      : Array.isArray(options.blindBoxRecipes)
+        ? options.blindBoxRecipes
+        : this.data.blindBoxRecipes
     const decoratedBlindBoxRecipes = decorateRecipesWithRecords(
-      blindBoxContent.recipes,
+      blindBoxRecipes,
       recipeRecords,
     )
     const guideContent =
       activeGuideType === 'blindBox'
-        ? {
-          ...blindBoxContent,
-          recipes: decoratedBlindBoxRecipes,
-        }
+        ? this.buildGuideContent(
+          'blindBox',
+          items,
+          decoratedBlindBoxRecipes,
+          expiryUsage.recommendations,
+          context,
+          this.data.blindBoxRefreshIndex,
+        )
         : activeGuideType === 'picker'
           ? this.buildGuideContent(
             'picker',
@@ -667,6 +849,12 @@ Page({
       safeManualIngredients,
       this.data.pickerQuery,
     )
+    const shouldRequestCloud =
+      Boolean(options.generateCloud) &&
+      (
+        activeGuideType === 'blindBox' ||
+        (activeGuideType === 'picker' && safeSelectedIds.length > 0)
+      )
 
     const nextData = {
       items,
@@ -679,8 +867,20 @@ Page({
       guideDesc: guideContent.desc,
       guideAlgorithm: guideContent.algorithm,
       guideRecipes: guideContent.recipes,
+      guideLoading: shouldRequestCloud && Boolean(activeGuideType),
+      guideStatusText: shouldRequestCloud && activeGuideType
+        ? activeGuideType === 'blindBox'
+          ? 'AI 正在结合城市、天气和节气生成菜谱'
+          : 'AI 正在围绕料理碗食材生成菜谱'
+        : guideContent.recipes.length > 0
+          ? ''
+          : options.cachedGuideStatusText || '',
       selectedItemIds: safeSelectedIds,
-      selectedItems: result.selectedItems,
+      selectedItems: buildSelectedRecipeItems(
+        recommendationItems,
+        safeManualIngredients,
+        safeSelectedIds,
+      ),
       manualIngredients: safeManualIngredients,
       generatedManualIngredients:
         safeSelectedIds.length > 0
@@ -696,22 +896,18 @@ Page({
 
     this.setData(nextData)
 
-    const cloudRefreshPromise = this.refreshCloudRecommendations({
-      items,
-      recommendationItems,
-      selectedItemIds: safeSelectedIds,
-      context,
-      expiryRecommendations: expiryUsage.recommendations,
-      allowRadarContextUpdate: Boolean(options.refreshRadarContext || safeSelectedIds.length === 0),
-    })
-
-    if (options.persistPickerCache && activeGuideType === 'picker') {
-      saveRecipePickerCache({
-        selectedItemIds: safeSelectedIds,
+    const cloudRefreshPromise = shouldRequestCloud
+      ? this.refreshCloudRecommendations({
+        scene: activeGuideType === 'blindBox' ? 'blindBox' : activeGuideType === 'picker' ? 'picker' : '',
+        items,
+        recommendationItems: activeGuideType === 'blindBox' ? [] : recommendationItems,
+        selectedItemIds: activeGuideType === 'blindBox' ? [] : safeSelectedIds,
         manualIngredients: safeManualIngredients,
-        recipeRefreshIndex: this.data.recipeRefreshIndex,
+        context,
+        expiryRecommendations: expiryUsage.recommendations,
+        allowRadarContextUpdate: Boolean(options.refreshRadarContext || safeSelectedIds.length === 0),
       })
-    }
+      : Promise.resolve()
 
     return cloudRefreshPromise
   },
@@ -719,11 +915,15 @@ Page({
   refreshCloudRecommendations(payload) {
     const requestId = `${Date.now()}-${Math.random()}`
     this.cloudRecipeRequestId = requestId
+    this.climateContextRequestId = ''
+    const scene = payload.scene || 'picker'
 
     return recipeService
       .getCloudAIRecipeRecommendations(payload.recommendationItems, {
         selectedItemIds: payload.selectedItemIds,
         city: payload.context.city || '',
+        context: payload.context,
+        scene,
       })
       .then((cloudResult) => {
         if (this.cloudRecipeRequestId !== requestId) {
@@ -735,31 +935,33 @@ Page({
           cloudResult.context,
           payload.allowRadarContextUpdate,
         )
-        const pickerRecipes = Array.isArray(payload.selectedItemIds) && payload.selectedItemIds.length > 0
+        const cloudRecipes = Array.isArray(cloudResult.recommendations)
           ? cloudResult.recommendations
           : []
+        const pickerRecipes = scene === 'picker'
+          ? cloudRecipes
+          : this.data.pickerRecipes
         const decoratedPickerRecipes = decorateRecipesWithRecords(
           pickerRecipes,
           this.data.recipeRecords,
         )
-        const blindBoxContent = this.buildGuideContent(
-          'blindBox',
-          payload.items,
-          [],
-          payload.expiryRecommendations,
-          context,
-          this.data.activeGuideType === 'blindBox' ? this.data.blindBoxRefreshIndex : 0,
-        )
+        const blindBoxRecipes = scene === 'blindBox'
+          ? cloudRecipes
+          : this.data.blindBoxRecipes
         const decoratedBlindBoxRecipes = decorateRecipesWithRecords(
-          blindBoxContent.recipes,
+          blindBoxRecipes,
           this.data.recipeRecords,
         )
         const guideContent =
           this.data.activeGuideType === 'blindBox'
-            ? {
-              ...blindBoxContent,
-              recipes: decoratedBlindBoxRecipes,
-            }
+            ? this.buildGuideContent(
+              'blindBox',
+              payload.items,
+              decoratedBlindBoxRecipes,
+              payload.expiryRecommendations,
+              context,
+              this.data.blindBoxRefreshIndex,
+            )
             : this.data.activeGuideType === 'picker'
               ? this.buildGuideContent(
                 'picker',
@@ -770,6 +972,9 @@ Page({
                 this.data.recipeRefreshIndex,
               )
               : emptyGuideContent()
+        const statusText = guideContent.recipes.length > 0
+          ? ''
+          : cloudResult.fallbackReason || '云端 AI 暂未生成可用菜谱，请稍后再试。'
 
         this.setData({
           context,
@@ -783,10 +988,116 @@ Page({
           guideDesc: guideContent.desc,
           guideAlgorithm: guideContent.algorithm,
           guideRecipes: guideContent.recipes,
+          guideLoading: false,
+          guideStatusText: statusText,
         })
+        saveRecipeClimateCache(context.city || payload.context.city || this.data.city, context)
+
+        if (scene === 'blindBox') {
+          saveRecipeBlindBoxCache({
+            city: context.city || payload.context.city || this.data.city,
+            recipes: blindBoxRecipes,
+            context,
+            statusText,
+          })
+        }
+
+        if (scene === 'picker' && pickerRecipes.length > 0) {
+          saveRecipePickerCache({
+            selectedItemIds: payload.selectedItemIds,
+            manualIngredients: payload.manualIngredients,
+            recipeRefreshIndex: this.data.recipeRefreshIndex,
+            recipes: pickerRecipes,
+            context,
+            statusText,
+          })
+        }
+      })
+      .catch((error) => {
+        if (this.cloudRecipeRequestId !== requestId) {
+          return
+        }
+
+        const statusText =
+          (error && error.message) || '云端 AI 暂不可用，请稍后再试。'
+
+        this.setData({
+          guideLoading: false,
+          guideStatusText: statusText,
+        })
+
+        if (scene === 'blindBox') {
+          saveRecipeBlindBoxCache({
+            city: payload.context.city || this.data.city,
+            recipes: [],
+            context: payload.context,
+            statusText,
+          })
+        }
+      })
+  },
+
+  refreshClimateContext(city) {
+    const safeCity = normalizeCityName(city || this.data.city || readRecipeCity())
+
+    if (!safeCity) {
+      return Promise.resolve()
+    }
+
+    const cachedContext = readRecipeClimateCache(safeCity)
+
+    if (cachedContext) {
+      const context = mergeCloudContext(
+        buildRadarContext(safeCity, {}),
+        cachedContext,
+        true,
+      )
+
+      this.setData({
+        context,
+        city: context.city || safeCity,
+        cityInput: context.city || safeCity,
+      })
+      return Promise.resolve(context)
+    }
+
+    const requestId = `${Date.now()}-${Math.random()}`
+    this.climateContextRequestId = requestId
+
+    return recipeService
+      .getCloudClimateContext(safeCity, this.data.items)
+      .then((result) => {
+        if (this.climateContextRequestId !== requestId) {
+          return
+        }
+
+        const context = mergeCloudContext(
+          buildRadarContext(safeCity, {}),
+          result.context,
+          true,
+        )
+
+        this.setData({
+          context,
+          city: context.city || safeCity,
+          cityInput: context.city || safeCity,
+        })
+        saveRecipeClimateCache(safeCity, context)
+        return context
       })
       .catch(() => {
-        // 云端 AI 失败时保留本地推荐，避免用户当前操作被打断。
+        if (this.climateContextRequestId !== requestId) {
+          return
+        }
+
+        const context = buildRadarContext(safeCity, {})
+
+        this.setData({
+          context,
+          city: safeCity,
+          cityInput: safeCity,
+        })
+        return context
       })
   },
 
@@ -794,10 +1105,10 @@ Page({
     if (type === 'blindBox') {
       return {
         title: '菜谱盲盒',
-        desc: '不知道吃什么时，按今日气候推荐 3 道应季家常菜。',
+        desc: '不知道吃什么时，AI 会结合城市、天气和节气生成 3 道应季家常菜。',
         algorithm: '',
         recipes: decorateGuideRecipes(
-          buildBlindBoxRecipes(items, context, refreshIndex),
+          rotateRecipes(recommendations, refreshIndex).slice(0, 3),
           '菜谱',
         ),
       }
@@ -884,24 +1195,70 @@ Page({
     }
 
     saveRecipeCity(city)
+
+    const cachedBlindBox = this.data.activeGuideType === 'blindBox'
+      ? readRecipeBlindBoxCache(city)
+      : null
+    const cityOptions = {
+      city,
+      refreshRadarContext: true,
+    }
+
+    if (this.data.activeGuideType === 'blindBox') {
+      cityOptions.activeGuideType = 'blindBox'
+
+      if (cachedBlindBox) {
+        const cachedBlindBoxContext = getCachedContextForCity(
+          cachedBlindBox.context,
+          city,
+        )
+
+        cityOptions.blindBoxRecipes = cachedBlindBox.recipes
+        cityOptions.cachedContext = cachedBlindBoxContext || undefined
+        cityOptions.cachedGuideStatusText = cachedBlindBox.statusText
+      } else {
+        cityOptions.clearBlindBoxRecipes = true
+        cityOptions.generateCloud = true
+      }
+    }
+
     this.setData({
       city,
       cityInput: city,
       cityModalVisible: false,
-      context: {
-        ...this.data.context,
-        city,
-      },
     })
+
+    if (this.data.activeGuideType === 'blindBox' && !cachedBlindBox) {
+      this.setData({
+        activeGuideType: 'blindBox',
+        guideRecipes: [],
+        guideLoading: true,
+        guideStatusText: 'AI 正在读取城市天气并生成菜谱',
+      })
+      this.refreshClimateContext(city).then((climateContext) => {
+        this.applyRecommendations(
+          this.data.items,
+          this.data.selectedItemIds,
+          this.data.manualIngredients,
+          {
+            ...cityOptions,
+            cachedContext: climateContext || readRecipeClimateCache(city) || undefined,
+          },
+        )
+      })
+      return
+    }
+
     this.applyRecommendations(
       this.data.items,
       this.data.selectedItemIds,
       this.data.manualIngredients,
-      {
-        city,
-        refreshRadarContext: true,
-      },
+      cityOptions,
     )
+
+    if (!cachedBlindBox) {
+      this.refreshClimateContext(city)
+    }
   },
 
   handleOpenRecords() {
@@ -1010,7 +1367,74 @@ Page({
   handleSelectGuide(event) {
     const activeGuideType = event.currentTarget.dataset.type
 
+    if (activeGuideType === 'blindBox') {
+      const cachedBlindBox = readRecipeBlindBoxCache(this.data.city)
+
+      if (cachedBlindBox) {
+        const cachedBlindBoxContext = getCachedContextForCity(
+          cachedBlindBox.context,
+          this.data.city,
+        )
+
+        this.applyRecommendations(
+          this.data.items,
+          this.data.selectedItemIds,
+          this.data.manualIngredients,
+          {
+            activeGuideType: 'blindBox',
+            blindBoxRecipes: cachedBlindBox.recipes,
+            cachedContext: cachedBlindBoxContext || undefined,
+            cachedGuideStatusText: cachedBlindBox.statusText,
+          },
+        )
+        return
+      }
+
+      this.setData({
+        activeGuideType: 'blindBox',
+        guideRecipes: [],
+        guideLoading: true,
+        guideStatusText: 'AI 正在读取城市天气并生成菜谱',
+      })
+      this.refreshClimateContext(this.data.city).then((climateContext) => {
+        this.applyRecommendations(
+          this.data.items,
+          this.data.selectedItemIds,
+          this.data.manualIngredients,
+          {
+            activeGuideType: 'blindBox',
+            clearGuideRecipes: true,
+            generateCloud: true,
+            cachedContext: climateContext || readRecipeClimateCache(this.data.city) || undefined,
+          },
+        )
+      })
+      return
+    }
+
     if (activeGuideType === 'picker') {
+      const cachedPicker = readRecipePickerCache()
+
+      if (cachedPicker && cachedPicker.recipes.length > 0) {
+        const cachedPickerContext = getCachedContextForCity(
+          cachedPicker.context,
+          this.data.city,
+        )
+
+        this.applyRecommendations(
+          this.data.items,
+          cachedPicker.selectedItemIds,
+          cachedPicker.manualIngredients,
+          {
+            activeGuideType: 'picker',
+            pickerRecipes: cachedPicker.recipes,
+            cachedContext: cachedPickerContext || undefined,
+            cachedGuideStatusText: cachedPicker.statusText,
+          },
+        )
+        return
+      }
+
       if (this.data.selectedItemIds.length > 0 && this.data.pickerRecipes.length > 0) {
         const guideContent = this.buildGuideContent(
           activeGuideType,
@@ -1027,6 +1451,8 @@ Page({
           guideDesc: guideContent.desc,
           guideAlgorithm: guideContent.algorithm,
           guideRecipes: guideContent.recipes,
+          guideLoading: false,
+          guideStatusText: '',
           pickerVisible: false,
           ...buildPickerState(
             this.data.items,
@@ -1051,6 +1477,8 @@ Page({
         guideDesc: '',
         guideAlgorithm: '',
         guideRecipes: [],
+        guideLoading: false,
+        guideStatusText: '',
         selectedItemIds,
         manualIngredients,
         generatedManualIngredients: manualIngredients,
@@ -1066,24 +1494,13 @@ Page({
       return
     }
 
-    const guideContent = this.buildGuideContent(
-      activeGuideType,
-      this.data.items,
-      this.data.pickerRecipes,
-      this.data.expiryRecommendations,
-      this.data.context,
-      this.data.blindBoxRefreshIndex,
-    )
-    const guideRecipes = activeGuideType === 'blindBox'
-      ? decorateRecipesWithRecords(guideContent.recipes, this.data.recipeRecords)
-      : guideContent.recipes
-
     this.setData({
       activeGuideType,
-      guideTitle: guideContent.title,
-      guideDesc: guideContent.desc,
-      guideAlgorithm: guideContent.algorithm,
-      guideRecipes,
+      guideTitle: '',
+      guideDesc: '',
+      guideAlgorithm: '',
+      guideRecipes: [],
+      guideStatusText: '',
       ...buildPickerState(
         this.data.items,
         this.data.selectedItemIds,
@@ -1261,6 +1678,9 @@ Page({
         this.data.selectedItemIds,
         this.data.manualIngredients,
         {
+          activeGuideType: 'picker',
+          clearGuideRecipes: true,
+          generateCloud: true,
           persistPickerCache: true,
         },
       )
@@ -1296,8 +1716,16 @@ Page({
       manualIngredients: [],
       generatedManualIngredients: [],
       pickerQuery: '',
+      guideLoading: false,
+      guideStatusText: '',
+      pickerRecipes: [],
+      recommendations: [],
     })
-    this.applyRecommendations(this.data.items, [], [])
+    this.applyRecommendations(this.data.items, [], [], {
+      activeGuideType: '',
+      clearGuideRecipes: true,
+      clearPickerRecipes: true,
+    })
   },
 
   handleAddManualToInventory(event) {
@@ -1315,6 +1743,54 @@ Page({
 
   handleRefreshGuide() {
     if (!this.data.activeGuideType) {
+      return
+    }
+
+    if (this.data.activeGuideType === 'blindBox') {
+      const cachedBlindBox = readRecipeBlindBoxCache(this.data.city)
+
+      if (cachedBlindBox) {
+        const cachedBlindBoxContext = getCachedContextForCity(
+          cachedBlindBox.context,
+          this.data.city,
+        )
+
+        this.applyRecommendations(
+          this.data.items,
+          this.data.selectedItemIds,
+          this.data.manualIngredients,
+          {
+            activeGuideType: 'blindBox',
+            blindBoxRecipes: cachedBlindBox.recipes,
+            cachedContext: cachedBlindBoxContext || undefined,
+            cachedGuideStatusText: cachedBlindBox.statusText,
+          },
+        )
+      }
+      return
+    }
+
+    if (this.data.activeGuideType === 'picker') {
+      const cachedPicker = readRecipePickerCache()
+
+      if (cachedPicker && cachedPicker.recipes.length > 0) {
+        const cachedPickerContext = getCachedContextForCity(
+          cachedPicker.context,
+          this.data.city,
+        )
+
+        this.applyRecommendations(
+          this.data.items,
+          cachedPicker.selectedItemIds,
+          cachedPicker.manualIngredients,
+          {
+            activeGuideType: 'picker',
+            pickerRecipes: cachedPicker.recipes,
+            cachedContext: cachedPickerContext || undefined,
+            cachedGuideStatusText: cachedPicker.statusText,
+          },
+        )
+      }
       return
     }
 
@@ -1354,6 +1830,9 @@ Page({
         selectedItemIds: this.data.selectedItemIds,
         manualIngredients: this.data.manualIngredients,
         recipeRefreshIndex,
+        recipes: this.data.pickerRecipes,
+        context: this.data.context,
+        statusText: this.data.guideStatusText,
       })
     }
   },

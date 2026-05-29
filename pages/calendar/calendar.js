@@ -11,6 +11,9 @@ const {
 } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
 
+const CALENDAR_RADAR_CACHE_KEY = 'fridge_calendar_radar_recipe_cache_v1'
+const CALENDAR_RADAR_CACHE_VERSION = 1
+
 const EMPTY_EXPIRY_USAGE = {
   todayItems: [],
   threeDayItems: [],
@@ -50,6 +53,47 @@ const EMPTY_RECIPE_DETAIL = {
   missingItems: [],
   steps: [],
   safetyNote: '',
+}
+
+function normalizeCachedRecipes(recipes) {
+  return Array.isArray(recipes)
+    ? recipes.filter((recipe) => recipe && recipe.id && recipe.title)
+    : []
+}
+
+function readCalendarRadarCache() {
+  try {
+    const cache = wx.getStorageSync(CALENDAR_RADAR_CACHE_KEY)
+
+    if (!cache || cache.version !== CALENDAR_RADAR_CACHE_VERSION) {
+      return null
+    }
+
+    if (cache.date !== getTodayString()) {
+      return null
+    }
+
+    return {
+      recommendations: normalizeCachedRecipes(cache.recommendations),
+      statusText: cache.statusText || '',
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveCalendarRadarCache(payload) {
+  try {
+    wx.setStorageSync(CALENDAR_RADAR_CACHE_KEY, {
+      version: CALENDAR_RADAR_CACHE_VERSION,
+      date: getTodayString(),
+      savedAt: Date.now(),
+      recommendations: normalizeCachedRecipes(payload.recommendations),
+      statusText: payload.statusText || '',
+    })
+  } catch {
+    // 日历菜谱缓存失败时不影响当前页面展示。
+  }
 }
 
 function getZoneDefinition(key) {
@@ -272,22 +316,41 @@ Page({
         const events = reminderService.getCalendarEvents(items)
         const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
         const stats = buildStats(statItems)
-        const mealRadarReport = buildMealRadarReport(items, expiryUsage)
-        const shouldLoadRecipes = expiryUsage.usableCount > 0
+        const cachedRadar = readCalendarRadarCache()
+        const nextExpiryUsage = cachedRadar
+          ? {
+            ...expiryUsage,
+            recommendations: cachedRadar.recommendations,
+          }
+          : expiryUsage
+        const mealRadarReport = buildMealRadarReport(items, nextExpiryUsage)
+        const hasPendingRadarRequest = Boolean(this.mealRadarRecipeRequestId)
+        const shouldLoadRecipes =
+          !cachedRadar && !hasPendingRadarRequest && expiryUsage.usableCount > 0
+        const shouldShowPendingRecipes =
+          !cachedRadar && hasPendingRadarRequest && expiryUsage.usableCount > 0
 
         this.setData({
           events,
           items,
           statItems,
           stats,
-          expiryUsage,
+          expiryUsage: nextExpiryUsage,
           mealRadarReport,
-          radarRecipeLoading: shouldLoadRecipes,
-          radarRecipeStatusText: getInitialRadarRecipeStatus(expiryUsage),
+          radarRecipeLoading: shouldLoadRecipes || shouldShowPendingRecipes,
+          radarRecipeStatusText: cachedRadar
+            ? cachedRadar.statusText || (
+              cachedRadar.recommendations.length > 0
+                ? '今日开饭雷达菜谱已生成。'
+                : '今日开饭雷达暂未生成可用菜谱。'
+            )
+            : getInitialRadarRecipeStatus(expiryUsage),
           loading: false,
         })
         this.renderCalendar()
-        this.loadMealRadarRecipes(items, expiryUsage)
+        if (shouldLoadRecipes) {
+          this.loadMealRadarRecipes(items, expiryUsage)
+        }
       })
       .catch(() => {
         this.mealRadarRecipeRequestId = ''
@@ -337,6 +400,12 @@ Page({
           ? '云端 AI 已结合临期食材和库存生成菜谱。'
           : result.fallbackReason || '云端 AI 暂未生成可用菜谱，请稍后再试。'
 
+        saveCalendarRadarCache({
+          recommendations,
+          statusText,
+        })
+        this.mealRadarRecipeRequestId = ''
+
         this.setData({
           expiryUsage: nextExpiryUsage,
           mealRadarReport: buildMealRadarReport(this.data.items, nextExpiryUsage),
@@ -352,6 +421,12 @@ Page({
         this.setData({
           radarRecipeLoading: false,
           radarRecipeStatusText:
+            (error && error.message) || '云端 AI 暂不可用，本次不使用本地菜谱兜底。',
+        })
+        this.mealRadarRecipeRequestId = ''
+        saveCalendarRadarCache({
+          recommendations: [],
+          statusText:
             (error && error.message) || '云端 AI 暂不可用，本次不使用本地菜谱兜底。',
         })
       })

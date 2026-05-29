@@ -25,6 +25,21 @@ const RECIPE_IMAGE_MAP = {
   'healthy-banana-milk': '/images/recipe/healthy-banana-milk.png',
 }
 
+const RECIPE_IMAGE_KEYWORDS = [
+  { keywords: ['虾', '海鲜', '鲫鱼', '鱼', '贝', '蛤'], image: '/images/recipe/shrimp-broccoli.png' },
+  { keywords: ['汤', '羹', '煲', '炖'], image: '/images/recipe/blind-soup.png' },
+  { keywords: ['粥', '小米', '燕麦'], image: '/images/recipe/warm-noodle.png' },
+  { keywords: ['面', '粉', '米线'], image: '/images/recipe/warm-noodle.png' },
+  { keywords: ['豆腐', '青菜', '菠菜'], image: '/images/recipe/vegetable-tofu-soup.png' },
+  { keywords: ['番茄', '西红柿'], image: '/images/recipe/tomato-egg.png' },
+  { keywords: ['鸡蛋', '滑蛋', '蛋'], image: '/images/recipe/egg-fried-rice.png' },
+  { keywords: ['饭', '米饭', '焖饭'], image: '/images/recipe/blind-rice-bowl.png' },
+  { keywords: ['黄瓜', '凉拌', '沙拉'], image: '/images/recipe/cucumber-egg-salad.png' },
+  { keywords: ['苹果', '香蕉', '水果', '酸奶'], image: '/images/recipe/yogurt-fruit-bowl.png' },
+  { keywords: ['菌', '菇', '木耳'], image: '/images/recipe/mushroom-soup.png' },
+  { keywords: ['菜', '笋', '瓜', '藕', '萝卜'], image: '/images/recipe/stir-fry-greens.png' },
+]
+
 const AI_RECIPE_LIBRARY = [
   {
     id: 'tomato-egg',
@@ -341,37 +356,26 @@ function buildRadarDietAdvice(context) {
     return context.radarAdvice
   }
 
-  const seasonAdviceMap = {
-    春季: '春季饮食宜清爽舒展',
-    夏季: '夏季饮食宜清淡生津',
-    秋季: '秋季饮食宜润燥少辛',
-    冬季: '冬季饮食宜温热护胃',
-  }
-  const cityText = context.city ? `${context.city}今日` : ''
-  const sourceText =
-    context.weatherStatus === 'real'
-      ? ''
-      : '天气暂用估算，'
-  const termText = context.solarTermName
-    ? `临近${context.solarTermName}，`
-    : ''
-  const seasonText = seasonAdviceMap[context.season] || '今天饮食宜清淡均衡'
   const temperature = Number(context.temperature)
   const humidity = Number(context.humidity)
-  const tempText =
-    temperature >= 28
-      ? '气温偏高，少油少辣，适合补水感强的菜。'
-      : temperature <= 12
-        ? '气温偏低，适合安排温热熟食。'
-        : '气温适中，适合做一顿轻负担家常菜。'
-  const humidityText =
-    humidity >= 65
-      ? '湿度较高，可优先选择清爽、少油、容易消化的搭配。'
-      : humidity <= 45
-        ? '空气偏干，可安排汤羹、蒸煮或带水分的食材。'
-        : '湿度适中，注意荤素搭配和不过量。'
+  const mealText = context.mealTime || '这顿'
+  const termText = context.solarTermName
+    ? `${context.solarTermName}前后，`
+    : ''
 
-  return `${cityText}${sourceText}${termText}${seasonText}；${tempText}${humidityText}`
+  if (humidity >= 70) {
+    return `${termText}${mealText}建议走健脾祛湿路线，优先蒸煮、汤菜、豆腐和绿叶菜，少油少辣，避开厚重煎炸。`
+  }
+
+  if (humidity <= 45) {
+    return `${termText}${mealText}建议多一点汤水和润燥食材，选菌菇、瓜果、蒸菜或低盐蛋白，少煎烤辛辣。`
+  }
+
+  if (temperature >= 28) {
+    return `${termText}${mealText}建议清热生津，主菜选蒸煮或快炒时蔬，搭配豆腐鱼虾，少放辣油和甜腻饮品。`
+  }
+
+  return `${termText}${mealText}建议做一顿轻负担家常菜，主菜选蒸煮或清炒，搭配绿叶菜和温和蛋白，口味别太重。`
 }
 
 function getContextLabel(context) {
@@ -545,6 +549,38 @@ function normalizeIngredientText(value) {
     .replace(/[()（）【】\[\]，,、:：；;]/g, '')
 }
 
+function getCleanIngredientName(value) {
+  return String(value || '')
+    .replace(/[.。…]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*[0-9０-９]+(?:\.\d+)?\s*(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺|条)/gi, '')
+    .replace(/\s*(?:各|约|大约|左右)\s*$/g, '')
+    .replace(/[，,、:：；;]\s*$/g, '')
+    .trim()
+}
+
+function getRecipeImage(recipe, id) {
+  if (recipe.image) {
+    return recipe.image
+  }
+
+  if (RECIPE_IMAGE_MAP[id]) {
+    return RECIPE_IMAGE_MAP[id]
+  }
+
+  const text = [
+    recipe.title,
+    ...(Array.isArray(recipe.ingredients) ? recipe.ingredients : []),
+    ...(Array.isArray(recipe.missingItems) ? recipe.missingItems : []),
+  ].join(' ')
+
+  const matched = RECIPE_IMAGE_KEYWORDS.find((entry) =>
+    entry.keywords.some((keyword) => text.includes(keyword)),
+  )
+
+  return matched ? matched.image : DEFAULT_RECIPE_IMAGE
+}
+
 function getItemKey(item) {
   return item && (item._id || item.id || item.name)
 }
@@ -706,17 +742,20 @@ function getAIRecipeRecommendations(items, options) {
 
 function normalizeCloudRecipe(recipe, index) {
   const id = recipe.id || `cloud-recipe-${index}`
+  const missingItems = Array.isArray(recipe.missingItems)
+    ? recipe.missingItems.map(getCleanIngredientName).filter(Boolean)
+    : []
 
   return {
     ...recipe,
     id,
-    image: recipe.image || RECIPE_IMAGE_MAP[id] || DEFAULT_RECIPE_IMAGE,
+    image: getRecipeImage(recipe, id),
     sourceType: recipe.sourceType || 'ai',
     reason: recipe.reason || '云端 AI 根据当前库存生成。',
     availableItems: Array.isArray(recipe.availableItems)
       ? recipe.availableItems
       : [],
-    missingItems: Array.isArray(recipe.missingItems) ? recipe.missingItems : [],
+    missingItems,
     priorityItems: Array.isArray(recipe.priorityItems)
       ? recipe.priorityItems
       : [],
@@ -734,38 +773,69 @@ function normalizeCloudRecipe(recipe, index) {
 }
 
 function getCloudAIRecipeRecommendations(items, options = {}) {
-  const fallback = getAIRecipeRecommendations(items, options)
-
   if (typeof wx === 'undefined' || !wx.cloud) {
     return Promise.reject(new Error('当前环境不支持云端菜谱生成'))
+  }
+
+  const scene = options.scene || 'picker'
+
+  return wx.cloud
+    .callFunction({
+      name: 'generateRecipes',
+      data: {
+        scene,
+        items: Array.isArray(items) ? items : [],
+        selectedItemIds: Array.isArray(options.selectedItemIds)
+          ? options.selectedItemIds
+          : [],
+        city: options.city || '',
+        context: options.context || {},
+      },
+    })
+    .then((res) => {
+      const payload = res.result || {}
+      const isRealProvider = payload.providerStatus === 'real'
+      const recommendations = isRealProvider && Array.isArray(payload.recommendations)
+        ? payload.recommendations.map(normalizeCloudRecipe)
+        : []
+
+      return {
+        context: {
+          ...(payload.context || {}),
+        },
+        selectedItems: Array.isArray(payload.selectedItems)
+          ? payload.selectedItems
+          : [],
+        recommendations,
+        providerStatus: payload.providerStatus || '',
+        fallbackReason: recommendations.length > 0
+          ? ''
+          : payload.fallbackReason || '云端 AI 暂未生成可用菜谱。',
+      }
+    })
+}
+
+function getCloudClimateContext(city, items = []) {
+  if (typeof wx === 'undefined' || !wx.cloud) {
+    return Promise.reject(new Error('当前环境不支持云端天气和雷达建议'))
   }
 
   return wx.cloud
     .callFunction({
       name: 'generateRecipes',
       data: {
+        scene: 'climateRadar',
         items: Array.isArray(items) ? items : [],
-        selectedItemIds: Array.isArray(options.selectedItemIds)
-          ? options.selectedItemIds
-          : [],
-        city: options.city || '',
+        city: city || '',
       },
     })
     .then((res) => {
       const payload = res.result || {}
-      const recommendations = Array.isArray(payload.recommendations)
-        ? payload.recommendations.map(normalizeCloudRecipe)
-        : fallback.recommendations
 
       return {
         context: {
-          ...fallback.context,
           ...(payload.context || {}),
         },
-        selectedItems: Array.isArray(payload.selectedItems)
-          ? payload.selectedItems
-          : fallback.selectedItems,
-        recommendations,
         providerStatus: payload.providerStatus || '',
         fallbackReason: payload.fallbackReason || '',
       }
@@ -994,6 +1064,7 @@ module.exports = {
   fallbackAIRecipes,
   getAIRecipeRecommendations,
   getCloudAIRecipeRecommendations,
+  getCloudClimateContext,
   getCloudExpiryRecipeRecommendations,
   getBlindBoxRecommendation,
   getBlindBoxRecommendations,

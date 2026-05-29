@@ -6,6 +6,35 @@ cloud.init({
 })
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const CHINA_TIME_OFFSET_MS = 8 * 60 * 60 * 1000
+const SOLAR_TERM_PREVIEW_THRESHOLD_DAYS = 3
+
+const SOLAR_TERMS = [
+  { name: '小寒', month: 1, day: 5 },
+  { name: '大寒', month: 1, day: 20 },
+  { name: '立春', month: 2, day: 4 },
+  { name: '雨水', month: 2, day: 19 },
+  { name: '惊蛰', month: 3, day: 5 },
+  { name: '春分', month: 3, day: 20 },
+  { name: '清明', month: 4, day: 4 },
+  { name: '谷雨', month: 4, day: 20 },
+  { name: '立夏', month: 5, day: 5 },
+  { name: '小满', month: 5, day: 21 },
+  { name: '芒种', month: 6, day: 5 },
+  { name: '夏至', month: 6, day: 21 },
+  { name: '小暑', month: 7, day: 7 },
+  { name: '大暑', month: 7, day: 22 },
+  { name: '立秋', month: 8, day: 7 },
+  { name: '处暑', month: 8, day: 23 },
+  { name: '白露', month: 9, day: 7 },
+  { name: '秋分', month: 9, day: 23 },
+  { name: '寒露', month: 10, day: 8 },
+  { name: '霜降', month: 10, day: 23 },
+  { name: '立冬', month: 11, day: 7 },
+  { name: '小雪', month: 11, day: 22 },
+  { name: '大雪', month: 12, day: 7 },
+  { name: '冬至', month: 12, day: 21 },
+]
 
 const MOCK_RECIPES = [
   {
@@ -108,18 +137,89 @@ function parseDate(dateString) {
   return new Date(parts[0], parts[1] - 1, parts[2])
 }
 
-function getToday() {
-  const now = new Date()
+function getChinaDateParts(date = new Date()) {
+  const chinaDate = new Date(date.getTime() + CHINA_TIME_OFFSET_MS)
 
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return {
+    year: chinaDate.getUTCFullYear(),
+    month: chinaDate.getUTCMonth() + 1,
+    day: chinaDate.getUTCDate(),
+    hour: chinaDate.getUTCHours(),
+  }
+}
+
+function getToday() {
+  const today = getChinaDateParts()
+
+  return new Date(today.year, today.month - 1, today.day)
 }
 
 function getTodayString() {
-  const today = getToday()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
+  const today = getChinaDateParts()
+  const month = String(today.month).padStart(2, '0')
+  const day = String(today.day).padStart(2, '0')
 
-  return `${today.getFullYear()}-${month}-${day}`
+  return `${today.year}-${month}-${day}`
+}
+
+function getDisplaySolarTerm() {
+  const todayParts = getChinaDateParts()
+  const today = new Date(todayParts.year, todayParts.month - 1, todayParts.day)
+  const candidates = [todayParts.year - 1, todayParts.year, todayParts.year + 1].flatMap((targetYear) =>
+    SOLAR_TERMS.map((term) => ({
+      name: term.name,
+      date: new Date(targetYear, term.month - 1, term.day),
+    })),
+  )
+    .sort((left, right) => left.date.getTime() - right.date.getTime())
+  let previousTerm = null
+  let nextTerm = null
+
+  candidates.forEach((term) => {
+    if (term.date.getTime() <= today.getTime()) {
+      previousTerm = term
+      return
+    }
+
+    if (!nextTerm) {
+      nextTerm = term
+    }
+  })
+
+  if (!previousTerm && nextTerm) {
+    return {
+      solarTermName: nextTerm.name,
+      solarTermHint: `还有 ${Math.round((nextTerm.date.getTime() - today.getTime()) / DAY_MS)} 天`,
+    }
+  }
+
+  if (!previousTerm) {
+    return {
+      solarTermName: '',
+      solarTermHint: '',
+    }
+  }
+
+  const daysSincePrevious = Math.round((today.getTime() - previousTerm.date.getTime()) / DAY_MS)
+
+  if (daysSincePrevious === 0) {
+    return {
+      solarTermName: previousTerm.name,
+      solarTermHint: '当日',
+    }
+  }
+
+  if (daysSincePrevious <= SOLAR_TERM_PREVIEW_THRESHOLD_DAYS || !nextTerm) {
+    return {
+      solarTermName: previousTerm.name,
+      solarTermHint: `已过 ${daysSincePrevious} 天`,
+    }
+  }
+
+  return {
+    solarTermName: nextTerm.name,
+    solarTermHint: `还有 ${Math.round((nextTerm.date.getTime() - today.getTime()) / DAY_MS)} 天`,
+  }
 }
 
 function getDaysUntil(dateString) {
@@ -143,6 +243,16 @@ function normalizeIngredientText(value) {
     .replace(/[0-9０-９]+(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺)?/gi, '')
     .replace(/适量|少许|少量|半个|半颗|一份|一小把|一把/g, '')
     .replace(/[()（）【】\[\]，,、:：；;]/g, '')
+}
+
+function getCleanIngredientName(value) {
+  return String(value || '')
+    .replace(/[.。…]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*[0-9０-９]+(?:\.\d+)?\s*(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺|条)/gi, '')
+    .replace(/\s*(?:各|约|大约|左右)\s*$/g, '')
+    .replace(/[，,、:：；;]\s*$/g, '')
+    .trim()
 }
 
 function getItemKey(item) {
@@ -232,7 +342,11 @@ function matchRecipe(recipe, items, sourceType = 'ai') {
     }
 
     if (!isBasicPantryIngredient(ingredient)) {
-      missingItems.push(ingredient)
+      const cleanIngredient = getCleanIngredientName(ingredient)
+
+      if (cleanIngredient) {
+        missingItems.push(cleanIngredient)
+      }
     }
   })
 
@@ -278,10 +392,125 @@ function sortRecommendations(recommendations) {
   })
 }
 
+function getMealTime(hour) {
+  if (hour < 10) {
+    return '早餐'
+  }
+
+  if (hour < 14) {
+    return '午餐'
+  }
+
+  if (hour < 17) {
+    return '下午加餐'
+  }
+
+  if (hour < 21) {
+    return '晚餐'
+  }
+
+  return '夜间轻食'
+}
+
+function getRegionalDietProfile(city) {
+  const normalizedCity = normalizeCityName(city)
+  const profileGroups = [
+    {
+      cities: ['广州', '深圳', '南宁', '海口', '福州', '厦门'],
+      profile: '岭南沿海，天气湿热或雨水偏多时更适合清爽、祛湿、少油，常用冬瓜、薏米、赤小豆、鱼虾、时蔬。',
+    },
+    {
+      cities: ['长沙', '武汉', '重庆', '成都', '贵阳'],
+      profile: '中南和川渝一带湿气较重、口味容易偏辣，今天建议把辣度收一收，用清蒸、炖汤、焖煮或清炒平衡。',
+    },
+    {
+      cities: ['北京', '天津', '石家庄', '太原', '郑州', '西安', '兰州', '银川', '西宁', '乌鲁木齐'],
+      profile: '北方内陆偏干或昼夜温差明显，适合润燥补水、少煎炸，可安排汤羹、蒸菜、菌菇、瓜果和低盐蛋白。',
+    },
+    {
+      cities: ['上海', '杭州', '南京', '苏州', '合肥'],
+      profile: '江南地区湿润，适合清鲜少油、略带汤水的家常菜，兼顾开胃和不过甜不过咸。',
+    },
+    {
+      cities: ['青岛', '济南', '大连'],
+      profile: '沿海或胶东气候受海风影响，适合搭配海鲜、菌菇和时蔬，少油低盐，避免过度辛辣。',
+    },
+    {
+      cities: ['哈尔滨', '长春', '沈阳'],
+      profile: '东北地区更重视热量和熟食口感，天气偏凉时适合热汤、炖菜和根茎类；天气偏热时减少厚重油脂。',
+    },
+    {
+      cities: ['昆明'],
+      profile: '高原气候温差明显、体感偏干，适合菌菇、鲜蔬、汤羹和温和蛋白，避免过燥过辣。',
+    },
+    {
+      cities: ['拉萨'],
+      profile: '高原地区空气偏干、温差较大，适合温热熟食、汤水和易消化搭配，避免过油过辛辣。',
+    },
+  ]
+  const matched = profileGroups.find((group) => group.cities.includes(normalizedCity))
+
+  return matched
+    ? matched.profile
+    : '按当地地域饮食习惯和今天温湿度调整，优先选择家常、少油、易执行的一餐。'
+}
+
+function getRegionalAdviceFocus(city) {
+  const normalizedCity = normalizeCityName(city)
+  const focusMap = {
+    广州: '清润祛湿，适合蒸鱼、冬瓜汤、豆腐青菜，少油少辣',
+    深圳: '清爽祛湿，适合鱼虾、冬瓜、时蔬和汤菜，少油少辣',
+    南宁: '清爽祛湿，适合汤菜、鱼虾和绿叶菜，酸辣口味别太重',
+    海口: '清爽补水，适合蒸煮海鲜、冬瓜和绿叶菜，少煎炸',
+    长沙: '湘味可以保留香气但收辣降油，适合蒸菜、汤菜和清炒时蔬',
+    武汉: '适合温润清爽，主菜选蒸煮或汤菜，热干厚味少一点',
+    重庆: '麻辣要收住，适合清汤、蒸菜和豆腐青菜，减少油重锅底',
+    成都: '香辣可留香不留重油，适合汤菜、蒸菜和清炒时蔬',
+    北京: '润燥补水，适合汤羹、蒸菜、菌菇和低盐蛋白，少煎炸',
+    天津: '润燥少盐，适合汤菜、蒸蛋、菌菇和绿叶菜，少油炸',
+    上海: '清鲜少油，适合汤菜、蒸鱼、豆腐和时蔬，少甜腻',
+    杭州: '清鲜带汤水，适合蒸煮、笋类、豆腐和绿叶菜，少油腻',
+    南京: '清润少油，适合鸭汤、豆腐、菌菇和绿叶菜，口味别太咸',
+    苏州: '清鲜少甜腻，适合蒸鱼、汤菜、豆腐和时蔬',
+    青岛: '少油低盐，适合海鲜、菌菇和绿叶菜，避免重辣',
+    济南: '润燥少油，适合汤羹、蒸菜和清炒时蔬',
+    大连: '适合海鲜和时蔬搭配，少油低盐，避免重辣',
+    昆明: '菌菇和鲜蔬很合适，搭配汤羹和温和蛋白，少燥辣',
+  }
+
+  return focusMap[normalizedCity] || '优先选择蒸煮、汤菜、豆腐、鱼虾或绿叶菜，少油少辣，避开厚重煎炸'
+}
+
+function buildRuleRadarAdvice(context = {}) {
+  const mealText = context.mealTime || '这顿'
+  const focus = getRegionalAdviceFocus(context.city)
+  const termText = context.solarTermName
+    ? `${context.solarTermName}前后，`
+    : ''
+  const humidity = Number(context.humidity)
+  const temperature = Number(context.temperature)
+  let climateAction = ''
+
+  if (humidity >= 75) {
+    climateAction = '湿气偏重，'
+  } else if (humidity <= 40) {
+    climateAction = '体感偏干，'
+  } else if (temperature >= 28) {
+    climateAction = '暑热渐起，'
+  }
+
+  if (mealText === '夜间轻食') {
+    return `${termText}${climateAction}夜间别吃太厚重，${focus}。`
+  }
+
+  return `${termText}${climateAction}${mealText}建议直接走${focus}的路线。`
+}
+
 function getMockContext(searchInsight = '', city = '') {
-  const now = new Date()
-  const month = now.getMonth() + 1
-  const hour = now.getHours()
+  const now = getChinaDateParts()
+  const month = now.month
+  const hour = now.hour
+  const solarTerm = getDisplaySolarTerm()
   let season = '春季'
 
   if (month >= 6 && month <= 8) {
@@ -292,21 +521,28 @@ function getMockContext(searchInsight = '', city = '') {
     season = '冬季'
   }
 
-  return {
+  const context = {
     date: getTodayString(),
     city: city || process.env.FRIDGE_DEFAULT_CITY || '上海',
     season,
     weather: season === '夏季' ? '晴热' : season === '冬季' ? '阴冷' : '微风',
     temperature: season === '夏季' ? 31 : season === '冬季' ? 8 : 22,
     humidity: season === '秋季' ? 48 : 58,
-    mealTime: hour < 10 ? '早餐' : hour < 15 ? '午餐' : '晚餐',
+    mealTime: getMealTime(hour),
+    localHour: hour,
+    ...solarTerm,
+    regionalDietProfile: getRegionalDietProfile(city),
     weatherSource: 'mock',
     weatherStatus: 'fallback',
     weatherUpdatedAt: getTodayString(),
-    radarAdvice: '天气数据暂用季节估算，今天饮食以清淡均衡、顺应温湿度为主。',
     radarAdviceSource: 'rule',
     summary: searchInsight || '云端菜谱会结合当日气候和季节给出轻负担搭配。',
     searchInsight: searchInsight || '联网搜索未启用时，使用季节和气候规则生成建议。',
+  }
+
+  return {
+    ...context,
+    radarAdvice: buildRuleRadarAdvice(context),
   }
 }
 
@@ -595,7 +831,10 @@ async function buildRecommendationContext(city, searchInsight, items, scene) {
       ...baseContext,
       ...weatherProfile,
       summary: `${weatherProfile.city}${weatherProfile.weather}，${weatherProfile.temperature || '--'}℃，湿度 ${weatherProfile.humidity || '--'}%，适合按气候安排低负担家常菜。`,
-      radarAdvice: `${weatherProfile.city}${weatherProfile.weather}，${weatherProfile.temperature || '--'}℃、湿度 ${weatherProfile.humidity || '--'}%，今天适合按温湿度安排清淡均衡的一餐。`,
+      radarAdvice: buildRuleRadarAdvice({
+        ...baseContext,
+        ...weatherProfile,
+      }),
       radarAdviceSource: 'rule',
     }
   } catch (error) {
@@ -605,6 +844,36 @@ async function buildRecommendationContext(city, searchInsight, items, scene) {
       weatherError: error.message || '真实天气暂不可用',
     }
   }
+}
+
+function getProvidedRecommendationContext(context, city, scene, items) {
+  if (!context || typeof context !== 'object') {
+    return null
+  }
+
+  const safeCity = normalizeCityName(city)
+  const contextCity = normalizeCityName(context.city || safeCity)
+
+  if (safeCity && contextCity && safeCity !== contextCity) {
+    return null
+  }
+
+  const nextContext = {
+    ...context,
+    city: contextCity || safeCity,
+    scene,
+    ...(!context.solarTermName ? getDisplaySolarTerm() : {}),
+    regionalDietProfile: context.regionalDietProfile || getRegionalDietProfile(contextCity || safeCity),
+    inventoryScan: scene === 'expiryRadar'
+      ? buildInventoryScanSummary(items)
+      : context.inventoryScan || null,
+  }
+
+  if (!nextContext.weather || nextContext.temperature === undefined || nextContext.humidity === undefined) {
+    return null
+  }
+
+  return nextContext
 }
 
 async function getSearchInsight(city) {
@@ -733,6 +1002,23 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
   }))
   const selectedNames = selectedItems.map((item) => item.name).join('、')
 
+  if (scene === 'blindBox') {
+    return [
+      '请为微信小程序“冰箱雷达”的“菜谱盲盒”生成 3 道应季养生家常菜。',
+      '这是用户不知道吃什么时的灵感入口，不要读取或假设用户冰箱库存，不要写“已有食材”。',
+      '必须综合城市、当天真实天气或兜底天气、温度、湿度、季节、节气、当前用餐时段来设计菜谱。',
+      '菜谱不要过于简单，要像可以真正照着做的家常菜：说明备菜、切配、火候、时间、判断熟度、出锅状态和可替代做法。',
+      '每道菜写 5-7 个步骤，每一步都要具体，避免“炒熟即可”“简单调味”这类空话。',
+      '可以参考中医食养表达，但不要做医疗诊断、治疗承诺，不要说能治疗疾病。',
+      'ingredients 只写主料和关键辅料的纯食材名，不要写数量、单位、状态或省略号，例如写“鲫鱼”不要写“鲜活鲫鱼 1 条”。',
+      '不要把盐、油、水、糖、酱油、葱姜蒜这类基础调味列入 ingredients。',
+      '菜名要像真实家常菜，不要生成纯调料菜、标题党菜或难以执行的菜。',
+      '只返回 JSON，格式如下：',
+      '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"25 分钟","difficulty":"中等","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结","radarAdvice":"一句只根据城市天气气候生成的养生雷达建议"}',
+      `今日上下文：${JSON.stringify(context)}`,
+    ].join('\n')
+  }
+
   if (scene === 'expiryRadar') {
     const scanSummary = context.inventoryScan || buildInventoryScanSummary(items)
 
@@ -748,7 +1034,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
       'ingredients 必须包含完整主料和关键辅料，方便前端继续显示“已有 / 缺哪样”。',
       'ingredients 里的食材名请使用纯食材名，不要带“临期、库存、1份、少许、适量”等修饰；数量和状态写在 reason 或 steps 里。',
       '不要生成“葱快手小炒”这类只把葱、调料、配菜当主菜的方案；菜名需要像真实家常菜。',
-      '步骤要比模板更具体，每道菜 3-5 步，说明关键处理方式和临期食材怎么用掉。',
+      '步骤要比模板更具体，每道菜 5-7 步，说明备菜、切配、火候、时间、判断熟度、临期食材怎么优先用掉和出锅状态。',
       selectedNames ? `本轮优先处理食材：${selectedNames}` : '本轮没有明显临期食材，请根据全部未过期库存生成。',
       `库存扫描结果：${JSON.stringify(scanSummary)}`,
       '只返回 JSON，格式如下：',
@@ -759,16 +1045,43 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
   }
 
   return [
-    '请为冰箱库存生成 5 道家常菜谱。',
-    '要求：优先使用 3 天内到期的食材；不要使用已过期食材；步骤简单；缺少食材可以列出。',
-    '请结合今日城市、天气、温度、湿度和节气，让推荐理由更偏气候养生和家常饮食管理。',
+    '请为微信小程序“冰箱雷达”的“我来选食材”生成 3 道家常菜谱。',
+    '用户已经明确选择料理碗里的食材，必须围绕这些食材设计菜谱，不要偏离主题。',
+    '要求：优先使用用户点选食材；不要使用已过期食材；缺少食材可以列出，但不要列基础调味品。',
+    '请结合今日城市、天气、温度、湿度、季节和节气，让推荐理由更偏气候养生和家常饮食管理。',
     'radarAdvice 只能根据城市、天气、温度、湿度和节气生成，不要引用库存、选中食材、临期食材或菜谱结果。',
     '可以参考中医食养表达，但不要做医疗诊断、治疗承诺，不要说能治疗疾病。',
+    '菜谱不要过于简单，要写成新手能照着做的版本。',
+    '每道菜写 5-7 个步骤，每一步都要包含具体操作，例如切多大、先后顺序、火候、约几分钟、看到什么状态再进入下一步。',
+    '步骤里可以给出低成本替代方案和口味调整建议，但不要把步骤写成大段散文。',
+    'ingredients 里的食材名请使用纯食材名，不要带“临期、库存、1份、少许、适量”等修饰。',
     selectedNames ? `用户点选的重点食材：${selectedNames}` : '用户未点选食材，请根据库存整体推荐。',
     '只返回 JSON，格式如下：',
-    '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"15 分钟","difficulty":"简单","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结","radarAdvice":"一句只根据城市天气气候生成的养生雷达建议"}',
+    '{"recipes":[{"id":"短英文id","title":"菜名","ingredients":["食材"],"timeCost":"25 分钟","difficulty":"中等","tags":["标签"],"steps":["步骤"],"safetyNote":"安全提示","reason":"推荐原因"}],"summary":"一句话总结","radarAdvice":"一句只根据城市天气气候生成的养生雷达建议"}',
     `今日上下文：${JSON.stringify(context)}`,
     `库存：${JSON.stringify(compactItems)}`,
+  ].join('\n')
+}
+
+function buildClimateAdvicePrompt(context) {
+  return [
+    '请为微信小程序“冰箱雷达”的 AI 菜谱页生成一句“雷达建议”。',
+    '上方天气卡已经展示城市、天气、温度和湿度，雷达建议里不要重复这些数字和天气词。',
+    '不要以城市名开头，不要写“广州今日雨”“长沙多云”“29℃湿度63%”这类复述天气的信息。',
+    '直接给用户这顿饭怎么吃：推荐烹饪方式、食材方向、口味控制，以及需要避开的做法。',
+    '必须体现地域饮食特征，但表达要自然，例如长沙可以提“湘味收辣降油”，广州可以提“清润祛湿”。',
+    '必须结合气候体感、节气阶段和中医食养逻辑，用“祛湿、健脾、润燥、清热、生津、温养”等食养方向之一组织建议。',
+    '可以提节气判断，例如“小满后芒种前湿热渐重”“春末夏初宜清润”，但不要堆术语。',
+    `当前用餐时段：${context.mealTime || '这顿'}。不要固定写午餐，必须按这个时段措辞。`,
+    `当前节气：${context.solarTermName || '未知'}（${context.solarTermHint || '未知'}）。`,
+    `地域饮食画像：${context.regionalDietProfile || getRegionalDietProfile(context.city)}。`,
+    '不要引用库存、选中食材、临期食材或菜谱结果。',
+    '可以参考中医食养表达，但不要做医疗诊断、治疗承诺，不要说能治疗疾病。',
+    '不要说“天气暂用估算”“真实天气不可用”“兜底天气”等技术状态。',
+    '建议控制在 55-85 个中文字符，不要太短，不要像模板标语。',
+    '只返回 JSON，格式如下：',
+    '{"radarAdvice":"一句气候养生建议"}',
+    `今日上下文：${JSON.stringify(context)}`,
   ].join('\n')
 }
 
@@ -806,13 +1119,48 @@ async function callCloudBaseAI(items, context, selectedItems, scene = '') {
   return extractJson(getAiText(result))
 }
 
+async function callCloudBaseClimateAdvice(context) {
+  if (!isEnabled(process.env.FRIDGE_ENABLE_REAL_AI)) {
+    throw new Error('未启用 FRIDGE_ENABLE_REAL_AI')
+  }
+
+  const tcb = safeRequire('@cloudbase/node-sdk')
+
+  if (!tcb) {
+    throw new Error('未安装 CloudBase Node SDK')
+  }
+
+  const app = tcb.init({
+    env: getCloudBaseEnvId(),
+    timeout: 60000,
+  })
+  const model = app.ai().createModel(getAiProvider())
+  const result = await model.generateText({
+    model: getAiModelName(),
+    messages: [
+      {
+        role: 'system',
+        content:
+          '你是冰箱管家的气候食养建议助手。输出必须是 JSON，不要输出 Markdown。',
+      },
+      {
+        role: 'user',
+        content: buildClimateAdvicePrompt(context),
+      },
+    ],
+  })
+  const parsed = extractJson(getAiText(result))
+
+  return String(parsed.radarAdvice || '').trim()
+}
+
 function buildMockRecommendations(baseItems) {
   return sortRecommendations(
     MOCK_RECIPES.map((recipe) => matchRecipe(recipe, baseItems, 'mock')),
   )
 }
 
-function normalizeAiRecommendations(aiResult, baseItems, maxCount = 5) {
+function normalizeAiRecommendations(aiResult, baseItems, maxCount = 5, sourceType = 'ai') {
   const recipes = Array.isArray(aiResult.recipes) ? aiResult.recipes : []
 
   if (recipes.length === 0) {
@@ -820,7 +1168,10 @@ function normalizeAiRecommendations(aiResult, baseItems, maxCount = 5) {
   }
 
   return sortRecommendations(
-    recipes.slice(0, maxCount).map((recipe) => matchRecipe(recipe, baseItems, 'ai')),
+    recipes.slice(0, maxCount).map((recipe) => ({
+      ...matchRecipe(recipe, baseItems, sourceType),
+      providerStatus: 'real',
+    })),
   )
 }
 
@@ -829,15 +1180,50 @@ exports.main = async (event = {}) => {
   const usableItems = getUsableItems(items)
   const scene = event.scene || event.mode || ''
   const isExpiryRadar = scene === 'expiryRadar'
+  const isBlindBox = scene === 'blindBox'
+  const isPicker = scene === 'picker'
+  const isClimateRadar = scene === 'climateRadar'
   const selectedItems = isExpiryRadar
     ? getSelectedItems(usableItems, event.priorityItemIds)
-    : getSelectedItems(usableItems, event.selectedItemIds)
-  const baseItems = isExpiryRadar
+    : isBlindBox
+      ? []
+      : getSelectedItems(usableItems, event.selectedItemIds)
+  const baseItems = isBlindBox
+    ? []
+    : isExpiryRadar
     ? usableItems
     : selectedItems.length > 0 ? selectedItems : usableItems
   const city = event.city || process.env.FRIDGE_DEFAULT_CITY || '上海'
-  const searchInsight = await getSearchInsight(city)
-  const context = await buildRecommendationContext(city, searchInsight, items, scene)
+  const providedContext = getProvidedRecommendationContext(event.context, city, scene, items)
+  const searchInsight = providedContext ? '' : await getSearchInsight(city)
+  const context = providedContext || await buildRecommendationContext(city, searchInsight, items, scene)
+
+  if (isClimateRadar) {
+    try {
+      const radarAdvice = await callCloudBaseClimateAdvice(context)
+
+      return {
+        context: {
+          ...context,
+          radarAdvice: radarAdvice || context.radarAdvice,
+          radarAdviceSource: radarAdvice ? 'ai' : context.radarAdviceSource || 'rule',
+        },
+        selectedItems: [],
+        recommendations: [],
+        providerStatus: radarAdvice ? 'real' : 'context',
+        fallbackReason: '',
+      }
+    } catch (error) {
+      return {
+        context,
+        selectedItems: [],
+        recommendations: [],
+        providerStatus: 'context',
+        fallbackReason:
+          error.message || error.code || '云端 AI 雷达建议暂不可用，已保留天气上下文。',
+      }
+    }
+  }
 
   if (isExpiryRadar && baseItems.length === 0) {
     return {
@@ -854,15 +1240,16 @@ exports.main = async (event = {}) => {
     const recommendations = normalizeAiRecommendations(
       aiResult,
       baseItems,
-      isExpiryRadar ? 3 : 5,
+      isExpiryRadar || isBlindBox || isPicker ? 3 : 5,
+      isBlindBox ? 'blindBox' : 'ai',
     )
 
     return {
       context: {
         ...context,
         summary: aiResult.summary || context.summary,
-        radarAdvice: aiResult.radarAdvice || context.radarAdvice,
-        radarAdviceSource: aiResult.radarAdvice ? 'ai' : context.radarAdviceSource || 'rule',
+        radarAdvice: context.radarAdvice,
+        radarAdviceSource: context.radarAdviceSource || 'rule',
       },
       selectedItems: selectedItems.map(formatItem),
       recommendations,
@@ -870,7 +1257,7 @@ exports.main = async (event = {}) => {
       fallbackReason: '',
     }
   } catch (error) {
-    if (isExpiryRadar) {
+    if (isExpiryRadar || isBlindBox || isPicker) {
       return {
         context,
         selectedItems: selectedItems.map(formatItem),

@@ -1,10 +1,26 @@
 .recipes-page {
   overflow-x: hidden;
-  padding-bottom: 72rpx;
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 12% 4%, rgba(221, 248, 232, 0.80), rgba(221, 248, 232, 0) 260rpx),
     radial-gradient(circle at 88% 10%, rgba(255, 209, 106, 0.18), rgba(255, 209, 106, 0) 230rpx),
     linear-gradient(180deg, #fff9ea 0%, #fff4de 58%, #f4fff7 100%);
+}
+
+.guide-status-card {
+  margin-top: 22rpx;
+  min-height: 120rpx;
+  padding: 34rpx 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.45;
+}
+
+.guide-status-card.loading {
+  border-color: rgba(21, 154, 91, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 254, 248, 0.94) 0%, rgba(239, 252, 243, 0.94) 100%);
 }
 
 .recipe-hero {
