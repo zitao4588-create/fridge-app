@@ -31,6 +31,10 @@
         "type": "folder"
       },
       {
+        "value": ".codegraph",
+        "type": "folder"
+      },
+      {
         "value": ".DS_Store",
         "type": "file"
       },
@@ -104,6 +108,14 @@
       },
       {
         "value": "preview-info.json",
+        "type": "file"
+      },
+      {
+        "value": "preview-qrcode-20260530-1829.png",
+        "type": "file"
+      },
+      {
+        "value": "preview-info-20260530-1829.json",
         "type": "file"
       }
     ],
