@@ -17,6 +17,94 @@
       {
         "value": "public",
         "type": "folder"
+      },
+      {
+        "value": "cloudfunctions",
+        "type": "folder"
+      },
+      {
+        "value": "custom-tab-bar",
+        "type": "folder"
+      },
+      {
+        "value": "miniprogram_npm",
+        "type": "folder"
+      },
+      {
+        "value": ".DS_Store",
+        "type": "file"
+      },
+      {
+        "value": ".gitignore",
+        "type": "file"
+      },
+      {
+        "value": "AGENTS.md",
+        "type": "file"
+      },
+      {
+        "value": "README.md",
+        "type": "file"
+      },
+      {
+        "value": "PROJECT.md",
+        "type": "file"
+      },
+      {
+        "value": "PROJECT_CONTEXT.md",
+        "type": "file"
+      },
+      {
+        "value": "TODO.md",
+        "type": "file"
+      },
+      {
+        "value": "DECISIONS.md",
+        "type": "file"
+      },
+      {
+        "value": "BUG_NOTES.md",
+        "type": "file"
+      },
+      {
+        "value": "package.json",
+        "type": "file"
+      },
+      {
+        "value": "package-lock.json",
+        "type": "file"
+      },
+      {
+        "value": "tsconfig.json",
+        "type": "file"
+      },
+      {
+        "value": "tsconfig.app.json",
+        "type": "file"
+      },
+      {
+        "value": "tsconfig.node.json",
+        "type": "file"
+      },
+      {
+        "value": "eslint.config.js",
+        "type": "file"
+      },
+      {
+        "value": "vite.config.ts",
+        "type": "file"
+      },
+      {
+        "value": "index.html",
+        "type": "file"
+      },
+      {
+        "value": "preview-qrcode.png",
+        "type": "file"
+      },
+      {
+        "value": "preview-info.json",
+        "type": "file"
       }
     ],
     "include": []
