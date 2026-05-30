@@ -194,8 +194,8 @@
 - 当前定位为 AI 菜谱体验页。
 - 顶部顺序为城市天气卡、雷达建议、我的收藏、菜谱盲盒 / 我来选食材切换。
 - 天气信息通过 `generateRecipes` 云函数读取腾讯实时天气；前端不保存腾讯位置服务 key。
-- 雷达建议通过 `scene: "climateRadar"` 独立生成，只结合城市、天气、温湿度、节气、用餐时段、地域饮食特征和中医食养方向，不重复天气卡里的数字。
-- 雷达建议使用北京时间判断用餐时段，晚上应进入晚餐建议，不再固定午餐。
+- 雷达建议通过 `scene: "climateRadar"` 独立生成，只结合城市、天气、温湿度、节气、地域饮食特征和中医食养方向，不重复天气卡里的数字。
+- 雷达建议已改为今日全天饮食建议，不再区分早餐、午餐、晚餐或夜间轻食。
 - 进入菜谱页后，下方默认保持空白，不自动展示“临期去化攻略”。
 - 菜谱页当前只保留“菜谱盲盒”和“我来选食材”两个入口。
 - “菜谱盲盒”不读取冰箱库存，只按当前城市、天气、节气和气候食养方向调用云端 AI 生成 3 道应季养生家常菜。
@@ -296,14 +296,17 @@ type FridgeItem = {
 ### 本地缓存
 
 - `fridge_recipe_picker_cache_v2`
+  - 当前缓存版本：3
   - 用于保存最近一次“我来选食材”生成结果
   - 保存内容包括已选库存食材 ID、临时食材、云端菜谱、气候上下文、状态文案和保存时间
   - 只使用 `wx.setStorageSync`，不写入 CloudBase
   - 用户点“清空”时清除，切页面或切换入口不清除
 - `fridge_recipe_blind_box_cache_v1`
+  - 当前缓存版本：5
   - 用于保存当天某个城市第一次点击“菜谱盲盒”生成的 3 道菜
   - 缓存 key 带日期和城市，避免上海、广州、长沙等城市结果串用
 - `fridge_recipe_climate_cache_v1`
+  - 当前缓存版本：5
   - 用于保存当天某个城市的天气上下文和雷达建议
   - 城市变化后会按城市重新读取或生成
 - `fridge_calendar_radar_recipe_cache_v1`
@@ -2751,3 +2754,86 @@ type FridgeItem = {
 
 - 本轮没有修改 JS、WXML、WXSS、数据库、云函数、业务流程、页面入口或核心逻辑。
 - `/private/tmp/fridge-preview.png` 和 `/private/tmp/fridge-preview-info.json` 只是本地预览产物，不提交到 Git。
+
+## 2026-05-30 AI 菜谱页天气、日历页收藏与上线前收尾
+
+本轮完成：
+
+- AI 菜谱页去掉天气卡中的“更新时间”，天气卡只展示城市、天气、今日温度区间和湿度。
+- 菜谱页天气卡左侧冰蓝渐变保留，其余页面和卡片中的小块深浅渐变团已清理，整体色块更平。
+- `generateRecipes` 云函数读取腾讯实时天气时：
+  - `type: now` 用于实时天气、实时温度和实时湿度。
+  - `type: future` 用于今日白天 / 夜间温度，前端显示为今日温度区间。
+- 雷达建议改为今日全天饮食建议，不再按早餐、午餐、晚餐拆分。
+- 菜谱盲盒按当天 + 城市固定生成一次；换城市或次日再刷新。
+- 菜谱页缓存版本已升级：
+  - `fridge_recipe_picker_cache_v2` 版本 3
+  - `fridge_recipe_blind_box_cache_v1` 版本 5
+  - `fridge_recipe_climate_cache_v1` 版本 5
+- 为解决湿度旧值问题，`generateRecipes` 新增 `WEATHER_CONTEXT_VERSION = 2`：
+  - 云函数只信任今天、同城市、来源明确、版本匹配的天气上下文。
+  - 旧前端缓存里的湿度不会再被云函数继续沿用。
+  - 旧上下文不可信时，云函数会重新拉取腾讯天气。
+- 日历页 `开饭雷达检测报告`：
+  - 去掉右侧叶子装饰。
+  - 菜谱卡右侧按钮从“查看做法”改为“收藏 / 已收藏”。
+  - 点击菜谱卡片非收藏区域可打开做法弹窗。
+  - 日历页接入 `recipeRecordService`，支持菜谱收藏状态同步。
+- 初始化 Codegraph，并将 `.codegraph/` 加入 `.gitignore`。
+- 微信开发者工具中已确认本地模拟器加载新日历页：叶子消失，按钮显示“收藏”。
+- `generateRecipes` 云函数已重新部署到 CloudBase。
+- 已生成新的微信真机预览二维码：
+  - `/Users/qzt/Desktop/projects/fridge-app/preview-qrcode-20260530-1829.png`
+
+本轮修改文件：
+
+- `.gitignore`
+- `app.wxss`
+- `cloudfunctions/generateRecipes/index.js`
+- `pages/calendar/calendar.js`
+- `pages/calendar/calendar.wxml`
+- `pages/calendar/calendar.wxss`
+- `pages/recipes/recipes.js`
+- `pages/recipes/recipes.wxss`
+- `pages/index/index.wxss`
+- `pages/item-form/item-form.wxss`
+- `pages/quick-add/quick-add.wxss`
+- `pages/parse-confirm/parse-confirm.wxss`
+- `pages/batch-parse-confirm/batch-parse-confirm.wxss`
+- `services/recipeService.js`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`
+- `DECISIONS.md`
+
+本轮验证：
+
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+- 微信开发者工具 CLI 部署 `generateRecipes` 成功
+- 微信开发者工具 CLI `preview` 成功，主包大小约 `2.0 MB`
+
+当前还没解决的问题：
+
+- 用户手机真机预览曾继续显示旧内容，已通过清理开发者工具编译缓存和生成唯一文件名二维码排查；仍需要用户最终确认手机端是否已加载最新包。
+- 当前预览包体仍贴近 2MB，后续新增图片前必须先评估主包体积。
+
+已尝试但失败的方案：
+
+- 使用同名 `preview-qrcode.png` 反复覆盖，容易让聊天窗口或手机端误扫旧二维码图片。
+- 首次截图开发者工具时误截到 Codex 前台窗口，随后已切换微信开发者工具到前台重新截图确认。
+
+下一步建议：
+
+- 用户用最新二维码真机确认菜谱页湿度、今日温度区间、雷达建议和日历页收藏交互。
+- 如果手机仍显示旧包，优先开启微信开发者工具“真机调试”，看手机实际加载的包和本地 storage。
+- 上线前再次确认 CloudBase `generateRecipes` 日志里的 `weatherStatus`、`weatherSource`、`humidity`、`temperatureRangeSource` 是否符合预期。
+
+重要注意事项：
+
+- 微信预览二维码和预览信息文件不提交到 Git。
+- 云函数天气逻辑必须继续放在云端，腾讯位置服务 key 不得放到小程序前端。

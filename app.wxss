@@ -5,8 +5,6 @@
 page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 0%, rgba(221, 244, 255, 0.52) 0, rgba(221, 244, 255, 0) 260rpx),
-    radial-gradient(circle at 88% 8%, rgba(255, 178, 62, 0.18) 0, rgba(255, 178, 62, 0) 220rpx),
     linear-gradient(
       180deg,
       var(--cream-bg-2, #fffaf0) 0%,

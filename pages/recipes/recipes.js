@@ -7,11 +7,11 @@ const { getExpiryStatus } = require('../../utils/status')
 const DAY_MS = 24 * 60 * 60 * 1000
 const MANUAL_INGREDIENT_PREFIX = 'manual:'
 const RECIPE_PICKER_CACHE_KEY = 'fridge_recipe_picker_cache_v2'
-const RECIPE_PICKER_CACHE_VERSION = 2
+const RECIPE_PICKER_CACHE_VERSION = 3
 const RECIPE_BLIND_BOX_CACHE_KEY = 'fridge_recipe_blind_box_cache_v1'
-const RECIPE_BLIND_BOX_CACHE_VERSION = 1
+const RECIPE_BLIND_BOX_CACHE_VERSION = 5
 const RECIPE_CLIMATE_CACHE_KEY = 'fridge_recipe_climate_cache_v1'
-const RECIPE_CLIMATE_CACHE_VERSION = 1
+const RECIPE_CLIMATE_CACHE_VERSION = 5
 const RECIPE_CITY_CACHE_KEY = 'fridge_recipe_city_v1'
 const RECIPE_CITY_CACHE_VERSION = 1
 const DEFAULT_CITY = '上海'
@@ -139,6 +139,7 @@ function readRecipePickerCache() {
     }
 
     return {
+      date: cache.date || '',
       selectedItemIds,
       manualIngredients: Array.isArray(cache.manualIngredients)
         ? cache.manualIngredients
@@ -151,6 +152,10 @@ function readRecipePickerCache() {
   } catch {
     return null
   }
+}
+
+function isCacheDateToday(cache) {
+  return cache && cache.date === getTodayString()
 }
 
 function saveRecipePickerCache(payload) {
@@ -196,8 +201,14 @@ function readRecipeBlindBoxCache(city) {
       return null
     }
 
+    const recipes = normalizeCachedRecipes(cache.recipes)
+
+    if (recipes.length === 0) {
+      return null
+    }
+
     return {
-      recipes: normalizeCachedRecipes(cache.recipes),
+      recipes,
       context: cache.context || {},
       statusText: cache.statusText || '',
       city: cacheCity || currentCity,
@@ -208,13 +219,19 @@ function readRecipeBlindBoxCache(city) {
 }
 
 function saveRecipeBlindBoxCache(payload) {
+  const recipes = normalizeCachedRecipes(payload.recipes)
+
+  if (recipes.length === 0) {
+    return
+  }
+
   try {
     wx.setStorageSync(getRecipeBlindBoxStorageKey(payload.city), {
       version: RECIPE_BLIND_BOX_CACHE_VERSION,
       date: getTodayString(),
       savedAt: Date.now(),
       city: normalizeCityName(payload.city),
-      recipes: normalizeCachedRecipes(payload.recipes),
+      recipes,
       context: payload.context || {},
       statusText: payload.statusText || '',
     })
@@ -559,32 +576,75 @@ function recordToRecipe(record) {
   }
 }
 
+function cleanTemperatureText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/摄氏度|°c/gi, '')
+    .replace(/℃/g, '')
+    .trim()
+}
+
+function formatTemperatureRange(context = {}) {
+  const isRealWeather = context.weatherStatus === 'real'
+  const hasOfficialForecastRange =
+    context.temperatureRangeSource === 'tencent_forecast_day_night'
+
+  if (isRealWeather && !hasOfficialForecastRange) {
+    const temperature = cleanTemperatureText(context.temperature)
+
+    return temperature ? `${temperature}℃` : '--℃'
+  }
+
+  const rangeText = cleanTemperatureText(
+    context.temperatureRange || context.tempRange || '',
+  )
+
+  if (rangeText) {
+    return `${rangeText
+      .replace(/\s*(?:至|到|—|－|~|～)\s*/g, '~')
+      .replace(/(\d)\s*-\s*(\d)/g, '$1~$2')}℃`
+  }
+
+  const minTemperature = cleanTemperatureText(
+    context.minTemperature ||
+      context.lowTemperature ||
+      context.temperatureMin ||
+      '',
+  )
+  const maxTemperature = cleanTemperatureText(
+    context.maxTemperature ||
+      context.highTemperature ||
+      context.temperatureMax ||
+      '',
+  )
+
+  if (minTemperature && maxTemperature) {
+    return minTemperature === maxTemperature
+      ? `${minTemperature}℃`
+      : `${minTemperature}~${maxTemperature}℃`
+  }
+
+  const temperature = cleanTemperatureText(context.temperature)
+
+  return temperature ? `${temperature}℃` : '--℃'
+}
+
 function decorateContext(context) {
   const nextContext = {
     ...context,
     ...getDisplaySolarTerm(),
   }
-  const weatherStatusLabel =
-    nextContext.weatherStatus === 'real' ? '实时天气' : '气候参考'
-  const weatherUpdatedLabel = nextContext.weatherUpdatedAt
-    ? `更新 ${nextContext.weatherUpdatedAt}`
-    : '根据城市气候生成建议'
-  const weatherTimeMatch = String(nextContext.weatherUpdatedAt || '').match(/\d{1,2}:\d{2}/)
-  const compactUpdatedLabel = weatherTimeMatch
-    ? `更新 ${weatherTimeMatch[0]}`
-    : nextContext.weatherUpdatedAt
-      ? `更新 ${nextContext.weatherUpdatedAt}`
-      : '根据城市气候生成'
-  const weatherSummary = `${nextContext.weather || '天气'} · ${nextContext.temperature || '--'}℃ · 湿度 ${nextContext.humidity || '--'}%`
+  const temperatureDisplay = formatTemperatureRange(nextContext)
+  const weatherSummary =
+    `${nextContext.weather || '天气'} · ${temperatureDisplay} · ` +
+    `湿度 ${nextContext.humidity || '--'}%`
   const solarTermSummary = nextContext.solarTermName
     ? `${nextContext.solarTermName}${nextContext.solarTermHint || ''}`
     : '节气'
-  const climateSummary = `${nextContext.season || '季节'} · ${solarTermSummary} · ${compactUpdatedLabel}`
+  const climateSummary = `${nextContext.season || '季节'} · ${solarTermSummary}`
 
   return {
     ...nextContext,
-    weatherStatusLabel,
-    weatherUpdatedLabel,
+    temperatureDisplay,
     weatherSummary,
     climateSummary,
     aiAdvicePrompt: recipeService.buildRadarDietPrompt(nextContext),
@@ -595,6 +655,7 @@ function decorateContext(context) {
 function shouldKeepRadarContext(currentContext, city) {
   return currentContext &&
     currentContext.city === city &&
+    currentContext.date === getTodayString() &&
     (currentContext.weatherStatus === 'real' || currentContext.weatherStatus === 'fallback')
 }
 
@@ -612,15 +673,24 @@ function buildRadarContext(city, currentContext = {}) {
 function mergeCloudContext(baseContext, cloudContext, allowRadarContextUpdate) {
   const safeBaseContext = baseContext || {}
   const safeCloudContext = cloudContext || {}
+  const baseForMerge = safeCloudContext.weatherStatus === 'real'
+    ? {
+      ...safeBaseContext,
+      minTemperature: '',
+      maxTemperature: '',
+      temperatureRange: '',
+      temperatureRangeSource: '',
+    }
+    : safeBaseContext
   const preservedRadar = allowRadarContextUpdate
     ? {}
     : {
-      radarAdvice: safeBaseContext.radarAdvice,
-      radarAdviceSource: safeBaseContext.radarAdviceSource,
+      radarAdvice: baseForMerge.radarAdvice,
+      radarAdviceSource: baseForMerge.radarAdviceSource,
     }
 
   return decorateContext({
-    ...safeBaseContext,
+    ...baseForMerge,
     ...safeCloudContext,
     ...preservedRadar,
   })
@@ -705,7 +775,7 @@ Page({
         const cachedBlindBox = readRecipeBlindBoxCache(currentCity)
         const cachedClimateContext = readRecipeClimateCache(currentCity)
         const cachedPickerContext = getCachedContextForCity(
-          cachedPicker && cachedPicker.context,
+          isCacheDateToday(cachedPicker) && cachedPicker.context,
           currentCity,
         )
         const cachedBlindBoxContext = getCachedContextForCity(
@@ -870,7 +940,7 @@ Page({
       guideLoading: shouldRequestCloud && Boolean(activeGuideType),
       guideStatusText: shouldRequestCloud && activeGuideType
         ? activeGuideType === 'blindBox'
-          ? 'AI 正在结合城市、天气和节气生成菜谱'
+          ? 'AI 正在生成今日固定菜谱'
           : 'AI 正在围绕料理碗食材生成菜谱'
         : guideContent.recipes.length > 0
           ? ''
@@ -1026,14 +1096,7 @@ Page({
           guideStatusText: statusText,
         })
 
-        if (scene === 'blindBox') {
-          saveRecipeBlindBoxCache({
-            city: payload.context.city || this.data.city,
-            recipes: [],
-            context: payload.context,
-            statusText,
-          })
-        }
+        // 盲盒失败不写入每日缓存，避免当天一直停留在失败状态。
       })
   },
 
@@ -1105,7 +1168,7 @@ Page({
     if (type === 'blindBox') {
       return {
         title: '菜谱盲盒',
-        desc: '不知道吃什么时，AI 会结合城市、天气和节气生成 3 道应季家常菜。',
+        desc: '每天按城市、天气和节气固定生成 3 道应季家常菜；换城市或次日再刷新。',
         algorithm: '',
         recipes: decorateGuideRecipes(
           rotateRecipes(recommendations, refreshIndex).slice(0, 3),
@@ -1233,7 +1296,7 @@ Page({
         activeGuideType: 'blindBox',
         guideRecipes: [],
         guideLoading: true,
-        guideStatusText: 'AI 正在读取城市天气并生成菜谱',
+        guideStatusText: 'AI 正在生成今日固定菜谱',
       })
       this.refreshClimateContext(city).then((climateContext) => {
         this.applyRecommendations(
@@ -1394,7 +1457,7 @@ Page({
         activeGuideType: 'blindBox',
         guideRecipes: [],
         guideLoading: true,
-        guideStatusText: 'AI 正在读取城市天气并生成菜谱',
+        guideStatusText: 'AI 正在生成今日固定菜谱',
       })
       this.refreshClimateContext(this.data.city).then((climateContext) => {
         this.applyRecommendations(
@@ -1417,7 +1480,7 @@ Page({
 
       if (cachedPicker && cachedPicker.recipes.length > 0) {
         const cachedPickerContext = getCachedContextForCity(
-          cachedPicker.context,
+          isCacheDateToday(cachedPicker) && cachedPicker.context,
           this.data.city,
         )
 
@@ -1775,7 +1838,7 @@ Page({
 
       if (cachedPicker && cachedPicker.recipes.length > 0) {
         const cachedPickerContext = getCachedContextForCity(
-          cachedPicker.context,
+          isCacheDateToday(cachedPicker) && cachedPicker.context,
           this.data.city,
         )
 

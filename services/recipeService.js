@@ -327,6 +327,48 @@ function getWeatherProfile(season) {
   return profileMap[season] || profileMap.春季
 }
 
+function cleanTemperatureText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/摄氏度|°c/gi, '')
+    .replace(/℃/g, '')
+    .trim()
+}
+
+function getTemperatureLabel(context = {}) {
+  const rangeText = cleanTemperatureText(
+    context.temperatureRange || context.tempRange || '',
+  )
+
+  if (rangeText) {
+    return `${rangeText
+      .replace(/\s*(?:至|到|—|－|~|～)\s*/g, '~')
+      .replace(/(\d)\s*-\s*(\d)/g, '$1~$2')}℃`
+  }
+
+  const minTemperature = cleanTemperatureText(
+    context.minTemperature ||
+      context.lowTemperature ||
+      context.temperatureMin ||
+      '',
+  )
+  const maxTemperature = cleanTemperatureText(
+    context.maxTemperature ||
+      context.highTemperature ||
+      context.temperatureMax ||
+      '',
+  )
+
+  if (minTemperature && maxTemperature) {
+    return minTemperature === maxTemperature
+      ? `${minTemperature}℃`
+      : `${minTemperature}~${maxTemperature}℃`
+  }
+
+  const temperature = cleanTemperatureText(context.temperature)
+
+  return temperature ? `${temperature}℃` : '--℃'
+}
+
 function buildRadarDietPrompt(context) {
   return [
     '你是冰箱雷达的饮食建议助手。',
@@ -337,8 +379,8 @@ function buildRadarDietPrompt(context) {
     }）。`,
     `今日季节：${context.season || '未知'}。`,
     `气候信息：${context.weather || '未知'}，` +
-      `${context.temperature || '--'}℃，湿度 ${context.humidity || '--'}%。`,
-    '请给出一句适合今天气候和地域特点的家常饮食建议，' +
+      `今日温度 ${getTemperatureLabel(context)}，湿度 ${context.humidity || '--'}%。`,
+    '请给出一句适合今日全天气候和地域特点的家常饮食建议，' +
       '要求温和、具体，不要引用库存或选中食材。',
   ].join('\n')
 }
@@ -350,34 +392,33 @@ function buildRadarDietAdvice(context) {
 
   const temperature = Number(context.temperature)
   const humidity = Number(context.humidity)
-  const mealText = context.mealTime || '这顿'
   const termText = context.solarTermName
     ? `${context.solarTermName}前后，`
     : ''
 
   if (humidity >= 70) {
     return (
-      `${termText}${mealText}建议走健脾祛湿路线，` +
+      `${termText}今日全天建议走健脾祛湿路线，` +
       '优先蒸煮、汤菜、豆腐和绿叶菜，少油少辣，避开厚重煎炸。'
     )
   }
 
   if (humidity <= 45) {
     return (
-      `${termText}${mealText}建议多一点汤水和润燥食材，` +
+      `${termText}今日全天建议多一点汤水和润燥食材，` +
       '选菌菇、瓜果、蒸菜或低盐蛋白，少煎烤辛辣。'
     )
   }
 
   if (temperature >= 28) {
     return (
-      `${termText}${mealText}建议清热生津，` +
+      `${termText}今日全天建议清热生津，` +
       '主菜选蒸煮或快炒时蔬，搭配豆腐鱼虾，少放辣油和甜腻饮品。'
     )
   }
 
   return (
-    `${termText}${mealText}建议做一顿轻负担家常菜，` +
+    `${termText}今日全天建议做轻负担家常菜，` +
     '主菜选蒸煮或清炒，搭配绿叶菜和温和蛋白，口味别太重。'
   )
 }
@@ -391,7 +432,7 @@ function getContextLabel(context) {
 
   return (
     `${cityText}${context.solarTermName || context.season || '今日'} · ` +
-    `${context.weather || '天气'} · ${context.temperature || '--'}℃ · ` +
+    `${context.weather || '天气'} · ${getTemperatureLabel(context)} · ` +
     `湿度 ${context.humidity || '--'}%`
   )
 }
@@ -408,10 +449,6 @@ function getClimateRecipeScore(recipe, context) {
 
   if (tags.has(context.season)) {
     score += 5
-  }
-
-  if (tags.has(context.mealTime)) {
-    score += 4
   }
 
   if (tags.has(context.weather)) {
@@ -517,7 +554,6 @@ function applyRecommendationContext(recommendations, context) {
 function getMockRecommendationContext(items) {
   const now = new Date()
   const month = now.getMonth() + 1
-  const hour = now.getHours()
   let season = '春季'
 
   if (month >= 6 && month <= 8) {
@@ -528,18 +564,12 @@ function getMockRecommendationContext(items) {
     season = '冬季'
   }
 
-  let mealTime = '晚餐'
-
-  if (hour < 10) {
-    mealTime = '早餐'
-  } else if (hour < 15) {
-    mealTime = '午餐'
-  } else if (hour < 17) {
-    mealTime = '加餐'
-  }
-
   const weatherProfile = getWeatherProfile(season)
   const reminderDate = getNearestReminderDate(items)
+  const temperature = weatherProfile.temperature
+  const minTemperature = temperature - 3
+  const maxTemperature = temperature + 3
+  const temperatureRange = `${minTemperature}~${maxTemperature}`
 
   return {
     date: getTodayString(),
@@ -547,13 +577,16 @@ function getMockRecommendationContext(items) {
     reminderDateDisplay: formatShortDate(reminderDate),
     season,
     weather: weatherProfile.weather,
-    temperature: weatherProfile.temperature,
+    temperature,
+    minTemperature,
+    maxTemperature,
+    temperatureRange,
     humidity: weatherProfile.humidity,
-    mealTime,
+    mealTime: '全天',
     healthTip: weatherProfile.healthTip,
     searchInsight: weatherProfile.searchInsight,
     summary:
-      `${season}${mealTime}，${weatherProfile.temperature}℃，` +
+      `${season}全天，${getTemperatureLabel({ temperatureRange })}，` +
       `湿度 ${weatherProfile.humidity}%，适合做轻负担、步骤少的家常菜。`,
   }
 }

@@ -51,7 +51,6 @@
   </view>
 
   <view class="meal-radar-card card">
-    <image class="meal-radar-decor leaf" src="/images/decor/leaf.png" mode="aspectFit" />
     <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" />
 
     <view class="meal-radar-head">
@@ -109,7 +108,12 @@
         <view class="meal-recipe-content">
           <view class="meal-recipe-head">
             <text class="meal-recipe-title">{{item.title}}</text>
-            <text class="meal-recipe-action">查看做法</text>
+            <text
+              class="meal-recipe-action {{item.isSaved ? 'saved' : ''}}"
+              data-id="{{item.id}}"
+              data-recipe-key="{{item.recipeKey}}"
+              catchtap="handleToggleRecipeRecord"
+            >{{item.isSaved ? '已收藏' : '收藏'}}</text>
           </view>
           <view class="expiry-chip-row">
             <text wx:if="{{item.availableItems.length === 0}}" class="expiry-empty-chip">暂无可用库存</text>

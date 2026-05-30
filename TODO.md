@@ -1392,3 +1392,51 @@
 
 - 本轮只换图片资产，不改功能、不改数据库、不改云函数。
 - 不要提交 `/private/tmp` 下的二维码、预览信息和临时拼图。
+
+## 2026-05-30 上线前天气与日历页收尾
+
+已完成：
+
+- 菜谱页天气卡移除“更新时间”，显示城市、天气、今日温度区间和湿度。
+- `generateRecipes` 使用腾讯实时天气读取实时湿度，使用腾讯预报读取今日白天 / 夜间温度区间。
+- 雷达建议改为今日全天饮食建议，不再区分早中晚。
+- 菜谱盲盒按当天 + 城市固定生成一次，换城市或次日再刷新。
+- 菜谱页缓存版本升级，强制丢弃旧天气、旧盲盒和旧选食材缓存。
+- 云函数新增天气上下文信任版本，旧前端缓存里的湿度不会被继续沿用。
+- 日历页去掉开饭雷达右侧叶子装饰。
+- 日历页菜谱卡右侧按钮改为“收藏 / 已收藏”，点击卡片打开做法弹窗。
+- 日历页接入菜谱收藏记录，同步收藏状态。
+- 初始化 Codegraph，并将 `.codegraph/` 加入 `.gitignore`。
+- `generateRecipes` 已重新部署到 CloudBase。
+- 已清理微信开发者工具编译缓存，并生成唯一文件名的真机预览二维码：
+  - `/Users/qzt/Desktop/projects/fridge-app/preview-qrcode-20260530-1829.png`
+
+本轮验证：
+
+- `node --check pages/calendar/calendar.js`
+- `node --check pages/recipes/recipes.js`
+- `node --check cloudfunctions/generateRecipes/index.js`
+- `git diff --check`
+- `npm run lint`
+- `npm run build`
+- 微信开发者工具模拟器确认日历页新 UI 生效
+- 微信开发者工具 CLI `preview` 成功，预览包体约 `2.0 MB`
+
+优先级高：
+
+- 真机重新扫描最新唯一二维码，确认手机不再显示旧内容。
+- 真机确认 AI 菜谱页湿度是否来自最新腾讯天气上下文。
+- 真机确认广州等城市天气卡显示是否符合预期：天气、温度区间、湿度。
+- 真机确认日历页菜谱卡右侧显示“收藏 / 已收藏”，点击卡片可看做法。
+- 上线前在 CloudBase 日志里抽查 `generateRecipes` 最近调用，确认 `weatherSource: tencent`、`weatherStatus: real`、`temperatureRangeSource: tencent_forecast_day_night`。
+
+优先级中：
+
+- 如果手机仍显示旧包，开启微信开发者工具“真机调试”查看实际加载包和 storage。
+- 继续关注主包大小，当前预览接近 2MB，后续新增图片优先考虑分包或云存储。
+- 后续如果用户希望湿度更贴近系统天气 App，可以考虑增加天气源对比或展示“实时湿度”说明，但不在前端直连第三方 key。
+
+注意事项：
+
+- 不要提交预览二维码、预览信息、临时截图或 `/private/tmp` 产物。
+- 腾讯位置服务 key 只能在云函数环境变量里使用，不能放进小程序前端。

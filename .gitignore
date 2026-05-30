@@ -7,10 +7,13 @@ dist/
 dist-ssr/
 .vite/
 miniprogram_npm/
+.codegraph/
 
 # WeChat developer tool preview output
 preview-info.json
+preview-info-*.json
 preview-qrcode.png
+preview-qrcode-*.png
 
 # Logs
 logs/

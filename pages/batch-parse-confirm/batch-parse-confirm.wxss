@@ -1,7 +1,6 @@
 .batch-page {
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 14% 5%, rgba(221, 248, 232, 0.82), rgba(221, 248, 232, 0) 250rpx),
     linear-gradient(180deg, #fff8ea 0%, #f7fff6 58%, #ffffff 100%);
 }
 

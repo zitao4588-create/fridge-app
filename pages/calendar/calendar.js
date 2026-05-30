@@ -1,5 +1,6 @@
 const itemService = require('../../services/itemService')
 const reminderService = require('../../services/reminderService')
+const recipeRecordService = require('../../services/recipeRecordService')
 const recipeService = require('../../services/recipeService')
 const zoneConfigService = require('../../services/zoneConfigService')
 const { HOME_ZONE_DEFINITIONS } = require('../../utils/constants')
@@ -59,6 +60,35 @@ function normalizeCachedRecipes(recipes) {
   return Array.isArray(recipes)
     ? recipes.filter((recipe) => recipe && recipe.id && recipe.title)
     : []
+}
+
+function buildRecipeRecordMap(records) {
+  const recordMap = {}
+  const safeRecords = Array.isArray(records) ? records : []
+
+  safeRecords.forEach((record) => {
+    if (record && record.recipeKey) {
+      recordMap[record.recipeKey] = record
+    }
+  })
+
+  return recordMap
+}
+
+function decorateRecipesWithRecords(recipes, records) {
+  const recordMap = buildRecipeRecordMap(records)
+
+  return normalizeCachedRecipes(recipes).map((recipe) => {
+    const recipeKey = recipeRecordService.buildRecipeKey(recipe)
+    const record = recordMap[recipeKey]
+
+    return {
+      ...recipe,
+      recipeKey,
+      recordId: record ? record._id : '',
+      isSaved: Boolean(record),
+    }
+  })
 }
 
 function readCalendarRadarCache() {
@@ -301,6 +331,8 @@ Page({
     statItems: [],
     stats: EMPTY_STATS,
     expiryUsage: EMPTY_EXPIRY_USAGE,
+    recipeRecords: [],
+    recordSaving: false,
     mealRadarReport: EMPTY_MEAL_RADAR_REPORT,
     radarRecipeLoading: false,
     radarRecipeStatusText: '',
@@ -333,17 +365,24 @@ Page({
       loading: true,
     })
 
-    Promise.all([itemService.getItems(), zoneConfigService.getZoneConfig()])
-      .then(([items, zoneConfig]) => {
+    Promise.all([
+      itemService.getItems(),
+      zoneConfigService.getZoneConfig(),
+      recipeRecordService.getRecipeRecords(),
+    ])
+      .then(([items, zoneConfig, recipeRecords]) => {
         const statItems = getEnabledZoneItems(items, zoneConfig && zoneConfig.zones)
         const events = reminderService.getCalendarEvents(items)
         const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
         const stats = buildStats(statItems)
         const cachedRadar = readCalendarRadarCache()
+        const cachedRecommendations = cachedRadar
+          ? decorateRecipesWithRecords(cachedRadar.recommendations, recipeRecords)
+          : []
         const nextExpiryUsage = cachedRadar
           ? {
             ...expiryUsage,
-            recommendations: cachedRadar.recommendations,
+            recommendations: cachedRecommendations,
           }
           : expiryUsage
         const mealRadarReport = buildMealRadarReport(items, nextExpiryUsage)
@@ -358,6 +397,7 @@ Page({
           items,
           statItems,
           stats,
+          recipeRecords,
           expiryUsage: nextExpiryUsage,
           mealRadarReport,
           radarRecipeLoading: shouldLoadRecipes || shouldShowPendingRecipes,
@@ -415,9 +455,13 @@ Page({
         const recommendations = Array.isArray(result.recommendations)
           ? result.recommendations
           : []
+        const decoratedRecommendations = decorateRecipesWithRecords(
+          recommendations,
+          this.data.recipeRecords,
+        )
         const nextExpiryUsage = {
           ...this.data.expiryUsage,
-          recommendations,
+          recommendations: decoratedRecommendations,
         }
         const statusText = recommendations.length > 0
           ? '云端 AI 已结合临期食材和库存生成菜谱。'
@@ -636,6 +680,105 @@ Page({
         steps: recipe.steps || [],
       },
     })
+  },
+
+  refreshRecipeRecordState(recipeRecords) {
+    const records = Array.isArray(recipeRecords) ? recipeRecords : []
+    const recommendations = decorateRecipesWithRecords(
+      this.data.expiryUsage.recommendations,
+      records,
+    )
+    const recipeDetail = this.data.recipeDetailVisible
+      ? decorateRecipesWithRecords([this.data.recipeDetail], records)[0] || this.data.recipeDetail
+      : this.data.recipeDetail
+    const nextExpiryUsage = {
+      ...this.data.expiryUsage,
+      recommendations,
+    }
+
+    this.setData({
+      recipeRecords: records,
+      expiryUsage: nextExpiryUsage,
+      mealRadarReport: buildMealRadarReport(this.data.items, nextExpiryUsage),
+      recipeDetail,
+    })
+  },
+
+  handleToggleRecipeRecord(event) {
+    const { id, recipeKey } = event.currentTarget.dataset
+    const recipe = (this.data.expiryUsage.recommendations || []).find(
+      (item) => item.id === id || item.recipeKey === recipeKey,
+    )
+
+    if (!recipe || this.data.recordSaving) {
+      return
+    }
+
+    this.setData({
+      recordSaving: true,
+    })
+
+    if (recipe.isSaved) {
+      const recordId = recipe.recordId ||
+        (buildRecipeRecordMap(this.data.recipeRecords)[recipe.recipeKey] || {})._id
+
+      recipeRecordService
+        .deleteRecipeRecord(recordId)
+        .then(() => {
+          const recipeRecords = this.data.recipeRecords.filter(
+            (record) => record._id !== recordId,
+          )
+
+          this.refreshRecipeRecordState(recipeRecords)
+          wx.showToast({
+            title: '已取消收藏',
+            icon: 'none',
+          })
+        })
+        .catch(() => {
+          wx.showToast({
+            title: '取消失败',
+            icon: 'none',
+          })
+        })
+        .finally(() => {
+          this.setData({
+            recordSaving: false,
+          })
+        })
+      return
+    }
+
+    recipeRecordService
+      .saveRecipeRecord({
+        recipe,
+        recipeKey: recipe.recipeKey,
+        context: {},
+      })
+      .then((record) => {
+        const recipeRecords = [record].concat(
+          this.data.recipeRecords.filter(
+            (item) => item._id !== record._id && item.recipeKey !== record.recipeKey,
+          ),
+        )
+
+        this.refreshRecipeRecordState(recipeRecords)
+        wx.showToast({
+          title: '已收藏',
+          icon: 'none',
+        })
+      })
+      .catch(() => {
+        wx.showToast({
+          title: '收藏失败',
+          icon: 'none',
+        })
+      })
+      .finally(() => {
+        this.setData({
+          recordSaving: false,
+        })
+      })
   },
 
   handleCloseRecipeDetail() {

@@ -8,6 +8,7 @@ cloud.init({
 const DAY_MS = 24 * 60 * 60 * 1000
 const CHINA_TIME_OFFSET_MS = 8 * 60 * 60 * 1000
 const SOLAR_TERM_PREVIEW_THRESHOLD_DAYS = 3
+const WEATHER_CONTEXT_VERSION = 2
 
 const SOLAR_TERMS = [
   { name: '小寒', month: 1, day: 5 },
@@ -392,26 +393,6 @@ function sortRecommendations(recommendations) {
   })
 }
 
-function getMealTime(hour) {
-  if (hour < 10) {
-    return '早餐'
-  }
-
-  if (hour < 14) {
-    return '午餐'
-  }
-
-  if (hour < 17) {
-    return '下午加餐'
-  }
-
-  if (hour < 21) {
-    return '晚餐'
-  }
-
-  return '夜间轻食'
-}
-
 function getRegionalDietProfile(city) {
   const normalizedCity = normalizeCityName(city)
   const profileGroups = [
@@ -481,8 +462,49 @@ function getRegionalAdviceFocus(city) {
   return focusMap[normalizedCity] || '优先选择蒸煮、汤菜、豆腐、鱼虾或绿叶菜，少油少辣，避开厚重煎炸'
 }
 
+function cleanTemperatureText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/摄氏度|°c/gi, '')
+    .replace(/℃/g, '')
+    .trim()
+}
+
+function getTemperatureLabel(context = {}) {
+  const rangeText = cleanTemperatureText(
+    context.temperatureRange || context.tempRange || '',
+  )
+
+  if (rangeText) {
+    return `${rangeText
+      .replace(/\s*(?:至|到|—|－|~|～)\s*/g, '~')
+      .replace(/(\d)\s*-\s*(\d)/g, '$1~$2')}℃`
+  }
+
+  const minTemperature = cleanTemperatureText(
+    context.minTemperature ||
+      context.lowTemperature ||
+      context.temperatureMin ||
+      '',
+  )
+  const maxTemperature = cleanTemperatureText(
+    context.maxTemperature ||
+      context.highTemperature ||
+      context.temperatureMax ||
+      '',
+  )
+
+  if (minTemperature && maxTemperature) {
+    return minTemperature === maxTemperature
+      ? `${minTemperature}℃`
+      : `${minTemperature}~${maxTemperature}℃`
+  }
+
+  const temperature = cleanTemperatureText(context.temperature)
+
+  return temperature ? `${temperature}℃` : '--℃'
+}
+
 function buildRuleRadarAdvice(context = {}) {
-  const mealText = context.mealTime || '这顿'
   const focus = getRegionalAdviceFocus(context.city)
   const termText = context.solarTermName
     ? `${context.solarTermName}前后，`
@@ -499,17 +521,12 @@ function buildRuleRadarAdvice(context = {}) {
     climateAction = '暑热渐起，'
   }
 
-  if (mealText === '夜间轻食') {
-    return `${termText}${climateAction}夜间别吃太厚重，${focus}。`
-  }
-
-  return `${termText}${climateAction}${mealText}建议直接走${focus}的路线。`
+  return `${termText}${climateAction}今日全天建议直接走${focus}的路线。`
 }
 
 function getMockContext(searchInsight = '', city = '') {
   const now = getChinaDateParts()
   const month = now.month
-  const hour = now.hour
   const solarTerm = getDisplaySolarTerm()
   let season = '春季'
 
@@ -521,19 +538,27 @@ function getMockContext(searchInsight = '', city = '') {
     season = '冬季'
   }
 
+  const temperature = season === '夏季' ? 31 : season === '冬季' ? 8 : 22
+  const minTemperature = temperature - 3
+  const maxTemperature = temperature + 3
+  const temperatureRange = `${minTemperature}~${maxTemperature}`
   const context = {
     date: getTodayString(),
     city: city || process.env.FRIDGE_DEFAULT_CITY || '上海',
     season,
     weather: season === '夏季' ? '晴热' : season === '冬季' ? '阴冷' : '微风',
-    temperature: season === '夏季' ? 31 : season === '冬季' ? 8 : 22,
+    temperature,
+    minTemperature,
+    maxTemperature,
+    temperatureRange,
     humidity: season === '秋季' ? 48 : 58,
-    mealTime: getMealTime(hour),
-    localHour: hour,
+    mealTime: '全天',
+    localHour: now.hour,
     ...solarTerm,
     regionalDietProfile: getRegionalDietProfile(city),
     weatherSource: 'mock',
     weatherStatus: 'fallback',
+    weatherContextVersion: WEATHER_CONTEXT_VERSION,
     weatherUpdatedAt: getTodayString(),
     radarAdviceSource: 'rule',
     summary: searchInsight || '云端菜谱会结合当日气候和季节给出轻负担搭配。',
@@ -734,6 +759,259 @@ function pickFirstValue(values) {
   return matched === undefined ? '' : matched
 }
 
+function pickForecastNodes(result) {
+  if (!result) {
+    return []
+  }
+
+  const candidates = [
+    result.forecast,
+    result.forecasts,
+    result.future,
+    result.daily,
+    result.days,
+    result.list,
+    result.weather,
+  ]
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index]
+
+    if (Array.isArray(candidate) && candidate.length > 0) {
+      return candidate
+    }
+
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+      const values = Object.values(candidate).filter(
+        (item) => item && typeof item === 'object',
+      )
+
+      if (values.length > 0) {
+        return values
+      }
+    }
+  }
+
+  return [result]
+}
+
+function isTodayForecastNode(node = {}) {
+  const dateText = String(
+    pickFirstValue([
+      node.date,
+      node.time,
+      node.day,
+      node.forecastDate,
+      node.fxDate,
+      node.ymd,
+    ]),
+  )
+  const dateDigits = dateText.replace(/\D/g, '')
+  const todayDigits = getTodayString().replace(/\D/g, '')
+
+  return (
+    !dateDigits ||
+    dateDigits.includes(todayDigits) ||
+    dateDigits.includes(todayDigits.slice(4))
+  )
+}
+
+function pickTodayForecastInfo(result) {
+  const nodes = pickForecastNodes(result)
+  const infoNodes = []
+
+  nodes.forEach((node = {}) => {
+    const infos = Array.isArray(node.infos)
+      ? node.infos
+      : Array.isArray(node.info)
+        ? node.info
+        : []
+
+    if (infos.length > 0) {
+      infos.forEach((info) => {
+        infoNodes.push({
+          ...info,
+          update_time: info.update_time || node.update_time || node.updateTime,
+        })
+      })
+      return
+    }
+
+    infoNodes.push(node)
+  })
+
+  return infoNodes.find(isTodayForecastNode) || infoNodes[0] || {}
+}
+
+function parseTemperatureRangeText(value) {
+  const text = cleanTemperatureText(value)
+  const match = text.match(/(-?\d+(?:\.\d+)?)\D+(-?\d+(?:\.\d+)?)/)
+
+  if (!match) {
+    return null
+  }
+
+  const firstTemperature = Number(match[1])
+  const secondTemperature = Number(match[2])
+  const minTemperature =
+    !Number.isNaN(firstTemperature) && !Number.isNaN(secondTemperature)
+      ? String(Math.min(firstTemperature, secondTemperature))
+      : match[1]
+  const maxTemperature =
+    !Number.isNaN(firstTemperature) && !Number.isNaN(secondTemperature)
+      ? String(Math.max(firstTemperature, secondTemperature))
+      : match[2]
+
+  return {
+    minTemperature,
+    maxTemperature,
+    temperatureRange: `${minTemperature}~${maxTemperature}`,
+  }
+}
+
+function buildTemperatureRangeProfile(minValue, maxValue, rangeValue) {
+  let minTemperature = cleanTemperatureText(minValue)
+  let maxTemperature = cleanTemperatureText(maxValue)
+  const parsedRange = parseTemperatureRangeText(rangeValue)
+
+  if ((!minTemperature || !maxTemperature) && parsedRange) {
+    minTemperature = minTemperature || parsedRange.minTemperature
+    maxTemperature = maxTemperature || parsedRange.maxTemperature
+  }
+
+  if (!minTemperature || !maxTemperature) {
+    return {}
+  }
+
+  const minNumber = Number(minTemperature)
+  const maxNumber = Number(maxTemperature)
+
+  if (!Number.isNaN(minNumber) && !Number.isNaN(maxNumber) && minNumber > maxNumber) {
+    const nextMinTemperature = maxTemperature
+    maxTemperature = minTemperature
+    minTemperature = nextMinTemperature
+  }
+
+  return {
+    minTemperature,
+    maxTemperature,
+    temperatureRange:
+      minTemperature === maxTemperature
+        ? minTemperature
+        : `${minTemperature}~${maxTemperature}`,
+  }
+}
+
+function getOfficialForecastTemperatureRange(dayInfo = {}, nightInfo = {}) {
+  const dayTemperature = pickFirstValue([
+    dayInfo.temperature,
+    dayInfo.temp,
+    dayInfo.tem,
+  ])
+  const nightTemperature = pickFirstValue([
+    nightInfo.temperature,
+    nightInfo.temp,
+    nightInfo.tem,
+  ])
+  const forecastProfile = buildTemperatureRangeProfile(
+    nightTemperature,
+    dayTemperature,
+    '',
+  )
+
+  return hasTemperatureRangeProfile(forecastProfile)
+    ? {
+      ...forecastProfile,
+      temperatureRangeSource: 'tencent_forecast_day_night',
+    }
+    : {}
+}
+
+function hasTemperatureRangeProfile(profile = {}) {
+  const minTemperature = cleanTemperatureText(profile.minTemperature)
+  const maxTemperature = cleanTemperatureText(profile.maxTemperature)
+
+  return Boolean(profile.temperatureRange || (minTemperature && maxTemperature))
+}
+
+function normalizeForecastPayload(response) {
+  const result = response && response.result ? response.result : {}
+  const node = pickTodayForecastInfo(result)
+  const infos = node.infos || node.info || {}
+  const dayInfo = node.day || node.daytime || node.day_weather || {}
+  const nightInfo = node.night || node.nighttime || node.night_weather || {}
+  const officialForecastProfile = getOfficialForecastTemperatureRange(dayInfo, nightInfo)
+
+  if (hasTemperatureRangeProfile(officialForecastProfile)) {
+    return {
+      ...officialForecastProfile,
+      forecastDate: node.date || node.forecastDate || node.fxDate || '',
+    }
+  }
+
+  const minTemperature = pickFirstValue([
+    infos.min_temperature,
+    infos.minTemperature,
+    infos.temperature_min,
+    infos.temp_min,
+    infos.tempMin,
+    infos.low,
+    infos.min,
+    infos.night_temperature,
+    infos.nightTemp,
+    infos.lowest,
+    node.min_temperature,
+    node.minTemperature,
+    node.temperature_min,
+    node.temp_min,
+    node.tempMin,
+    node.low,
+    node.min,
+    node.night_temperature,
+    node.nightTemp,
+    node.lowest,
+  ])
+  const maxTemperature = pickFirstValue([
+    infos.max_temperature,
+    infos.maxTemperature,
+    infos.temperature_max,
+    infos.temp_max,
+    infos.tempMax,
+    infos.high,
+    infos.max,
+    infos.day_temperature,
+    infos.dayTemp,
+    infos.highest,
+    node.max_temperature,
+    node.maxTemperature,
+    node.temperature_max,
+    node.temp_max,
+    node.tempMax,
+    node.high,
+    node.max,
+    node.day_temperature,
+    node.dayTemp,
+    node.highest,
+  ])
+  const temperatureRange = pickFirstValue([
+    infos.temperatureRange,
+    infos.tempRange,
+    infos.temperature,
+    infos.temp,
+    infos.range,
+    node.temperatureRange,
+    node.tempRange,
+    node.temperature,
+    node.temp,
+    node.range,
+  ])
+
+  return {
+    ...buildTemperatureRangeProfile(minTemperature, maxTemperature, temperatureRange),
+    forecastDate: node.date || node.forecastDate || node.fxDate || '',
+  }
+}
+
 function normalizeWeatherPayload(response, city, adcode) {
   const result = response && response.result ? response.result : {}
   const node = pickWeatherNode(result)
@@ -813,7 +1091,32 @@ async function getTencentWeatherProfile(city) {
     throw new Error(response.message || '天气查询失败')
   }
 
-  return normalizeWeatherPayload(response, safeCity, adcode)
+  const nowProfile = normalizeWeatherPayload(response, safeCity, adcode)
+  const futureResponse = await requestGetJson(
+    'apis.map.qq.com',
+    '/ws/weather/v1/',
+    {
+      adcode,
+      type: 'future',
+      get_md: 0,
+      key,
+    },
+  )
+
+  if (futureResponse.status !== 0) {
+    throw new Error(futureResponse.message || '天气预报查询失败')
+  }
+
+  const forecastProfile = normalizeForecastPayload(futureResponse)
+
+  if (!hasTemperatureRangeProfile(forecastProfile)) {
+    throw new Error('天气预报未返回今日温度区间')
+  }
+
+  return {
+    ...nowProfile,
+    ...forecastProfile,
+  }
 }
 
 async function buildRecommendationContext(city, searchInsight, items, scene) {
@@ -830,7 +1133,10 @@ async function buildRecommendationContext(city, searchInsight, items, scene) {
     return {
       ...baseContext,
       ...weatherProfile,
-      summary: `${weatherProfile.city}${weatherProfile.weather}，${weatherProfile.temperature || '--'}℃，湿度 ${weatherProfile.humidity || '--'}%，适合按气候安排低负担家常菜。`,
+      summary:
+        `${weatherProfile.city}${weatherProfile.weather}，` +
+        `${getTemperatureLabel(weatherProfile)}，湿度 ${weatherProfile.humidity || '--'}%，` +
+        '适合按气候安排低负担家常菜。',
       radarAdvice: buildRuleRadarAdvice({
         ...baseContext,
         ...weatherProfile,
@@ -858,6 +1164,10 @@ function getProvidedRecommendationContext(context, city, scene, items) {
     return null
   }
 
+  if (!isTrustedProvidedWeatherContext(context)) {
+    return null
+  }
+
   const nextContext = {
     ...context,
     city: contextCity || safeCity,
@@ -874,6 +1184,33 @@ function getProvidedRecommendationContext(context, city, scene, items) {
   }
 
   return nextContext
+}
+
+function isTodayContextDate(context = {}) {
+  const contextDate = String(context.date || '').replace(/\D/g, '')
+  const todayDate = getTodayString().replace(/\D/g, '')
+
+  return Boolean(contextDate) && contextDate === todayDate
+}
+
+function isTrustedProvidedWeatherContext(context = {}) {
+  const weatherStatus = String(context.weatherStatus || '')
+  const weatherSource = String(context.weatherSource || '')
+  const weatherContextVersion = Number(context.weatherContextVersion || 0)
+
+  if (weatherContextVersion !== WEATHER_CONTEXT_VERSION || !isTodayContextDate(context)) {
+    return false
+  }
+
+  if (weatherStatus === 'real') {
+    return weatherSource === 'tencent'
+  }
+
+  if (weatherStatus === 'fallback') {
+    return weatherSource === 'mock'
+  }
+
+  return false
 }
 
 async function getSearchInsight(city) {
@@ -1006,7 +1343,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
     return [
       '请为微信小程序“冰箱雷达”的“菜谱盲盒”生成 3 道应季养生家常菜。',
       '这是用户不知道吃什么时的灵感入口，不要读取或假设用户冰箱库存，不要写“已有食材”。',
-      '必须综合城市、当天真实天气或兜底天气、温度、湿度、季节、节气、当前用餐时段来设计菜谱。',
+      '必须综合城市、当天真实天气或兜底天气、今日温度区间、湿度、季节和节气来设计适合全天的菜谱。',
       '菜谱不要过于简单，要像可以真正照着做的家常菜：说明备菜、切配、火候、时间、判断熟度、出锅状态和可替代做法。',
       '每道菜写 5-7 个步骤，每一步都要具体，避免“炒熟即可”“简单调味”这类空话。',
       '可以参考中医食养表达，但不要做医疗诊断、治疗承诺，不要说能治疗疾病。',
@@ -1068,11 +1405,10 @@ function buildClimateAdvicePrompt(context) {
     '请为微信小程序“冰箱雷达”的 AI 菜谱页生成一句“雷达建议”。',
     '上方天气卡已经展示城市、天气、温度和湿度，雷达建议里不要重复这些数字和天气词。',
     '不要以城市名开头，不要写“广州今日雨”“长沙多云”“29℃湿度63%”这类复述天气的信息。',
-    '直接给用户这顿饭怎么吃：推荐烹饪方式、食材方向、口味控制，以及需要避开的做法。',
+    '直接给用户今日全天怎么吃：推荐烹饪方式、食材方向、口味控制，以及需要避开的做法。',
     '必须体现地域饮食特征，但表达要自然，例如长沙可以提“湘味收辣降油”，广州可以提“清润祛湿”。',
     '必须结合气候体感、节气阶段和中医食养逻辑，用“祛湿、健脾、润燥、清热、生津、温养”等食养方向之一组织建议。',
     '可以提节气判断，例如“小满后芒种前湿热渐重”“春末夏初宜清润”，但不要堆术语。',
-    `当前用餐时段：${context.mealTime || '这顿'}。不要固定写午餐，必须按这个时段措辞。`,
     `当前节气：${context.solarTermName || '未知'}（${context.solarTermHint || '未知'}）。`,
     `地域饮食画像：${context.regionalDietProfile || getRegionalDietProfile(context.city)}。`,
     '不要引用库存、选中食材、临期食材或菜谱结果。',
