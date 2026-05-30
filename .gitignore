@@ -8,6 +8,17 @@ dist-ssr/
 .vite/
 miniprogram_npm/
 .codegraph/
+promo-video/out/
+fridge-radar-demo/out/
+hyperframes-fridge-intro/renders/
+hyperframes-creator-log/renders/
+
+# Promotional video workspaces live in ../fridge-radar-promo
+promo-video/
+fridge-radar-demo/
+hyperframes-fridge-intro/
+hyperframes-creator-log/
+fridge-radar-promo/
 
 # WeChat developer tool preview output
 preview-info.json
