@@ -11,6 +11,33 @@ The current product is built around a practical daily workflow:
 
 This repository is currently an MVP in active development. It is useful as both a working mini program and a reference implementation for WeChat Mini Program + CloudBase + AI-assisted food workflows.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/home-fridge.png" width="220" alt="Fridge inventory home screen" />
+      <br />
+      <sub>Fridge inventory</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/calendar-overview.png" width="220" alt="Expiry calendar overview" />
+      <br />
+      <sub>Expiry calendar</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/cookability-report.png" width="220" alt="Cookability report and recipe suggestions" />
+      <br />
+      <sub>Cookability report</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/ai-recipes.png" width="220" alt="AI recipe suggestions" />
+      <br />
+      <sub>AI recipes</sub>
+    </td>
+  </tr>
+</table>
+
 ## Why This Project Exists
 
 Food waste often happens because people forget what is already in the fridge or miss expiry dates. Fridge Radar focuses on a small but common household problem:
