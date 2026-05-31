@@ -1,63 +1,158 @@
-# 冰箱管家微信小程序
+# Fridge Radar / 冰箱雷达
 
-这是一个微信小程序项目，用来管理冰箱食品和饮料库存。
+Fridge Radar is an open-source WeChat Mini Program for household fridge inventory management. It helps users record food, track expiry dates, organize fridge zones, and generate recipe ideas based on existing ingredients, weather, and seasonal context.
 
-当前主线已经从早期 React/Vite H5 切换为微信小程序原生开发。旧 H5 文件仍保留在目录中，但不是当前开发主线。
+The current product is built around a practical daily workflow:
 
-## 当前功能
+1. Add food manually or through photo-based confirmation flows.
+2. Place food into real fridge zones such as chilled, frozen, door shelf, produce drawer, and flexible temperature zone.
+3. Track what is expiring soon.
+4. Turn soon-to-expire ingredients into recipe suggestions.
 
-- 首页展示可 DIY 的分区货架，支持冷藏、冷冻、门上储物格、果蔬抽屉、变温区启用和排序。
-- 首页分区本身作为添加入口，分区食品通过横向卡片查看。
-- 首页用“确定放哪 / 不确定放哪”两个指示牌表达录入路径。
-- 点击首页分区进入添加方式面板，点击分区统计查看对应食品清单，点击食品图片查看、编辑、删除。
-- 支持添加、编辑、删除食品。
-- 支持全局统计：总食品数、临期食品、已过期食品。
-- 支持搜索食品。
-- 日历页展示到期食品。
-- 日历页提供临期去化模块，展示今日到期、3 天内、7 天内和已过期食品，并直接生成 3 道去化推荐菜谱卡片。
-- 菜谱页当前是 AI 菜谱体验版，已接入云函数 AI 路径和腾讯实时天气。
-- 菜谱页雷达建议独立根据城市、天气、温度、湿度和季节 / 节气生成，不随下方选菜结果变化。
-- 菜谱盲盒不读取冰箱库存，只根据雷达气候信息推荐应季养生家常菜。
-- 我来选食材只围绕料理碗里的库存 / 临时食材生成，生成结果会保留到用户主动清空。
-- 菜谱页支持收藏菜谱，并在“我的收藏”中查看记录。
-- AI 菜谱页进入后默认等待用户选择入口，不自动展示临期去化内容。
-- AI 菜谱页支持“菜谱盲盒”和“我来选食材”。
-- 首页提供“智能录入”入口。
-- 智能录入支持手动输入名称后推荐分区。
-- 分区弹窗内支持手动添加、拍食品、拍包装。
-- 拍食品、拍包装、拍购物小票都会经过识别确认页，确认后才保存。
-- 添加和识别确认流程不再要求填写数量、单位；保存时使用兼容默认值。
-- 存放分区只保留冷藏、冷冻、门架、果蔬抽屉、变温 5 个标准分区。
-- 日历页库存弹窗支持直接删除食品。
+This repository is currently an MVP in active development. It is useful as both a working mini program and a reference implementation for WeChat Mini Program + CloudBase + AI-assisted food workflows.
 
-## 技术栈
+## Why This Project Exists
 
-- 微信小程序原生开发
+Food waste often happens because people forget what is already in the fridge or miss expiry dates. Fridge Radar focuses on a small but common household problem:
+
+- What do I have?
+- Where is it stored?
+- What will expire soon?
+- What can I cook with it today?
+
+The project is intentionally small enough to run as a mini program, but complete enough to show real product flows: inventory, calendar, AI recipe generation, image/OCR parsing, CloudBase storage, and user-owned data separation through `_openid`.
+
+## Current Features
+
+- WeChat Mini Program native pages built with JavaScript, WXML, and WXSS.
+- CloudBase initialization and cloud database integration.
+- Food inventory create, read, update, and delete flows.
+- Food search and expiry status calculation.
+- Fridge-zone based home screen with configurable zones.
+- Standard zones:
+  - chilled
+  - frozen
+  - door shelf
+  - produce drawer
+  - flexible temperature zone
+- Expiry calendar view.
+- Soon-to-expire food handling suggestions.
+- AI recipe experience page.
+- Recipe modes:
+  - seasonal recipe blind box
+  - user-selected ingredients
+- Recipe favorites.
+- Photo, package, and receipt confirmation flows before saving parsed food.
+- Cloud functions for OpenID, food parsing, barcode compatibility, recipe generation, and expiry reminders.
+- Local visual assets for food categories, recipes, mascot states, tab bar icons, and fridge templates.
+
+## Tech Stack
+
+- WeChat Mini Program native development
 - JavaScript
 - WXML
 - WXSS
-- 微信云开发 / CloudBase
+- WeChat Cloud Development / Tencent CloudBase
+- CloudBase cloud database
+- CloudBase cloud functions
 
-云开发资源：
+Main cloud database collections:
 
-- AppID: `wx328e2b87665508e7`
-- CloudBase 环境 ID: `cloud1-d3g4v0ms8ee56bd94`
-- 云数据库集合：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs`、`recipeRecords`
-- 云函数：`getOpenId`、`parseFoodImage`、`parseBarcode`、`generateRecipes`、`sendExpiryReminders`
+- `items`
+- `reminders`
+- `parseLogs`
+- `fridgeZoneConfigs`
+- `recipeRecords`
 
-## 本地运行
+Main cloud functions:
 
-1. 打开微信开发者工具。
-2. 导入本目录：`/Users/qzt/Desktop/projects/fridge-app`
-3. 使用项目内 `project.config.json`。
-4. 确认开发者工具识别到：
+- `getOpenId`
+- `parseFoodImage`
+- `parseBarcode`
+- `generateRecipes`
+- `sendExpiryReminders`
+
+## Repository Structure
+
+```text
+.
+├── app.js                         # Mini program startup and CloudBase init
+├── app.json                       # Mini program page and tab configuration
+├── app.wxss                       # Global WXSS
+├── cloudfunctions/                # CloudBase cloud functions
+├── custom-tab-bar/                # Custom mini program tab bar
+├── images/                        # Local product visual assets
+├── pages/                         # Mini program pages
+├── services/                      # Business logic and CloudBase access
+├── styles/                        # Shared visual styles
+├── utils/                         # Constants, date helpers, status helpers
+├── project.config.json            # WeChat Developer Tools project config
+└── package.json                   # Legacy H5/Vite compatibility scripts
+```
+
+Note: the earlier React/Vite H5 files are kept for compatibility and history, but the active product direction is the WeChat Mini Program.
+
+## Local Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/zitao4588-create/fridge-app.git
+cd fridge-app
+```
+
+### 2. Open with WeChat Developer Tools
+
+1. Open WeChat Developer Tools.
+2. Import this repository folder.
+3. Use the project config in `project.config.json`.
+4. Confirm:
    - `miniprogramRoot: "./"`
    - `cloudfunctionRoot: "cloudfunctions/"`
-5. 编译运行小程序。
 
-## 验证命令
+### 3. Configure your own CloudBase environment
 
-这些命令只做基础语法和旧 H5 构建检查：
+If you fork this project, use your own WeChat Mini Program AppID and CloudBase environment.
+
+The maintainer's local AppID and CloudBase environment may appear in project configuration files because this repository is also used as an active development project. They are not reusable credentials for your own mini program.
+
+For your own fork, update:
+
+- `project.config.json`
+- `app.js`
+- any cloud function environment configuration that points to a specific CloudBase environment
+
+Do not commit API keys, service tokens, or private `.env` files.
+
+For a step-by-step setup guide, read [docs/CLOUDBASE_SETUP.md](docs/CLOUDBASE_SETUP.md).
+
+### 4. Create required CloudBase collections
+
+Create these collections in the CloudBase console:
+
+- `items`
+- `reminders`
+- `parseLogs`
+- `fridgeZoneConfigs`
+- `recipeRecords`
+
+Recommended permission model for user data collections:
+
+- only the creator can read and write their own records
+
+### 5. Deploy cloud functions
+
+Deploy these folders from `cloudfunctions/` through WeChat Developer Tools or your CloudBase deployment workflow:
+
+- `getOpenId`
+- `parseFoodImage`
+- `parseBarcode`
+- `generateRecipes`
+- `sendExpiryReminders`
+
+## Verification
+
+These checks are useful for basic syntax and legacy H5 compatibility:
 
 ```bash
 node --check app.js
@@ -76,23 +171,51 @@ npm run lint
 npm run build
 ```
 
-说明：`npm run build` 仍来自早期 Vite 配置，只能作为兼容检查，不代表当前主线是 H5。
+`npm run build` belongs to the earlier Vite setup and should be treated as a compatibility check, not as the main mini program build path.
 
-## 当前不做
+## Current Boundaries
 
-- 不做 Vercel 部署。
-- 不接 Supabase。
-- 不把 React H5 作为主线。
-- 不做 Next.js。
-- 不做独立后端服务器。
-- 不做登录页。
-- 不接真实条形码商品库。
-- 真实天气通过云函数调用腾讯位置服务，小程序前端不直接保存 API key。
-- 不接真实联网搜索。
-- 不做订阅消息真实推送。
+The project currently does not include:
 
-## 重要说明
+- independent backend server
+- Vercel deployment
+- Supabase
+- Next.js
+- Docker
+- payment flow
+- phone number login
+- real public barcode product database
+- frontend-side API key storage
+- real subscription-message push
 
-- `src/`、`dist/`、`public/`、`package.json` 等旧 H5 相关内容仍存在，但 `project.config.json` 已将它们从小程序打包中忽略。
-- 后续如果确认旧 H5 不再需要，应按用户确认逐个清理，不要批量删除。
-- 条形码扫描模块已从用户入口移除；后续如恢复，需要重新确认低成本商品库方案。
+AI, OCR, weather, and recipe-related capabilities should stay behind cloud functions. The mini program frontend should not store provider API keys.
+
+## Open Source Roadmap
+
+The next open-source readiness tasks are:
+
+- add more screenshots or a short demo video
+- add issue templates
+- publish the first GitHub release
+- collect real usage evidence from testers or early users
+- document which AI/OCR providers can be swapped in cloud functions
+
+## Contributing
+
+Contributions are welcome. Please start by reading [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Good first contribution areas:
+
+- documentation improvements
+- setup guide corrections
+- UI copy improvements
+- CloudBase deployment notes
+- small bug fixes with clear reproduction steps
+
+## Security
+
+Please read [SECURITY.md](SECURITY.md) before reporting sensitive issues.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
