@@ -18,7 +18,7 @@
   </view>
 
   <view class="info-card card">
-    <text class="info-title">关于冰箱雷达</text>
+    <text class="info-title">关于冰箱小雷达</text>
     <text class="info-text">用于记录冰箱食品饮料库存，支持手动管理、到期日历、库存统计和菜谱建议。</text>
   </view>
 

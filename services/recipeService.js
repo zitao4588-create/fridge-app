@@ -371,7 +371,7 @@ function getTemperatureLabel(context = {}) {
 
 function buildRadarDietPrompt(context) {
   return [
-    '你是冰箱雷达的饮食建议助手。',
+    '你是冰箱小雷达的饮食建议助手。',
     '请结合中医饮食理论，但不要做医疗诊断或治疗承诺。',
     `所在城市：${context.city || '未知'}。`,
     `今日节气：${context.solarTermName || '未知'}（${
