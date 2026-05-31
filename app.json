@@ -9,7 +9,7 @@
     "pages/batch-parse-confirm/batch-parse-confirm"
   ],
   "window": {
-    "navigationBarTitleText": "冰箱雷达",
+    "navigationBarTitleText": "冰箱小雷达",
     "navigationBarBackgroundColor": "#FFF9EA",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#FFF4DE"

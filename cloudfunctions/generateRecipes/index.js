@@ -1341,7 +1341,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
 
   if (scene === 'blindBox') {
     return [
-      '请为微信小程序“冰箱雷达”的“菜谱盲盒”生成 3 道应季养生家常菜。',
+      '请为微信小程序“冰箱小雷达”的“菜谱盲盒”生成 3 道应季养生家常菜。',
       '这是用户不知道吃什么时的灵感入口，不要读取或假设用户冰箱库存，不要写“已有食材”。',
       '必须综合城市、当天真实天气或兜底天气、今日温度区间、湿度、季节和节气来设计适合全天的菜谱。',
       '菜谱不要过于简单，要像可以真正照着做的家常菜：说明备菜、切配、火候、时间、判断熟度、出锅状态和可替代做法。',
@@ -1360,7 +1360,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
     const scanSummary = context.inventoryScan || buildInventoryScanSummary(items)
 
     return [
-      '请为微信小程序“冰箱雷达”的“开饭雷达检测报告”生成 3 道家常菜谱。',
+      '请为微信小程序“冰箱小雷达”的“开饭雷达检测报告”生成 3 道家常菜谱。',
       '这是云端 AI 菜谱生成，必须基于本地传入的真实冰箱库存和临期扫描结果，不要编造库存里没有的“已有食材”。',
       '雷达建议要偏气候养生：只结合城市、当天真实天气或兜底天气、温度、湿度和节气，给出温和具体的家常饮食建议。',
       'radarAdvice 不要引用库存、选中食材、临期食材或菜谱结果。',
@@ -1382,7 +1382,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
   }
 
   return [
-    '请为微信小程序“冰箱雷达”的“我来选食材”生成 3 道家常菜谱。',
+    '请为微信小程序“冰箱小雷达”的“我来选食材”生成 3 道家常菜谱。',
     '用户已经明确选择料理碗里的食材，必须围绕这些食材设计菜谱，不要偏离主题。',
     '要求：优先使用用户点选食材；不要使用已过期食材；缺少食材可以列出，但不要列基础调味品。',
     '请结合今日城市、天气、温度、湿度、季节和节气，让推荐理由更偏气候养生和家常饮食管理。',
@@ -1402,7 +1402,7 @@ function buildRecipePrompt(items, context, selectedItems, scene = '') {
 
 function buildClimateAdvicePrompt(context) {
   return [
-    '请为微信小程序“冰箱雷达”的 AI 菜谱页生成一句“雷达建议”。',
+    '请为微信小程序“冰箱小雷达”的 AI 菜谱页生成一句“雷达建议”。',
     '上方天气卡已经展示城市、天气、温度和湿度，雷达建议里不要重复这些数字和天气词。',
     '不要以城市名开头，不要写“广州今日雨”“长沙多云”“29℃湿度63%”这类复述天气的信息。',
     '直接给用户今日全天怎么吃：推荐烹饪方式、食材方向、口味控制，以及需要避开的做法。',
@@ -1443,7 +1443,7 @@ async function callCloudBaseAI(items, context, selectedItems, scene = '') {
       {
         role: 'system',
         content:
-          '你是冰箱管家的菜谱助手。输出必须是 JSON，不要输出 Markdown。',
+          '你是冰箱小雷达的菜谱助手。输出必须是 JSON，不要输出 Markdown。',
       },
       {
         role: 'user',
@@ -1477,7 +1477,7 @@ async function callCloudBaseClimateAdvice(context) {
       {
         role: 'system',
         content:
-          '你是冰箱管家的气候食养建议助手。输出必须是 JSON，不要输出 Markdown。',
+          '你是冰箱小雷达的气候食养建议助手。输出必须是 JSON，不要输出 Markdown。',
       },
       {
         role: 'user',
