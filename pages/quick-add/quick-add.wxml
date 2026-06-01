@@ -1,7 +1,7 @@
 <view class="page quick-page">
   <view class="quick-hero card">
     <view class="quick-hero-copy">
-      <view class="page-title">智能录入</view>
+      <view class="page-title">快捷录入</view>
       <view class="page-subtitle">不确定分区时，可以先识别，再按推荐分区保存。</view>
     </view>
     <view class="quick-hero-fridge">
@@ -25,7 +25,7 @@
       <view class="entry-copy">
         <text class="entry-kicker">单个食品</text>
         <text class="entry-title">拍食品</text>
-        <text class="entry-desc">识别食品本身，自动给出推荐分区</text>
+        <text class="entry-desc">拍下食品本身，给出推荐分区</text>
       </view>
       <view class="entry-arrow">›</view>
     </button>
@@ -35,7 +35,7 @@
       <view class="entry-copy">
         <text class="entry-kicker">包装信息</text>
         <text class="entry-title">拍包装</text>
-        <text class="entry-desc">识别包装说明文字，提取名称和保质期</text>
+        <text class="entry-desc">读取包装说明文字，提取名称和保质期</text>
       </view>
       <view class="entry-arrow">›</view>
     </button>
@@ -45,7 +45,7 @@
       <view class="entry-copy">
         <text class="entry-kicker">批量添加</text>
         <text class="entry-title">拍购物小票</text>
-        <text class="entry-desc">识别多条食品，逐个确认分区后保存</text>
+        <text class="entry-desc">读取多条食品，逐个确认分区后保存</text>
       </view>
       <view class="entry-arrow">›</view>
     </button>

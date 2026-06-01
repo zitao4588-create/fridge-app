@@ -116,7 +116,7 @@ function buildBatchRecognitionAlert(payload = {}, items = []) {
       recognitionAlertType: 'real',
       recognitionAlertTitle: '已使用真实小票识别',
       recognitionAlertDesc:
-        '已调用云端 OCR / AI 识别。小票和包装日期仍需要逐条核对后再保存。',
+        '已使用小票图片识别预填信息。小票和包装日期仍需要逐条核对后再保存。',
     }
   }
 
@@ -126,7 +126,7 @@ function buildBatchRecognitionAlert(payload = {}, items = []) {
       recognitionAlertTitle: '已使用备用小票识别',
       recognitionAlertDesc: fallbackReason
         ? `${fallbackReason}。请按购物小票和包装信息核对。`
-        : '真实识别暂不可用，已使用预填结果。请按购物小票和包装信息核对。',
+        : '图片识别暂不可用，已使用预填结果。请按购物小票和包装信息核对。',
     }
   }
 
@@ -134,7 +134,7 @@ function buildBatchRecognitionAlert(payload = {}, items = []) {
     recognitionAlertType: 'unknown',
     recognitionAlertTitle: '小票识别状态待确认',
     recognitionAlertDesc:
-      '云端没有返回识别来源，请逐条核对名称、日期和分区后保存。',
+      '识别没有返回来源，请逐条核对名称、日期和分区后保存。',
   }
 }
 

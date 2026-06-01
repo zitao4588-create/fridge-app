@@ -55,14 +55,14 @@ page {
   --coral-400: var(--coral);
   --coral-600: var(--coral-deep);
 
-  /* AI and saved recipes */
-  --ai-lilac-bg: #F2EFFF;
-  --ai-lilac: #7C62C7;
-  --ai-lilac-deep: #5D46A3;
-  --ai-100: var(--ai-lilac-bg);
-  --ai-300: #d8cffb;
-  --ai-500: var(--ai-lilac);
-  --ai-700: var(--ai-lilac-deep);
+  /* Saved recipe accent */
+  --lilac-bg: #F2EFFF;
+  --lilac: #7C62C7;
+  --lilac-deep: #5D46A3;
+  --lilac-100: var(--lilac-bg);
+  --lilac-300: #d8cffb;
+  --lilac-500: var(--lilac);
+  --lilac-700: var(--lilac-deep);
 
   /* Text */
   --text-main: #253730;
@@ -78,7 +78,7 @@ page {
   --shadow-ice: 0 14rpx 30rpx rgba(58, 175, 216, 0.12);
   --shadow-button-green: 0 8rpx 16rpx rgba(40, 185, 120, 0.16);
   --shadow-button-honey: 0 8rpx 16rpx rgba(255, 178, 62, 0.16);
-  --shadow-button-ai: 0 8rpx 16rpx rgba(124, 98, 199, 0.14);
+  --shadow-button-lilac: 0 8rpx 16rpx rgba(124, 98, 199, 0.14);
   --shadow-warning: 0 6rpx 14rpx rgba(255, 178, 62, 0.14);
 
   /* Rounded toy geometry */
@@ -131,9 +131,9 @@ page {
   --color-expiring: var(--honey-500);
   --color-expired: var(--coral-600);
   --color-info: var(--ice-500);
-  --color-ai: var(--ai-500);
-  --color-ai-deep: var(--ai-700);
-  --color-ai-light: var(--ai-100);
+  --color-lilac: var(--lilac-500);
+  --color-lilac-deep: var(--lilac-700);
+  --color-lilac-light: var(--lilac-100);
   --color-disabled: #d8e0dc;
   --shadow-button: var(--shadow-button-green);
 }

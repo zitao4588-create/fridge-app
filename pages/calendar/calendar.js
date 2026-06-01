@@ -13,7 +13,7 @@ const {
 const { getExpiryStatus } = require('../../utils/status')
 
 const CALENDAR_RADAR_CACHE_KEY = 'fridge_calendar_radar_recipe_cache_v1'
-const CALENDAR_RADAR_CACHE_VERSION = 1
+const CALENDAR_RADAR_CACHE_VERSION = 2
 
 const EMPTY_EXPIRY_USAGE = {
   todayItems: [],
@@ -37,7 +37,7 @@ const EMPTY_MEAL_RADAR_REPORT = {
   levelLabel: '低',
   levelTitle: '先处理风险或补货',
   levelClass: 'low',
-  recipeHint: '等待云端 AI 生成',
+  recipeHint: '等待本地推荐',
   inventoryCount: 0,
   expiringCount: 0,
   overdueCount: 0,
@@ -45,7 +45,7 @@ const EMPTY_MEAL_RADAR_REPORT = {
   explanation: '基于库存匹配、临期食材和过期风险计算',
 }
 
-const EMPTY_RECIPE_DETAIL = {
+const EMPTY_RECIPE_PANEL = {
   title: '',
   timeCost: '',
   difficulty: '',
@@ -264,8 +264,8 @@ function buildMealRadarReport(items, expiryUsage) {
     ? safeExpiryUsage.recommendations.length
     : 0
   const recipeHint = recommendationCount > 0
-    ? `云端 AI 已生成 ${recommendationCount} 道菜`
-    : '等待云端 AI 生成'
+    ? `已推荐 ${recommendationCount} 道菜`
+    : '等待本地推荐'
 
   return {
     ...EMPTY_MEAL_RADAR_REPORT,
@@ -289,10 +289,10 @@ function getInitialRadarRecipeStatus(expiryUsage) {
   }
 
   if ((safeExpiryUsage.threeDayItems || []).length > 0) {
-    return '正在结合临期食材和全量库存调用云端 AI...'
+    return '正在结合临期食材和全量库存整理菜谱...'
   }
 
-  return '正在结合当前库存调用云端 AI 生成菜谱...'
+  return '正在结合当前库存整理菜谱...'
 }
 
 function formatMonthDate(year, monthIndex, day = 1) {
@@ -342,7 +342,7 @@ Page({
     inventoryPanelTitle: '',
     inventoryPanelItems: [],
     recipeDetailVisible: false,
-    recipeDetail: EMPTY_RECIPE_DETAIL,
+    recipeDetail: EMPTY_RECIPE_PANEL,
   },
 
   onLoad() {
@@ -404,8 +404,8 @@ Page({
           radarRecipeStatusText: cachedRadar
             ? cachedRadar.statusText || (
               cachedRadar.recommendations.length > 0
-                ? '今日开饭雷达菜谱已生成。'
-                : '今日开饭雷达暂未生成可用菜谱。'
+                ? '今日开饭雷达菜谱已推荐。'
+                : '今日开饭雷达暂未整理出可用菜谱。'
             )
             : getInitialRadarRecipeStatus(expiryUsage),
           loading: false,
@@ -446,7 +446,7 @@ Page({
     this.mealRadarRecipeRequestId = requestId
 
     recipeService
-      .getCloudExpiryRecipeRecommendations(items, safeExpiryUsage)
+      .getLocalExpiryRecipeRecommendations(items, safeExpiryUsage)
       .then((result) => {
         if (this.mealRadarRecipeRequestId !== requestId) {
           return
@@ -464,8 +464,8 @@ Page({
           recommendations: decoratedRecommendations,
         }
         const statusText = recommendations.length > 0
-          ? '云端 AI 已结合临期食材和库存生成菜谱。'
-          : result.fallbackReason || '云端 AI 暂未生成可用菜谱，请稍后再试。'
+          ? '已根据临期食材和库存推荐菜谱。'
+          : result.fallbackReason || '暂未整理出可用菜谱，请稍后再试。'
 
         saveCalendarRadarCache({
           recommendations,
@@ -488,13 +488,13 @@ Page({
         this.setData({
           radarRecipeLoading: false,
           radarRecipeStatusText:
-            (error && error.message) || '云端 AI 暂不可用，本次不使用本地菜谱兜底。',
+            (error && error.message) || '暂未整理出可用菜谱，请稍后再试。',
         })
         this.mealRadarRecipeRequestId = ''
         saveCalendarRadarCache({
           recommendations: [],
           statusText:
-            (error && error.message) || '云端 AI 暂不可用，本次不使用本地菜谱兜底。',
+            (error && error.message) || '暂未整理出可用菜谱，请稍后再试。',
         })
       })
   },
@@ -673,7 +673,7 @@ Page({
     this.setData({
       recipeDetailVisible: true,
       recipeDetail: {
-        ...EMPTY_RECIPE_DETAIL,
+        ...EMPTY_RECIPE_PANEL,
         ...recipe,
         availableItems: recipe.availableItems || [],
         missingItems: recipe.missingItems || [],
@@ -784,7 +784,7 @@ Page({
   handleCloseRecipeDetail() {
     this.setData({
       recipeDetailVisible: false,
-      recipeDetail: EMPTY_RECIPE_DETAIL,
+      recipeDetail: EMPTY_RECIPE_PANEL,
     })
   },
 

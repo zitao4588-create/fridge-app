@@ -1,7 +1,7 @@
 const { getDaysUntil, getTodayString } = require('../utils/date')
 const { getRecipeVisual } = require('../utils/visualAssets')
 
-const AI_RECIPE_LIBRARY = [
+const LOCAL_RECIPE_LIBRARY = [
   {
     id: 'tomato-egg',
     title: '番茄炒蛋',
@@ -386,7 +386,7 @@ function buildRadarDietPrompt(context) {
 }
 
 function buildRadarDietAdvice(context) {
-  if (context && context.radarAdvice && context.radarAdviceSource === 'ai') {
+  if (context && context.radarAdvice && context.radarAdviceSource === 'local') {
     return context.radarAdvice
   }
 
@@ -500,7 +500,7 @@ function buildContextRecipeReason(recipe, context) {
       : '适合作为今天的轻负担备选。'
 
   return (
-    `结合${getContextLabel(context)}和雷达建议，` +
+    `结合${getContextLabel(context)}和今日建议，` +
     `${inventoryText}${missingText}推荐这道${recipe.title}，${priorityText}`
   )
 }
@@ -607,26 +607,6 @@ function normalizeIngredientText(value) {
     .replace(/[()（）【】\[\]，,、:：；;]/g, '')
 }
 
-function getCleanIngredientName(value) {
-  return String(value || '')
-    .replace(/[.。…]+$/g, '')
-    .replace(/\s+/g, ' ')
-    .replace(
-      /\s*[0-9０-９]+(?:\.\d+)?\s*(?:g|kg|ml|l|克|千克|斤|毫升|升|个|颗|枚|根|片|块|份|袋|盒|瓶|勺|条)/gi,
-      '',
-    )
-    .replace(/\s*(?:各|约|大约|左右)\s*$/g, '')
-    .replace(/[，,、:：；;]\s*$/g, '')
-    .trim()
-}
-
-function getRecipeImage(recipe, id) {
-  return getRecipeVisual({
-    ...recipe,
-    id: id || (recipe && recipe.id),
-  })
-}
-
 function getItemKey(item) {
   return item && (item._id || item.id || item.name)
 }
@@ -728,7 +708,7 @@ function matchRecipeToItems(recipe, items, sourceType, context) {
   if (!context && sourceType === 'expiry') {
     reason = `这道菜能消耗临期食材，${priorityText}`
   } else if (!context) {
-    reason = `AI 根据库存匹配度和当前场景推荐，${priorityText}`
+    reason = `根据库存匹配度和当前场景推荐，${priorityText}`
   }
 
   return {
@@ -762,7 +742,7 @@ function sortRecommendations(recommendations) {
   })
 }
 
-function getAIRecipeRecommendations(items, options) {
+function getLocalRecipeRecommendations(items, options) {
   const safeItems = Array.isArray(items) ? items : []
   const selectedItemIds = new Set((options && options.selectedItemIds) || [])
   const selectedItems = safeItems.filter((item) => selectedItemIds.has(getItemKey(item)))
@@ -773,8 +753,8 @@ function getAIRecipeRecommendations(items, options) {
       ? options.context
       : getMockRecommendationContext(baseItems)
   const matchedRecommendations = sortRecommendations(
-    AI_RECIPE_LIBRARY.map((recipe) =>
-      matchRecipeToItems(recipe, baseItems, 'ai', context),
+    LOCAL_RECIPE_LIBRARY.map((recipe) =>
+      matchRecipeToItems(recipe, baseItems, 'local', context),
     ),
   ).slice(0, 5)
   const recommendations = applyRecommendationContext(matchedRecommendations, context)
@@ -786,106 +766,37 @@ function getAIRecipeRecommendations(items, options) {
   }
 }
 
-function normalizeCloudRecipe(recipe, index) {
-  const id = recipe.id || `cloud-recipe-${index}`
-  const missingItems = Array.isArray(recipe.missingItems)
-    ? recipe.missingItems.map(getCleanIngredientName).filter(Boolean)
-    : []
-
-  return {
-    ...recipe,
-    id,
-    image: getRecipeImage(recipe, id),
-    sourceType: recipe.sourceType || 'ai',
-    reason: recipe.reason || '云端 AI 根据当前库存生成。',
-    availableItems: Array.isArray(recipe.availableItems)
-      ? recipe.availableItems
-      : [],
-    missingItems,
-    priorityItems: Array.isArray(recipe.priorityItems)
-      ? recipe.priorityItems
-      : [],
-    matchScore: Number(recipe.matchScore) || 0,
-    matchLabel: recipe.matchLabel || '',
-    canCook: Boolean(recipe.canCook),
-    timeCost: recipe.timeCost || '15 分钟',
-    difficulty: recipe.difficulty || '简单',
-    tags: Array.isArray(recipe.tags) ? recipe.tags : [],
-    seasonTags: Array.isArray(recipe.seasonTags) ? recipe.seasonTags : [],
-    steps: Array.isArray(recipe.steps) ? recipe.steps : [],
-    safetyNote: recipe.safetyNote || '',
-    providerStatus: recipe.providerStatus || '',
-  }
-}
-
-function getCloudAIRecipeRecommendations(items, options = {}) {
-  if (typeof wx === 'undefined' || !wx.cloud) {
-    return Promise.reject(new Error('当前环境不支持云端菜谱生成'))
-  }
-
+function getLocalGuideRecommendations(items, options = {}) {
+  const safeItems = Array.isArray(items) ? items : []
+  const context = options.context || getMockRecommendationContext(safeItems)
   const scene = options.scene || 'picker'
+  const recommendations = scene === 'blindBox'
+    ? getBlindBoxRecommendations([], 'blindBox', context, 3)
+    : getLocalRecipeRecommendations(safeItems, {
+      selectedItemIds: Array.isArray(options.selectedItemIds)
+        ? options.selectedItemIds
+        : [],
+      context,
+    }).recommendations.slice(0, 3)
 
-  return wx.cloud
-    .callFunction({
-      name: 'generateRecipes',
-      data: {
-        scene,
-        items: Array.isArray(items) ? items : [],
-        selectedItemIds: Array.isArray(options.selectedItemIds)
-          ? options.selectedItemIds
-          : [],
-        city: options.city || '',
-        context: options.context || {},
-      },
-    })
-    .then((res) => {
-      const payload = res.result || {}
-      const isRealProvider = payload.providerStatus === 'real'
-      const recommendations = isRealProvider && Array.isArray(payload.recommendations)
-        ? payload.recommendations.map(normalizeCloudRecipe)
-        : []
-
-      return {
-        context: {
-          ...(payload.context || {}),
-        },
-        selectedItems: Array.isArray(payload.selectedItems)
-          ? payload.selectedItems
-          : [],
-        recommendations,
-        providerStatus: payload.providerStatus || '',
-        fallbackReason: recommendations.length > 0
-          ? ''
-          : payload.fallbackReason || '云端 AI 暂未生成可用菜谱。',
-      }
-    })
+  return Promise.resolve({
+    context,
+    selectedItems: [],
+    recommendations,
+    providerStatus: 'local',
+    fallbackReason: recommendations.length > 0 ? '' : '暂无可用菜谱，请先添加食材。',
+  })
 }
 
-function getCloudClimateContext(city, items = []) {
-  if (typeof wx === 'undefined' || !wx.cloud) {
-    return Promise.reject(new Error('当前环境不支持云端天气和雷达建议'))
-  }
-
-  return wx.cloud
-    .callFunction({
-      name: 'generateRecipes',
-      data: {
-        scene: 'climateRadar',
-        items: Array.isArray(items) ? items : [],
-        city: city || '',
-      },
-    })
-    .then((res) => {
-      const payload = res.result || {}
-
-      return {
-        context: {
-          ...(payload.context || {}),
-        },
-        providerStatus: payload.providerStatus || '',
-        fallbackReason: payload.fallbackReason || '',
-      }
-    })
+function getLocalClimateContext(city, items = []) {
+  return Promise.resolve({
+    context: {
+      ...getMockRecommendationContext(Array.isArray(items) ? items : []),
+      city: city || '',
+    },
+    providerStatus: 'local',
+    fallbackReason: '',
+  })
 }
 
 function getExpiryUsageRecommendations(items) {
@@ -925,13 +836,9 @@ function getPriorityRecipeItemIds(expiryUsage) {
     .filter(Boolean)
 }
 
-function getCloudExpiryRecipeRecommendations(items, expiryUsage, options = {}) {
+function getLocalExpiryRecipeRecommendations(items, expiryUsage, options = {}) {
   const safeItems = Array.isArray(items) ? items : []
   const safeExpiryUsage = expiryUsage || getExpiryUsageRecommendations(safeItems)
-
-  if (typeof wx === 'undefined' || !wx.cloud) {
-    return Promise.reject(new Error('当前环境不支持云端菜谱生成'))
-  }
 
   if (!safeExpiryUsage.usableCount) {
     return Promise.resolve({
@@ -943,35 +850,29 @@ function getCloudExpiryRecipeRecommendations(items, expiryUsage, options = {}) {
     })
   }
 
-  return wx.cloud
-    .callFunction({
-      name: 'generateRecipes',
-      data: {
-        scene: 'expiryRadar',
-        items: safeItems,
-        priorityItemIds: getPriorityRecipeItemIds(safeExpiryUsage),
-        city: options.city || '',
-      },
-    })
-    .then((res) => {
-      const payload = res.result || {}
-      const isRealProvider = payload.providerStatus === 'real'
-      const recommendations = isRealProvider && Array.isArray(payload.recommendations)
-        ? payload.recommendations.map(normalizeCloudRecipe)
-        : []
+  const priorityItemIds = getPriorityRecipeItemIds(safeExpiryUsage)
+  const selectedItemIds = priorityItemIds.length > 0
+    ? priorityItemIds
+    : safeItems
+      .filter((item) => getDaysUntil(item.expireDate) >= 0)
+      .slice(0, 5)
+      .map(getItemKey)
+  const context = {
+    ...getMockRecommendationContext(safeItems),
+    city: options.city || '',
+  }
+  const recommendations = getLocalRecipeRecommendations(safeItems, {
+    selectedItemIds,
+    context,
+  }).recommendations.slice(0, 3)
 
-      return {
-        context: payload.context || {},
-        selectedItems: Array.isArray(payload.selectedItems)
-          ? payload.selectedItems
-          : [],
-        recommendations,
-        providerStatus: payload.providerStatus || '',
-        fallbackReason: recommendations.length > 0
-          ? ''
-          : payload.fallbackReason || '云端 AI 暂未生成可用菜谱。',
-      }
-    })
+  return Promise.resolve({
+    context,
+    selectedItems: [],
+    recommendations,
+    providerStatus: 'local',
+    fallbackReason: recommendations.length > 0 ? '' : '暂无可用菜谱，请先补充库存。',
+  })
 }
 
 function getDailyIndex(list, type) {
@@ -1098,10 +999,10 @@ function getBlindBoxRecommendations(items, type, context, count = 3, offset = 0)
 }
 
 function ruleBasedRecipes(items) {
-  return getAIRecipeRecommendations(items).recommendations.slice(0, 3)
+  return getLocalRecipeRecommendations(items).recommendations.slice(0, 3)
 }
 
-function fallbackAIRecipes(items) {
+function fallbackLocalRecipes(items) {
   return ruleBasedRecipes(items)
 }
 
@@ -1113,11 +1014,11 @@ module.exports = {
   applyRecommendationContext,
   buildRadarDietAdvice,
   buildRadarDietPrompt,
-  fallbackAIRecipes,
-  getAIRecipeRecommendations,
-  getCloudAIRecipeRecommendations,
-  getCloudClimateContext,
-  getCloudExpiryRecipeRecommendations,
+  fallbackLocalRecipes,
+  getLocalRecipeRecommendations,
+  getLocalGuideRecommendations,
+  getLocalClimateContext,
+  getLocalExpiryRecipeRecommendations,
   getBlindBoxRecommendation,
   getBlindBoxRecommendations,
   getExpiryUsageRecommendations,

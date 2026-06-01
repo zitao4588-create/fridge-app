@@ -94,9 +94,9 @@ function buildRecognitionAlert(result) {
     return {
       showRecognitionAlert: true,
       recognitionAlertType: 'real',
-      recognitionAlertTitle: '已使用真实识别',
+      recognitionAlertTitle: '已预填识别结果',
       recognitionAlertDesc:
-        '已调用云端 OCR / AI 识别。机器识别仍可能不准，请核对名称、日期和分区后保存。',
+        '已使用图片识别预填信息。机器识别仍可能不准，请核对名称、日期和分区后保存。',
     }
   }
 
@@ -106,8 +106,8 @@ function buildRecognitionAlert(result) {
       recognitionAlertType: 'partial',
       recognitionAlertTitle: '已使用图片识别',
       recognitionAlertDesc: fallbackReason
-        ? `云端 AI 暂不可用，已先用图片识别结果预填。原因：${fallbackReason}`
-        : '云端 AI 暂不可用，已先用图片识别结果预填。请按实物核对后保存。',
+        ? `识别服务暂不可用，已先用图片识别结果预填。原因：${fallbackReason}`
+        : '识别服务暂不可用，已先用图片识别结果预填。请按实物核对后保存。',
     }
   }
 
@@ -118,7 +118,7 @@ function buildRecognitionAlert(result) {
       recognitionAlertTitle: '已使用备用识别',
       recognitionAlertDesc: fallbackReason
         ? `${fallbackReason}。请按实物状态核对后保存。`
-        : '真实识别暂不可用，已使用预填结果。请按实物状态核对后保存。',
+        : '图片识别暂不可用，已使用预填结果。请按实物状态核对后保存。',
     }
   }
 
@@ -127,7 +127,7 @@ function buildRecognitionAlert(result) {
     recognitionAlertType: 'unknown',
     recognitionAlertTitle: '识别状态待确认',
     recognitionAlertDesc:
-      '云端没有返回识别来源，请按实物状态核对名称、日期和分区后保存。',
+      '识别没有返回来源，请按实物状态核对名称、日期和分区后保存。',
   }
 }
 
@@ -196,7 +196,7 @@ Page({
       smartRecommendEnabled,
       sourceLabel:
         normalized.source === 'manual' && normalized.smartRecommend
-          ? '手动智能录入'
+          ? '手动快捷录入'
           : SOURCE_LABELS[normalized.source] || '快捷录入',
       confidenceText:
         normalized.confidence >= 0.8 ? '信息较完整' : '请重点核对',

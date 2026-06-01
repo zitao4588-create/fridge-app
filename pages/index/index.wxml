@@ -30,8 +30,8 @@
 
       <view class="decision-sign unknown" bindtap="handleSmartAdd">
         <view class="decision-copy">
-          <text class="decision-title">智能录入</text>
-          <text class="decision-desc">拍照识别后推荐分区</text>
+          <text class="decision-title">快捷录入</text>
+          <text class="decision-desc">拍照后推荐分区</text>
         </view>
         <view class="decision-pointer right">
           <view class="pointer-line"></view>

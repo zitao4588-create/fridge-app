@@ -642,14 +642,14 @@ function formatFallbackReason(reason) {
   }
 
   if (message.includes('FRIDGE_ENABLE_REAL_SEARCH')) {
-    return '联网搜索暂未启用，已使用预填结果'
+    return '商品信息查询暂未启用，已使用预填结果'
   }
 
   if (
     message.includes('FRIDGE_WSA_API_KEY') ||
     message.includes('FRIDGE_SEARCH_API_KEY')
   ) {
-    return '联网搜索密钥未配置，已使用预填结果'
+    return '商品信息查询暂未配置，已使用预填结果'
   }
 
   if (/FRIDGE_[A-Z0-9_]+|[A-Z0-9_]+_API_KEY/.test(message)) {

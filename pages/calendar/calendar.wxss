@@ -520,7 +520,7 @@
   margin-top: 22rpx;
 }
 
-.expiry-ai-status {
+.expiry-status {
   position: relative;
   z-index: 1;
   margin-top: 22rpx;
@@ -534,10 +534,10 @@
   line-height: 1.5;
 }
 
-.expiry-ai-status.loading {
+.expiry-status.loading {
   border-style: solid;
-  background: linear-gradient(180deg, #ffffff 0%, var(--ai-100, #f2efff) 100%);
-  color: var(--ai-700, #5d46a3);
+  background: linear-gradient(180deg, #ffffff 0%, var(--lilac-100, #f2efff) 100%);
+  color: var(--lilac-700, #5d46a3);
 }
 
 .meal-recipe-card {
@@ -583,8 +583,8 @@
   flex-shrink: 0;
   padding: 8rpx 12rpx;
   border-radius: 999rpx;
-  background: var(--ai-lilac-bg, #F2EFFF);
-  color: var(--ai-lilac-deep, #5D46A3);
+  background: var(--lilac-bg, #F2EFFF);
+  color: var(--lilac-deep, #5D46A3);
   font-size: 21rpx;
   font-weight: 800;
   line-height: 1;

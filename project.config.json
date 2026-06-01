@@ -71,6 +71,10 @@
         "type": "file"
       },
       {
+        "value": "NEXT_VERSION_GUIDE.md",
+        "type": "file"
+      },
+      {
         "value": "package.json",
         "type": "file"
       },

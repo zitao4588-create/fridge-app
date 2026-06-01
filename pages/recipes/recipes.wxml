@@ -13,7 +13,7 @@
   <view class="recipe-hero card">
     <image class="recipe-hero-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
     <view class="recipe-hero-main">
-      <text class="recipe-hero-title">雷达建议</text>
+      <text class="recipe-hero-title">今日建议</text>
       <text class="recipe-hero-desc">{{context.healthTip}}</text>
     </view>
   </view>
@@ -33,7 +33,7 @@
   </view>
 
   <view wx:if="{{loading}}" class="empty card guide-status-card">正在读取菜谱上下文</view>
-  <view wx:elif="{{guideLoading}}" class="empty card guide-status-card loading">{{guideStatusText || 'AI 正在生成菜谱'}}</view>
+  <view wx:elif="{{guideLoading}}" class="empty card guide-status-card loading">{{guideStatusText || '正在整理菜谱'}}</view>
   <view wx:elif="{{activeGuideType && guideStatusText}}" class="empty card guide-status-card">{{guideStatusText}}</view>
 
   <view wx:elif="{{guideRecipes.length > 0}}" class="guide-panel">
@@ -55,7 +55,7 @@
 
     <view wx:if="{{activeGuideType === 'picker' && generatedManualIngredients.length > 0}}" class="manual-save-panel">
       <view class="manual-save-copy">
-        <text class="manual-save-title">这些新食材只参与了本次生成</text>
+        <text class="manual-save-title">这些新食材只参与了本次搭配</text>
         <text class="manual-save-desc">想下次也能从冰箱里点选，可以补齐到期日后加入库存。</text>
       </view>
       <view class="manual-save-list">
@@ -74,7 +74,7 @@
     </view>
 
     <view
-      class="ai-recipe-card"
+      class="recipe-card"
       wx:for="{{guideRecipes}}"
       wx:key="id"
       data-id="{{item.id}}"
@@ -183,7 +183,7 @@
       <view class="modal-head">
         <view class="modal-title-wrap">
           <text class="modal-title">修改城市</text>
-          <text class="picker-desc">城市会用于腾讯实时天气和气候养生雷达建议。</text>
+          <text class="picker-desc">城市会用于天气参考和气候饮食建议。</text>
         </view>
         <text class="modal-close" bindtap="handleCloseCityEditor">×</text>
       </view>
@@ -235,7 +235,7 @@
       <view class="modal-head">
         <view class="modal-title-wrap">
           <text class="modal-title">我来选食材</text>
-          <text class="picker-desc">从冰箱点选，或输入一个新食材放进料理碗。已过期食品不参与生成。</text>
+          <text class="picker-desc">从冰箱点选，或输入一个新食材放进料理碗。已过期食品不参与推荐。</text>
         </view>
         <text class="modal-close" bindtap="handleClosePicker">×</text>
       </view>
@@ -315,7 +315,7 @@
       <view class="picker-actions">
         <view class="picker-button secondary" bindtap="handleClosePicker">取消</view>
         <view class="picker-button primary {{pickerGenerating ? 'disabled' : ''}}" bindtap="handleGenerateFromSelected">
-          {{pickerGenerating ? '正在生成菜谱' : pickerSelectedItems.length > 0 ? '用这些生成菜谱' : '先选食材'}}
+          {{pickerGenerating ? '正在整理菜谱' : pickerSelectedItems.length > 0 ? '用这些找菜谱' : '先选食材'}}
         </view>
       </view>
     </view>

@@ -7,11 +7,11 @@ const { getExpiryStatus } = require('../../utils/status')
 const DAY_MS = 24 * 60 * 60 * 1000
 const MANUAL_INGREDIENT_PREFIX = 'manual:'
 const RECIPE_PICKER_CACHE_KEY = 'fridge_recipe_picker_cache_v2'
-const RECIPE_PICKER_CACHE_VERSION = 3
+const RECIPE_PICKER_CACHE_VERSION = 4
 const RECIPE_BLIND_BOX_CACHE_KEY = 'fridge_recipe_blind_box_cache_v1'
-const RECIPE_BLIND_BOX_CACHE_VERSION = 5
+const RECIPE_BLIND_BOX_CACHE_VERSION = 6
 const RECIPE_CLIMATE_CACHE_KEY = 'fridge_recipe_climate_cache_v1'
-const RECIPE_CLIMATE_CACHE_VERSION = 5
+const RECIPE_CLIMATE_CACHE_VERSION = 6
 const RECIPE_CITY_CACHE_KEY = 'fridge_recipe_city_v1'
 const RECIPE_CITY_CACHE_VERSION = 1
 const DEFAULT_CITY = '上海'
@@ -85,7 +85,7 @@ function saveRecipeCity(city) {
       savedAt: Date.now(),
     })
   } catch {
-    // 城市缓存失败时不影响当次天气和菜谱生成。
+    // 城市缓存失败时不影响当次天气和菜谱推荐。
   }
 }
 
@@ -112,7 +112,7 @@ function clearRecipePickerCache() {
   try {
     wx.removeStorageSync(RECIPE_PICKER_CACHE_KEY)
   } catch {
-    // 本地缓存失败不影响菜谱生成主流程。
+    // 本地缓存失败不影响菜谱推荐主流程。
   }
 }
 
@@ -172,7 +172,7 @@ function saveRecipePickerCache(payload) {
       statusText: payload.statusText || '',
     })
   } catch {
-    // 本地缓存写入失败时，继续保留页面内生成结果。
+    // 本地缓存写入失败时，继续保留页面内推荐结果。
   }
 }
 
@@ -647,7 +647,7 @@ function decorateContext(context) {
     temperatureDisplay,
     weatherSummary,
     climateSummary,
-    aiAdvicePrompt: recipeService.buildRadarDietPrompt(nextContext),
+    advicePrompt: recipeService.buildRadarDietPrompt(nextContext),
     healthTip: recipeService.buildRadarDietAdvice(nextContext),
   }
 }
@@ -875,20 +875,36 @@ Page({
     const shouldClearBlindBoxRecipes =
       Boolean(options.clearBlindBoxRecipes) ||
       (shouldClearGuideRecipes && activeGuideType === 'blindBox')
-    const pickerRecipes = shouldClearPickerRecipes
-      ? []
-      : Array.isArray(options.pickerRecipes)
-        ? options.pickerRecipes
-        : this.data.pickerRecipes
+    const localPickerRecipes = safeSelectedIds.length > 0
+      ? recipeService
+        .getLocalRecipeRecommendations(recommendationItems, {
+          selectedItemIds: safeSelectedIds,
+          context,
+        })
+        .recommendations
+        .slice(0, 3)
+      : []
+    const pickerRecipes = Array.isArray(options.pickerRecipes)
+      ? options.pickerRecipes
+      : activeGuideType === 'picker' && safeSelectedIds.length > 0
+        ? localPickerRecipes
+        : shouldClearPickerRecipes
+          ? []
+          : this.data.pickerRecipes
     const decoratedPickerRecipes = decorateRecipesWithRecords(
       pickerRecipes,
       recipeRecords,
     )
-    const blindBoxRecipes = shouldClearBlindBoxRecipes
-      ? []
-      : Array.isArray(options.blindBoxRecipes)
-        ? options.blindBoxRecipes
-        : this.data.blindBoxRecipes
+    const localBlindBoxRecipes = activeGuideType === 'blindBox'
+      ? recipeService.getBlindBoxRecommendations([], 'blindBox', context, 3)
+      : []
+    const blindBoxRecipes = Array.isArray(options.blindBoxRecipes)
+      ? options.blindBoxRecipes
+      : activeGuideType === 'blindBox'
+        ? localBlindBoxRecipes
+        : shouldClearBlindBoxRecipes
+          ? []
+          : this.data.blindBoxRecipes
     const decoratedBlindBoxRecipes = decorateRecipesWithRecords(
       blindBoxRecipes,
       recipeRecords,
@@ -919,12 +935,7 @@ Page({
       safeManualIngredients,
       this.data.pickerQuery,
     )
-    const shouldRequestCloud =
-      Boolean(options.generateCloud) &&
-      (
-        activeGuideType === 'blindBox' ||
-        (activeGuideType === 'picker' && safeSelectedIds.length > 0)
-      )
+    const shouldRequestCloud = false
 
     const nextData = {
       items,
@@ -940,8 +951,8 @@ Page({
       guideLoading: shouldRequestCloud && Boolean(activeGuideType),
       guideStatusText: shouldRequestCloud && activeGuideType
         ? activeGuideType === 'blindBox'
-          ? 'AI 正在生成今日固定菜谱'
-          : 'AI 正在围绕料理碗食材生成菜谱'
+          ? '正在整理今日固定菜谱'
+          : '正在围绕料理碗食材整理菜谱'
         : guideContent.recipes.length > 0
           ? ''
           : options.cachedGuideStatusText || '',
@@ -989,7 +1000,7 @@ Page({
     const scene = payload.scene || 'picker'
 
     return recipeService
-      .getCloudAIRecipeRecommendations(payload.recommendationItems, {
+      .getLocalGuideRecommendations(payload.recommendationItems, {
         selectedItemIds: payload.selectedItemIds,
         city: payload.context.city || '',
         context: payload.context,
@@ -1044,7 +1055,7 @@ Page({
               : emptyGuideContent()
         const statusText = guideContent.recipes.length > 0
           ? ''
-          : cloudResult.fallbackReason || '云端 AI 暂未生成可用菜谱，请稍后再试。'
+          : cloudResult.fallbackReason || '暂未整理出可用菜谱，请稍后再试。'
 
         this.setData({
           context,
@@ -1089,7 +1100,7 @@ Page({
         }
 
         const statusText =
-          (error && error.message) || '云端 AI 暂不可用，请稍后再试。'
+          (error && error.message) || '暂未整理出可用菜谱，请稍后再试。'
 
         this.setData({
           guideLoading: false,
@@ -1128,7 +1139,7 @@ Page({
     this.climateContextRequestId = requestId
 
     return recipeService
-      .getCloudClimateContext(safeCity, this.data.items)
+      .getLocalClimateContext(safeCity, this.data.items)
       .then((result) => {
         if (this.climateContextRequestId !== requestId) {
           return
@@ -1168,7 +1179,7 @@ Page({
     if (type === 'blindBox') {
       return {
         title: '菜谱盲盒',
-        desc: '每天按城市、天气和节气固定生成 3 道应季家常菜；换城市或次日再刷新。',
+        desc: '每天按城市、天气和节气固定推荐 3 道应季家常菜；换城市或次日再刷新。',
         algorithm: '',
         recipes: decorateGuideRecipes(
           rotateRecipes(recommendations, refreshIndex).slice(0, 3),
@@ -1180,7 +1191,7 @@ Page({
     if (type === 'picker') {
       return {
         title: '我来选食材',
-        desc: '只围绕料理碗里的食材生成，适合定向消耗。',
+        desc: '只围绕料理碗里的食材推荐，适合定向消耗。',
         algorithm: '',
         recipes: decorateGuideRecipes(
           rotateRecipes(recommendations, refreshIndex).slice(0, 3),
@@ -1296,7 +1307,7 @@ Page({
         activeGuideType: 'blindBox',
         guideRecipes: [],
         guideLoading: true,
-        guideStatusText: 'AI 正在生成今日固定菜谱',
+        guideStatusText: '正在整理今日固定菜谱',
       })
       this.refreshClimateContext(city).then((climateContext) => {
         this.applyRecommendations(
@@ -1457,7 +1468,7 @@ Page({
         activeGuideType: 'blindBox',
         guideRecipes: [],
         guideLoading: true,
-        guideStatusText: 'AI 正在生成今日固定菜谱',
+        guideStatusText: '正在整理今日固定菜谱',
       })
       this.refreshClimateContext(this.data.city).then((climateContext) => {
         this.applyRecommendations(
@@ -1617,7 +1628,7 @@ Page({
 
     if (!targetItem || targetItem.disabled) {
       wx.showToast({
-        title: '已过期食品不参与生成',
+        title: '已过期食品不参与推荐',
         icon: 'none',
       })
       return
@@ -1731,12 +1742,12 @@ Page({
       pickerGenerating: true,
     })
     wx.showLoading({
-      title: '正在生成菜谱',
+      title: '正在整理菜谱',
       mask: true,
     })
 
     try {
-      const cloudRefreshPromise = this.applyRecommendations(
+      const refreshPromise = this.applyRecommendations(
         this.data.items,
         this.data.selectedItemIds,
         this.data.manualIngredients,
@@ -1751,7 +1762,7 @@ Page({
         pickerVisible: false,
         pickerQuery: '',
       })
-      Promise.resolve(cloudRefreshPromise)
+      Promise.resolve(refreshPromise)
         .finally(() => {
           wx.hideLoading()
           this.setData({
@@ -1764,7 +1775,7 @@ Page({
         pickerGenerating: false,
       })
       wx.showToast({
-        title: '生成失败，请重试',
+        title: '整理失败，请重试',
         icon: 'none',
       })
       return
