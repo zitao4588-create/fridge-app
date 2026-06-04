@@ -1,8 +1,37 @@
 # 冰箱小雷达微信小程序
 
-这是一个微信小程序项目，用来管理冰箱食品和饮料库存。
+冰箱小雷达是一个微信小程序，用来管理家庭冰箱中的食品和饮料库存。它帮助用户记录食材、查看存放分区、跟踪过期日期，并把临期食材转化为可执行的菜谱建议。
+
+English name: Fridge Radar
 
 当前主线已经从早期 React/Vite H5 切换为微信小程序原生开发。旧 H5 文件仍保留在目录中，但不是当前开发主线。
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/home-fridge.png" width="220" alt="Fridge inventory home screen" />
+      <br />
+      <sub>Fridge inventory</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/calendar-overview.png" width="220" alt="Expiry calendar overview" />
+      <br />
+      <sub>Expiry calendar</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/cookability-report.png" width="220" alt="Cookability report and recipe suggestions" />
+      <br />
+      <sub>Cookability report</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/ai-recipes.png" width="220" alt="AI recipe suggestions" />
+      <br />
+      <sub>AI recipes</sub>
+    </td>
+  </tr>
+</table>
 
 ## 当前功能
 
@@ -21,7 +50,6 @@
 - 我来选食材只围绕料理碗里的库存 / 临时食材生成，生成结果会保留到用户主动清空。
 - 菜谱页支持收藏菜谱，并在“我的收藏”中查看记录。
 - AI 菜谱页进入后默认等待用户选择入口，不自动展示临期去化内容。
-- AI 菜谱页支持“菜谱盲盒”和“我来选食材”。
 - 首页提供“智能录入”入口。
 - 智能录入支持手动输入名称后推荐分区。
 - 分区弹窗内支持手动添加、拍食品、拍包装。
@@ -36,7 +64,9 @@
 - JavaScript
 - WXML
 - WXSS
-- 微信云开发 / CloudBase
+- 微信云开发 / Tencent CloudBase
+- CloudBase 云数据库
+- CloudBase 云函数
 
 云开发资源：
 
@@ -45,15 +75,38 @@
 - 云数据库集合：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs`、`recipeRecords`
 - 云函数：`getOpenId`、`parseFoodImage`、`parseBarcode`、`generateRecipes`、`sendExpiryReminders`
 
+说明：以上 AppID 和 CloudBase 环境 ID 是项目配置标识，不是可复用密钥。Fork 本项目时应替换成自己的微信小程序 AppID 和 CloudBase 环境。
+
+## 仓库结构
+
+```text
+.
+├── app.js                         # 小程序启动和 CloudBase 初始化
+├── app.json                       # 页面和 Tab 配置
+├── app.wxss                       # 全局样式
+├── cloudfunctions/                # CloudBase 云函数
+├── custom-tab-bar/                # 自定义 TabBar
+├── images/                        # 本地产品视觉素材
+├── pages/                         # 小程序页面
+├── services/                      # 业务逻辑和 CloudBase 访问
+├── styles/                        # 共享样式
+├── utils/                         # 常量、日期、状态工具
+├── docs/                          # 开源说明、CloudBase 设置和使用证明
+├── project.config.json            # 微信开发者工具配置
+└── package.json                   # 旧 H5/Vite 兼容检查脚本
+```
+
 ## 本地运行
 
 1. 打开微信开发者工具。
-2. 导入本目录：`/Users/qzt/Desktop/projects/fridge-app`
+2. 导入本仓库目录。
 3. 使用项目内 `project.config.json`。
 4. 确认开发者工具识别到：
    - `miniprogramRoot: "./"`
    - `cloudfunctionRoot: "cloudfunctions/"`
 5. 编译运行小程序。
+
+Fork 用户需要配置自己的 CloudBase 环境。详细步骤见 [docs/CLOUDBASE_SETUP.md](docs/CLOUDBASE_SETUP.md)。
 
 ## 验证命令
 
@@ -91,8 +144,41 @@ npm run build
 - 不接真实联网搜索。
 - 不做订阅消息真实推送。
 
+AI、OCR、天气、菜谱生成相关能力应留在云函数侧，小程序前端不能保存或暴露服务商 API key。
+
+## 开源准备
+
+当前仓库已补充开源协作和申请材料：
+
+- [CONTRIBUTING.md](CONTRIBUTING.md)：贡献说明
+- [SECURITY.md](SECURITY.md)：安全问题报告方式
+- [CHANGELOG.md](CHANGELOG.md)：版本记录
+- [OPEN_SOURCE_APPLICATION.md](OPEN_SOURCE_APPLICATION.md)：Codex for Open Source 申请准备说明
+- [docs/USAGE_EVIDENCE.md](docs/USAGE_EVIDENCE.md)：使用证明和后续证据清单
+- `.github/ISSUE_TEMPLATE/`：GitHub issue 模板
+
 ## 重要说明
 
 - `src/`、`dist/`、`public/`、`package.json` 等旧 H5 相关内容仍存在，但 `project.config.json` 已将它们从小程序打包中忽略。
 - 后续如果确认旧 H5 不再需要，应按用户确认逐个清理，不要批量删除。
 - 条形码扫描模块已从用户入口移除；后续如恢复，需要重新确认低成本商品库方案。
+
+## Contributing
+
+Contributions are welcome. Please start by reading [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Good first contribution areas:
+
+- documentation improvements
+- setup guide corrections
+- UI copy improvements
+- CloudBase deployment notes
+- small bug fixes with clear reproduction steps
+
+## Security
+
+Please read [SECURITY.md](SECURITY.md) before reporting sensitive issues.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
