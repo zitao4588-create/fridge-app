@@ -1,6 +1,6 @@
 # BUG_NOTES.md
 
-最后更新：2026-05-31
+最后更新：2026-06-04
 
 ## 本轮涉及的问题与处理
 
@@ -2011,3 +2011,31 @@
 - 后续如果宣传项目中 Remotion 渲染遇到 Chromium、端口或权限问题，优先判断为运行环境问题，不要先改小程序业务代码。
 - 后续如果 HyperFrames 运行遇到 npm registry、validate 或 inspect 问题，优先在宣传项目中处理。
 - 宣传内容越界检查应以宣传项目中的 `data.ts`、HTML、脚本和模板文档为准；本仓库只保留产品真实功能边界。
+
+## 2026-06-04 开源材料合并验证记录
+
+现象：
+
+- 第一次运行 `npm run build` 时失败，报错为无法写入：
+  - `node_modules/.tmp/tsconfig.app.tsbuildinfo`
+  - `node_modules/.tmp/tsconfig.node.tsbuildinfo`
+
+原因：
+
+- 这是 Codex 沙盒权限限制导致的写入失败，不是项目代码错误。
+
+处理：
+
+- 使用受控权限重跑同一个 `npm run build`。
+- 构建通过，Vite 成功输出到 `dist/`。
+
+验证：
+
+- `npm run lint` 通过。
+- `npm run build` 通过。
+- 合并后的 README 没有残留冲突标记。
+- 新增开源文档未命中常见 `sk-` / `mkt_` token 形态。
+
+后续注意：
+
+- 在 Codex 沙盒里运行会写入 `node_modules/.tmp` 的构建命令时，如果出现 EPERM，先判断是否为沙盒权限问题，再看代码错误。

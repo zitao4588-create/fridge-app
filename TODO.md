@@ -1,6 +1,6 @@
 # TODO.md
 
-最后更新：2026-05-31
+最后更新：2026-06-04
 
 ## 当前主线
 
@@ -1509,3 +1509,23 @@
 
 - 不要把 Remotion / HyperFrames 工程重新提交到本小程序仓库。
 - 不要在宣传内容中加入会员、付费、健康报告、体检报告、7 天挑战、医疗减肥承诺、虚构合作和虚构用户数据。
+
+## 2026-06-04 开源准备收口
+
+已完成：
+
+- [x] 合入远端开源准备材料到 Desktop 主工作区本地 `main`。
+- [x] 保留「冰箱小雷达」产品名，重写合并版 `README.md`。
+- [x] 新增 GitHub issue templates。
+- [x] 新增 `LICENSE`、`CONTRIBUTING.md`、`SECURITY.md`、`CHANGELOG.md`。
+- [x] 新增 `docs/CLOUDBASE_SETUP.md` 和 `docs/USAGE_EVIDENCE.md`。
+- [x] 新增 README 截图素材。
+- [x] 通过 `npm run lint`。
+- [x] 通过 `npm run build`。
+
+待确认：
+
+- [ ] 推送前确认 Git author name / email。
+- [ ] 决定是否把本地 `main` push 到 GitHub。
+- [ ] 如果推送，确认 GitHub README 截图是否正常展示。
+- [ ] 如继续申请 Codex for Open Source，补充真实使用证据和 release 说明。

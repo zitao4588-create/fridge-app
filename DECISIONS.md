@@ -1,6 +1,6 @@
 # DECISIONS.md
 
-最后更新：2026-05-31
+最后更新：2026-06-04
 
 ## 2026-05-31 品牌名统一为冰箱小雷达
 
@@ -2315,3 +2315,25 @@
 - 如果小程序真实功能变化，先更新本仓库产品文档，再更新宣传项目。
 - 抖音 / 小红书版本不放二维码，只写“微信搜：冰箱小雷达”。
 - 微信生态版本可以展示正式小程序码。
+
+### 125. 开源准备材料合入 Desktop 主工作区 main
+
+决策：
+
+- `/Users/qzt/Desktop/projects/fridge-app` 继续作为 `fridge-app` 主工作区。
+- 远端 `origin/main` 的开源准备材料合入本地 `main`。
+- 合并过程先在 `codex/fridge-open-source-sync` 临时分支完成，再快进回 `main`。
+- 暂不自动 push。
+
+原因：
+
+- Desktop 本地提交包含正式产品名「冰箱小雷达」和宣传物料拆分决策，是当前产品主线。
+- 远端提交包含有价值的开源准备材料，包括 README 截图、issue templates、LICENSE、CONTRIBUTING、SECURITY、CloudBase setup 和使用证明文档。
+- `README.md` 存在冲突，必须手动保留当前中文产品名和微信小程序主线口径。
+
+后续影响：
+
+- 本地 `main` 当前最新提交为 `8882c72 Merge open-source readiness docs`。
+- 推送前需要确认 Git author 配置。
+- 后续 GitHub README、release、issue 模板和开源申请材料，以本地 `main` 为准。
+- 不再把 `/Users/qzt/Developer/Playground/fridge-app` 当作主工作区。
