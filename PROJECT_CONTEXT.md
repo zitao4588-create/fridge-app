@@ -1790,7 +1790,7 @@ type FridgeItem = {
 
 当前还没解决的问题：
 
-- Git 提交作者仍是本机默认值：`qzt <qzt@qztdeMacBook-Air.local>`；不影响当前上传，但后续建议配置正式 Git 用户名和邮箱。
+- Git 提交作者曾是本机默认值；2026-06-04 已设置仓库级 GitHub noreply author，并改写 4 个未推送提交的 author / committer。
 - GitHub 仓库当前为私有仓库；如果后续要公开，需要先确认 AppID、CloudBase 环境 ID 和项目文档中公开信息是否可接受。
 - 本轮只完成 GitHub 上传，没有做新的微信开发者工具真机预览。
 
@@ -1804,7 +1804,7 @@ type FridgeItem = {
 下一步建议：
 
 - 后续每轮本地修改完成后，继续先跑 `git status`、必要检查，再提交并推送到 `origin/main`。
-- 建议配置正式 Git 作者信息，避免后续提交继续使用本机默认邮箱。
+- Git 作者信息已配置为仓库级 GitHub noreply author；后续新提交应继续使用该配置。
 - 保持仓库私有，除非明确决定公开项目。
 
 重要注意事项：
@@ -2909,8 +2909,9 @@ type FridgeItem = {
 - 从远端 `origin/main` 合入开源准备材料。
 - 先在临时分支 `codex/fridge-open-source-sync` 解决冲突并验证。
 - 已将验证后的合并结果快进合回本地 `main`。
-- 当前本地 `main` 最新提交为 `8882c72 Merge open-source readiness docs`。
-- 当前本地 `main` 相对 `origin/main` 为 `ahead 3`，尚未 push。
+- 当前本地 `main` 合并提交为 `59a7940 Merge open-source readiness docs`。
+- 当前本地 `main` 最新收尾提交为 `fd395d9 Document open-source readiness sync`。
+- 当前本地 `main` 相对 `origin/main` 为 `ahead 4`，尚未 push。
 
 本轮新增 / 更新内容：
 
@@ -2943,4 +2944,4 @@ type FridgeItem = {
 当前还没解决的问题：
 
 - 需要决定是否 push 本地 `main` 到 GitHub。
-- Git 提交作者邮箱当前由本机自动生成，推送前建议确认 Git author 配置。
+- 4 个未推送提交的 author / committer 已改为 GitHub noreply 邮箱。
