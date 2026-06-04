@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-05-31
+最后更新：2026-06-04
 
 ## 当前项目目标
 
@@ -2900,3 +2900,47 @@ type FridgeItem = {
 2. 到 `../fridge-radar-promo` 更新视频文案、素材和模板。
 3. 抖音 / 小红书版本不放二维码，只写“微信搜：冰箱小雷达”。
 4. 微信生态版本可以使用正式小程序码。
+
+## 2026-06-04 开源准备材料已合入本地 main
+
+本轮完成：
+
+- 确认 `/Users/qzt/Desktop/projects/fridge-app` 是主工作区。
+- 从远端 `origin/main` 合入开源准备材料。
+- 先在临时分支 `codex/fridge-open-source-sync` 解决冲突并验证。
+- 已将验证后的合并结果快进合回本地 `main`。
+- 当前本地 `main` 最新提交为 `8882c72 Merge open-source readiness docs`。
+- 当前本地 `main` 相对 `origin/main` 为 `ahead 3`，尚未 push。
+
+本轮新增 / 更新内容：
+
+- `.github/ISSUE_TEMPLATE/`
+- `CHANGELOG.md`
+- `CONTRIBUTING.md`
+- `LICENSE`
+- `OPEN_SOURCE_APPLICATION.md`
+- `SECURITY.md`
+- `docs/CLOUDBASE_SETUP.md`
+- `docs/USAGE_EVIDENCE.md`
+- `docs/screenshots/*.png`
+- `README.md`
+
+处理原则：
+
+- `README.md` 保留「冰箱小雷达」中文产品名和当前微信小程序主线口径。
+- 开源文档补充贡献、安全、CloudBase fork 设置、使用证明和截图。
+- 不把 API key 放到前端。
+- 不恢复 Vercel、Supabase、Next.js、登录页、独立后端或 Docker 路线。
+
+本轮验证：
+
+- `npm run lint` 通过。
+- `npm run build` 通过。
+- 新截图文件均为有效 PNG。
+- 未发现残留 Git 冲突标记。
+- 新增开源文档未命中常见 `sk-` / `mkt_` token 形态。
+
+当前还没解决的问题：
+
+- 需要决定是否 push 本地 `main` 到 GitHub。
+- Git 提交作者邮箱当前由本机自动生成，推送前建议确认 Git author 配置。
