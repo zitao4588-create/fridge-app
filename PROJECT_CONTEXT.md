@@ -2911,7 +2911,7 @@ type FridgeItem = {
 - 已将验证后的合并结果快进合回本地 `main`。
 - 当前本地 `main` 合并提交为 `59a7940 Merge open-source readiness docs`。
 - 当前本地 `main` 最新收尾提交为 `fd395d9 Document open-source readiness sync`。
-- 当前本地 `main` 相对 `origin/main` 为 `ahead 4`，尚未 push。
+- 当前本地 `main` 已推送到 `origin/main`，推送时远端从 `fd8ad49` 更新到 `9bf9cef`。
 
 本轮新增 / 更新内容：
 
@@ -2943,5 +2943,5 @@ type FridgeItem = {
 
 当前还没解决的问题：
 
-- 需要决定是否 push 本地 `main` 到 GitHub。
-- 4 个未推送提交的 author / committer 已改为 GitHub noreply 邮箱。
+- 需要在 GitHub 页面确认 README 截图和文档链接展示正常。
+- 4 个原未推送提交的 author / committer 已改为 GitHub noreply 邮箱并完成 push。

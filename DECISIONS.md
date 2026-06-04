@@ -2335,6 +2335,7 @@
 
 - 本地 `main` 当前合并提交为 `59a7940 Merge open-source readiness docs`。
 - 本地 `main` 最新收尾提交为 `fd395d9 Document open-source readiness sync`。
-- 4 个未推送提交的 author / committer 已改为 GitHub noreply 邮箱。
+- 4 个原未推送提交的 author / committer 已改为 GitHub noreply 邮箱。
+- 已 push 到 GitHub `origin/main`，远端从 `fd8ad49` 更新到 `9bf9cef`。
 - 后续 GitHub README、release、issue 模板和开源申请材料，以本地 `main` 为准。
 - 不再把 `/Users/qzt/Developer/Playground/fridge-app` 当作主工作区。

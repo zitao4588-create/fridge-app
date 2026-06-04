@@ -1527,6 +1527,6 @@
 
 - [x] 推送前确认并设置 Git author name / email。
 - [x] 将 4 个未推送提交的 author / committer 改为 GitHub noreply 邮箱。
-- [ ] 决定是否把本地 `main` push 到 GitHub。
+- [x] 将本地 `main` push 到 GitHub `origin/main`。
 - [ ] 如果推送，确认 GitHub README 截图是否正常展示。
 - [ ] 如继续申请 Codex for Open Source，补充真实使用证据和 release 说明。
