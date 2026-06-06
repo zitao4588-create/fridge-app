@@ -3,16 +3,19 @@
     <view class="home-dashboard-shine"></view>
     <view class="home-dashboard-head">
       <view class="home-brand-lockup">
-        <text class="home-brand-name">我的冰箱</text>
+        <text class="home-brand-name">冰箱小雷达</text>
       </view>
-      <view class="zone-config-entry" bindtap="handleOpenZoneConfig">分区管理</view>
+      <view style="display:flex;align-items:center;gap:12rpx;">
+        <view class="zone-config-entry" bindtap="handleOpenProfile">我的</view>
+        <view class="zone-config-entry" bindtap="handleOpenZoneConfig">分区管理</view>
+      </view>
     </view>
 
     <view class="home-hero">
-      <image class="home-mascot" src="/images/mascot/fridge-happy.png" mode="aspectFit" />
+      <image class="home-mascot" src="{{homeMood.mascot}}" mode="aspectFit" />
       <view class="home-speech">
-        <text class="home-speech-title">今天冰箱状态很好～</text>
-        <text class="home-speech-desc">继续保持，别让食材浪费啦！</text>
+        <text class="home-speech-title">{{homeMood.title}}</text>
+        <text class="home-speech-desc">{{homeMood.desc}}</text>
       </view>
     </view>
 
@@ -31,7 +34,7 @@
       <view class="decision-sign unknown" bindtap="handleSmartAdd">
         <view class="decision-copy">
           <text class="decision-title">智能录入</text>
-          <text class="decision-desc">拍照识别后推荐分区</text>
+          <text class="decision-desc">输入名称，自动推荐分区</text>
         </view>
         <view class="decision-pointer right">
           <view class="pointer-line"></view>
@@ -169,7 +172,7 @@
       </view>
 
       <view class="zone-add-grid action-grid">
-        <button class="zone-add-card photo" data-location="{{selectedAddZone.location}}" bindtap="handleZonePhotoAdd">
+        <button wx:if="{{photoParseEnabled}}" class="zone-add-card photo" data-location="{{selectedAddZone.location}}" bindtap="handleZonePhotoAdd">
           <view class="zone-add-icon">拍</view>
           <view class="zone-add-copy">
             <text class="zone-add-title">拍食品</text>
@@ -177,7 +180,7 @@
           </view>
           <view class="zone-add-arrow">›</view>
         </button>
-        <button class="zone-add-card package" data-location="{{selectedAddZone.location}}" bindtap="handleZonePackageAdd">
+        <button wx:if="{{photoParseEnabled}}" class="zone-add-card package" data-location="{{selectedAddZone.location}}" bindtap="handleZonePackageAdd">
           <view class="zone-add-icon">包</view>
           <view class="zone-add-copy">
             <text class="zone-add-title">拍包装</text>

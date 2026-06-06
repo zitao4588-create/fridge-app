@@ -11,6 +11,7 @@ const {
   getTodayString,
 } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
+const { FEATURE_FLAGS } = require('../../utils/featureFlags')
 
 const CALENDAR_RADAR_CACHE_KEY = 'fridge_calendar_radar_recipe_cache_v1'
 const CALENDAR_RADAR_CACHE_VERSION = 1
@@ -334,6 +335,7 @@ Page({
     recipeRecords: [],
     recordSaving: false,
     mealRadarReport: EMPTY_MEAL_RADAR_REPORT,
+    recipeFeatureEnabled: FEATURE_FLAGS.recipeAI,
     radarRecipeLoading: false,
     radarRecipeStatusText: '',
     selectedDate: '',
@@ -375,7 +377,9 @@ Page({
         const events = reminderService.getCalendarEvents(items)
         const expiryUsage = recipeService.getExpiryUsageRecommendations(items)
         const stats = buildStats(statItems)
-        const cachedRadar = readCalendarRadarCache()
+        // AI 菜谱当前阶段先收起：不读缓存、不自动调用云端 generateRecipes。
+        const recipeAiEnabled = FEATURE_FLAGS.recipeAI
+        const cachedRadar = recipeAiEnabled ? readCalendarRadarCache() : null
         const cachedRecommendations = cachedRadar
           ? decorateRecipesWithRecords(cachedRadar.recommendations, recipeRecords)
           : []
@@ -388,9 +392,9 @@ Page({
         const mealRadarReport = buildMealRadarReport(items, nextExpiryUsage)
         const hasPendingRadarRequest = Boolean(this.mealRadarRecipeRequestId)
         const shouldLoadRecipes =
-          !cachedRadar && !hasPendingRadarRequest && expiryUsage.usableCount > 0
+          recipeAiEnabled && !cachedRadar && !hasPendingRadarRequest && expiryUsage.usableCount > 0
         const shouldShowPendingRecipes =
-          !cachedRadar && hasPendingRadarRequest && expiryUsage.usableCount > 0
+          recipeAiEnabled && !cachedRadar && hasPendingRadarRequest && expiryUsage.usableCount > 0
 
         this.setData({
           events,
@@ -401,13 +405,15 @@ Page({
           expiryUsage: nextExpiryUsage,
           mealRadarReport,
           radarRecipeLoading: shouldLoadRecipes || shouldShowPendingRecipes,
-          radarRecipeStatusText: cachedRadar
-            ? cachedRadar.statusText || (
-              cachedRadar.recommendations.length > 0
-                ? '今日开饭雷达菜谱已生成。'
-                : '今日开饭雷达暂未生成可用菜谱。'
-            )
-            : getInitialRadarRecipeStatus(expiryUsage),
+          radarRecipeStatusText: !recipeAiEnabled
+            ? ''
+            : cachedRadar
+              ? cachedRadar.statusText || (
+                cachedRadar.recommendations.length > 0
+                  ? '今日开饭雷达菜谱已生成。'
+                  : '今日开饭雷达暂未生成可用菜谱。'
+              )
+              : getInitialRadarRecipeStatus(expiryUsage),
           loading: false,
         })
         this.renderCalendar()

@@ -8,6 +8,39 @@ const {
 const { formatDate, getDaysUntil } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
 const { getIngredientVisual } = require('../../utils/visualAssets')
+const { FEATURE_FLAGS } = require('../../utils/featureFlags')
+
+function buildHomeMood(stats) {
+  if (!stats || stats.total === 0) {
+    return {
+      mascot: '/images/mascot/fridge-empty.png',
+      title: '冰箱还是空的',
+      desc: '点下面分区的 ＋ 号，把食材加进来吧～',
+    }
+  }
+
+  if (stats.overdue > 0) {
+    return {
+      mascot: '/images/mascot/fridge-happy.png',
+      title: `有 ${stats.overdue} 样已经过期啦`,
+      desc: '记得尽快处理，别影响其他食材～',
+    }
+  }
+
+  if (stats.expiringSoon > 0) {
+    return {
+      mascot: '/images/mascot/fridge-happy.png',
+      title: `有 ${stats.expiringSoon} 样快到期咯`,
+      desc: '趁新鲜赶紧安排吃掉吧！',
+    }
+  }
+
+  return {
+    mascot: '/images/mascot/fridge-happy.png',
+    title: '今天冰箱状态很好～',
+    desc: '继续保持，别让食材浪费啦！',
+  }
+}
 
 function getZoneDefinition(key) {
   return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
@@ -244,6 +277,8 @@ function buildHomeZones(items, configZones) {
 Page({
   data: {
     loading: false,
+    photoParseEnabled: FEATURE_FLAGS.photoParse,
+    homeMood: buildHomeMood(null),
     zoneConfigLoaded: false,
     zoneConfigId: '',
     zoneConfigDraft: buildZoneConfigDraft([]),
@@ -348,6 +383,7 @@ Page({
         this.setData({
           allItems: decoratedItems,
           stats,
+          homeMood: buildHomeMood(stats),
           homeZones,
           loading: false,
           ...zonePanelData,
@@ -502,6 +538,12 @@ Page({
   handleSmartAdd() {
     wx.navigateTo({
       url: '/pages/quick-add/quick-add',
+    })
+  },
+
+  handleOpenProfile() {
+    wx.navigateTo({
+      url: '/pages/profile/profile',
     })
   },
 

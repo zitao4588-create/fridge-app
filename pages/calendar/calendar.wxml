@@ -92,6 +92,7 @@
       <text wx:else class="meal-radar-priority-empty">暂无临期压力，可以按心情安排一顿。</text>
     </view>
 
+    <block wx:if="{{recipeFeatureEnabled}}">
     <view wx:if="{{radarRecipeLoading}}" class="expiry-ai-status loading">
       <text>{{radarRecipeStatusText}}</text>
     </view>
@@ -124,6 +125,7 @@
       </view>
     </view>
     <view wx:else class="expiry-empty">{{radarRecipeStatusText || '云端 AI 暂未生成可用菜谱，请稍后再试。'}}</view>
+    </block>
 
     <view wx:if="{{expiryUsage.safetyTips.length > 0}}" class="safety-box">
       <text class="safety-title">已过期提醒</text>

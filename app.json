@@ -6,7 +6,8 @@
     "pages/recipes/recipes",
     "pages/item-form/item-form",
     "pages/parse-confirm/parse-confirm",
-    "pages/batch-parse-confirm/batch-parse-confirm"
+    "pages/batch-parse-confirm/batch-parse-confirm",
+    "pages/profile/profile"
   ],
   "window": {
     "navigationBarTitleText": "冰箱小雷达",
@@ -31,12 +32,6 @@
         "text": "日历",
         "iconPath": "images/tabbar/calendar.png",
         "selectedIconPath": "images/tabbar/calendar-active.png"
-      },
-      {
-        "pagePath": "pages/recipes/recipes",
-        "text": "菜谱",
-        "iconPath": "images/tabbar/recipe.png",
-        "selectedIconPath": "images/tabbar/recipe-active.png"
       }
     ]
   },

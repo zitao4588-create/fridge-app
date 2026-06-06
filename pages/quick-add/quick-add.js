@@ -1,6 +1,11 @@
 const parseService = require('../../services/parseService')
+const { FEATURE_FLAGS } = require('../../utils/featureFlags')
 
 Page({
+  data: {
+    photoParseEnabled: FEATURE_FLAGS.photoParse,
+  },
+
   navigateToSingleConfirm(result) {
     const cacheKey = parseService.saveTempParsePayload(result, 'single')
 

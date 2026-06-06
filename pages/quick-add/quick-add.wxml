@@ -2,7 +2,7 @@
   <view class="quick-hero card">
     <view class="quick-hero-copy">
       <view class="page-title">智能录入</view>
-      <view class="page-subtitle">不确定分区时，可以先识别，再按推荐分区保存。</view>
+      <view class="page-subtitle">不确定分区时，输入名称就能帮你推荐合适的存放分区。</view>
     </view>
     <view class="quick-hero-fridge">
       <view class="quick-hero-face"></view>
@@ -20,7 +20,7 @@
       <view class="entry-arrow">›</view>
     </button>
 
-    <button class="entry-card card food" bindtap="handleFoodPhoto">
+    <button wx:if="{{photoParseEnabled}}" class="entry-card card food" bindtap="handleFoodPhoto">
       <view class="entry-icon food"></view>
       <view class="entry-copy">
         <text class="entry-kicker">单个食品</text>
@@ -30,7 +30,7 @@
       <view class="entry-arrow">›</view>
     </button>
 
-    <button class="entry-card card package" bindtap="handlePackagePhoto">
+    <button wx:if="{{photoParseEnabled}}" class="entry-card card package" bindtap="handlePackagePhoto">
       <view class="entry-icon package"></view>
       <view class="entry-copy">
         <text class="entry-kicker">包装信息</text>
@@ -40,7 +40,7 @@
       <view class="entry-arrow">›</view>
     </button>
 
-    <button class="entry-card card receipt" bindtap="handleReceiptPhoto">
+    <button wx:if="{{photoParseEnabled}}" class="entry-card card receipt" bindtap="handleReceiptPhoto">
       <view class="entry-icon receipt"></view>
       <view class="entry-copy">
         <text class="entry-kicker">批量添加</text>
