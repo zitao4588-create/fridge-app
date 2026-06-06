@@ -331,7 +331,7 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.loadItems().finally(() => {
+    this.loadItems({ forceRefresh: true }).finally(() => {
       wx.stopPullDownRefresh()
     })
   },
@@ -350,13 +350,13 @@ Page({
     })
   },
 
-  loadItems() {
+  loadItems(options = {}) {
     this.setData({
       loading: true,
     })
 
     return itemService
-      .getItems()
+      .getItems(options)
       .then((items) => {
         const decoratedItems = items.map((item) => this.decorateItem(item))
         const stats = this.buildStats(decoratedItems)

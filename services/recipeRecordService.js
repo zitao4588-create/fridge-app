@@ -1,5 +1,6 @@
 const COLLECTION_NAME = 'recipeRecords'
-const PAGE_SIZE = 50
+// 小程序端单次 get() 最多返回 20 条，超过需分页累加，否则收藏会被静默截断。
+const PAGE_SIZE = 20
 
 function getDb() {
   if (!wx.cloud) {
@@ -88,18 +89,31 @@ function cleanRecordPayload(payload) {
   }
 }
 
+function fetchRecordsPage(offset, collected) {
+  return getDb()
+    .collection(COLLECTION_NAME)
+    .orderBy('createdAt', 'desc')
+    .skip(offset)
+    .limit(PAGE_SIZE)
+    .get()
+    .then((res) => {
+      const records = res.data || []
+      const nextRecords = collected.concat(records)
+
+      if (records.length < PAGE_SIZE) {
+        return nextRecords
+      }
+
+      return fetchRecordsPage(offset + PAGE_SIZE, nextRecords)
+    })
+}
+
 function getRecipeRecords() {
   if (!wx.cloud) {
     return Promise.resolve([])
   }
 
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .orderBy('createdAt', 'desc')
-    .limit(PAGE_SIZE)
-    .get()
-    .then((res) => res.data || [])
-    .catch(() => [])
+  return fetchRecordsPage(0, []).catch(() => [])
 }
 
 function saveRecipeRecord(payload) {

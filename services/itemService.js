@@ -3,6 +3,17 @@ const { normalizeStorageLocation } = require('../utils/constants')
 
 const COLLECTION_NAME = 'items'
 const PAGE_SIZE = 20
+// 库存轻缓存：覆盖首页/日历等多页 onShow 的重复全量读取，降低云数据库读次数。
+// 所有写操作（增/改/删/清空）都会立即失效缓存，TTL 仅用于兜底跨设备改动。
+const ITEMS_CACHE_TTL = 10 * 1000
+
+let itemsCache = null
+let itemsCacheAt = 0
+
+function invalidateItemsCache() {
+  itemsCache = null
+  itemsCacheAt = 0
+}
 
 function getDb() {
   if (!wx.cloud) {
@@ -69,9 +80,15 @@ function createItem(payload) {
     return Promise.reject(new Error('食品名称和过期日期不能为空'))
   }
 
-  return getDb().collection(COLLECTION_NAME).add({
-    data,
-  })
+  return getDb()
+    .collection(COLLECTION_NAME)
+    .add({
+      data,
+    })
+    .then((res) => {
+      invalidateItemsCache()
+      return res
+    })
 }
 
 function updateItem(id, payload) {
@@ -84,13 +101,27 @@ function updateItem(id, payload) {
     return Promise.reject(new Error('食品名称和过期日期不能为空'))
   }
 
-  return getDb().collection(COLLECTION_NAME).doc(id).update({
-    data,
-  })
+  return getDb()
+    .collection(COLLECTION_NAME)
+    .doc(id)
+    .update({
+      data,
+    })
+    .then((res) => {
+      invalidateItemsCache()
+      return res
+    })
 }
 
 function deleteItem(id) {
-  return getDb().collection(COLLECTION_NAME).doc(id).remove()
+  return getDb()
+    .collection(COLLECTION_NAME)
+    .doc(id)
+    .remove()
+    .then((res) => {
+      invalidateItemsCache()
+      return res
+    })
 }
 
 function getItemById(id) {
@@ -119,8 +150,21 @@ function fetchItemsPage(offset, collected) {
     })
 }
 
-function getItems() {
-  return fetchItemsPage(0, []).then(decorateItems)
+function getItems(options = {}) {
+  const forceRefresh = options.forceRefresh === true
+  const isFresh = itemsCache && Date.now() - itemsCacheAt < ITEMS_CACHE_TTL
+
+  if (!forceRefresh && isFresh) {
+    return Promise.resolve(itemsCache)
+  }
+
+  return fetchItemsPage(0, [])
+    .then(decorateItems)
+    .then((items) => {
+      itemsCache = items
+      itemsCacheAt = Date.now()
+      return items
+    })
 }
 
 function getExpiringItems(days) {
@@ -153,11 +197,16 @@ function searchItems(keyword, filters) {
 }
 
 function clearItems() {
-  return getItems().then((items) => {
-    return items.reduce((task, item) => {
-      return task.then(() => deleteItem(item._id))
-    }, Promise.resolve())
-  })
+  return getItems({ forceRefresh: true })
+    .then((items) => {
+      return items.reduce((task, item) => {
+        return task.then(() => deleteItem(item._id))
+      }, Promise.resolve())
+    })
+    .then((res) => {
+      invalidateItemsCache()
+      return res
+    })
 }
 
 module.exports = {
