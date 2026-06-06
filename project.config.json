@@ -7,18 +7,6 @@
         "type": "folder"
       },
       {
-        "value": "dist",
-        "type": "folder"
-      },
-      {
-        "value": "src",
-        "type": "folder"
-      },
-      {
-        "value": "public",
-        "type": "folder"
-      },
-      {
         "value": "cloudfunctions",
         "type": "folder"
       },
@@ -68,38 +56,6 @@
       },
       {
         "value": "BUG_NOTES.md",
-        "type": "file"
-      },
-      {
-        "value": "package.json",
-        "type": "file"
-      },
-      {
-        "value": "package-lock.json",
-        "type": "file"
-      },
-      {
-        "value": "tsconfig.json",
-        "type": "file"
-      },
-      {
-        "value": "tsconfig.app.json",
-        "type": "file"
-      },
-      {
-        "value": "tsconfig.node.json",
-        "type": "file"
-      },
-      {
-        "value": "eslint.config.js",
-        "type": "file"
-      },
-      {
-        "value": "vite.config.ts",
-        "type": "file"
-      },
-      {
-        "value": "index.html",
         "type": "file"
       },
       {

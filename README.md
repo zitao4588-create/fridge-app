@@ -4,7 +4,7 @@
 
 English name: Fridge Radar
 
-当前主线已经从早期 React/Vite H5 切换为微信小程序原生开发。旧 H5 文件仍保留在目录中，但不是当前开发主线。
+本项目为微信小程序原生开发。早期的 React/Vite H5 脚手架已彻底移除，仓库即为纯小程序工程。
 
 ## Screenshots
 
@@ -92,8 +92,7 @@ English name: Fridge Radar
 ├── styles/                        # 共享样式
 ├── utils/                         # 常量、日期、状态工具
 ├── docs/                          # 开源说明、CloudBase 设置和使用证明
-├── project.config.json            # 微信开发者工具配置
-└── package.json                   # 旧 H5/Vite 兼容检查脚本
+└── project.config.json            # 微信开发者工具配置
 ```
 
 ## 本地运行
@@ -110,13 +109,14 @@ Fork 用户需要配置自己的 CloudBase 环境。详细步骤见 [docs/CLOUDB
 
 ## 验证命令
 
-这些命令只做基础语法和旧 H5 构建检查：
+本项目无构建步骤，提交前用 Node 语法检查关键脚本，并在微信开发者工具中编译运行：
 
 ```bash
 node --check app.js
 node --check services/itemService.js
 node --check services/parseService.js
 node --check services/recipeService.js
+node --check services/recipeRecordService.js
 node --check pages/index/index.js
 node --check pages/item-form/item-form.js
 node --check pages/quick-add/quick-add.js
@@ -125,11 +125,7 @@ node --check pages/batch-parse-confirm/batch-parse-confirm.js
 node --check pages/calendar/calendar.js
 node --check pages/recipes/recipes.js
 node --check cloudfunctions/generateRecipes/index.js
-npm run lint
-npm run build
 ```
-
-说明：`npm run build` 仍来自早期 Vite 配置，只能作为兼容检查，不代表当前主线是 H5。
 
 ## 当前不做
 
@@ -159,8 +155,8 @@ AI、OCR、天气、菜谱生成相关能力应留在云函数侧，小程序前
 
 ## 重要说明
 
-- `src/`、`dist/`、`public/`、`package.json` 等旧 H5 相关内容仍存在，但 `project.config.json` 已将它们从小程序打包中忽略。
-- 后续如果确认旧 H5 不再需要，应按用户确认逐个清理，不要批量删除。
+- `src/`、`dist/`、`public/`、`package.json`、`vite.config.ts`、`tsconfig*.json`、`eslint.config.js`、`index.html` 等旧 H5/Vite 相关内容已彻底移除，仓库即为纯微信小程序工程。
+- 当前阶段优先稳定上线：AI 相关能力（菜谱生成、拍照/拍包装/小票识别）通过 `utils/featureFlags.js` 统一收起，默认关闭，后续可逐项开启。
 - 条形码扫描模块已从用户入口移除；后续如恢复，需要重新确认低成本商品库方案。
 
 ## Contributing
