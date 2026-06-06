@@ -3,7 +3,6 @@
     "pages/index/index",
     "pages/quick-add/quick-add",
     "pages/calendar/calendar",
-    "pages/recipes/recipes",
     "pages/item-form/item-form",
     "pages/parse-confirm/parse-confirm",
     "pages/batch-parse-confirm/batch-parse-confirm",
