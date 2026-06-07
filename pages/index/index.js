@@ -1,24 +1,57 @@
 const itemService = require('../../services/itemService')
-const parseService = require('../../services/parseService')
 const zoneConfigService = require('../../services/zoneConfigService')
-const {
-  CATEGORY_OPTIONS,
-  HOME_ZONE_DEFINITIONS,
-} = require('../../utils/constants')
+const { CATEGORY_OPTIONS, HOME_ZONE_DEFINITIONS } = require('../../utils/constants')
 const { formatDate, getDaysUntil } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
 const { getIngredientVisual } = require('../../utils/visualAssets')
-const { FEATURE_FLAGS } = require('../../utils/featureFlags')
 
-function buildHomeMood(stats) {
-  if (!stats || stats.total === 0) {
+const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
+
+function getZoneDefinition(key) {
+  return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
+}
+
+function bucketOf(expireDate) {
+  const days = getDaysUntil(expireDate)
+
+  if (days < 0) return 'overdue'
+  if (days <= 3) return 'expiring'
+  return 'normal'
+}
+
+function decorateItem(item) {
+  const status = getExpiryStatus(item.expireDate)
+  const thumb = getIngredientVisual(item)
+
+  return {
+    ...item,
+    amountText: `${item.quantity || 1}${item.unit || '份'}`,
+    expireDateText: formatDate(item.expireDate),
+    statusLabel: status.label,
+    statusHint: status.hint,
+    statusClass: status.className,
+    bucket: bucketOf(item.expireDate),
+    thumbImage: thumb.image,
+    thumbType: thumb.type,
+  }
+}
+
+function buildStats(items) {
+  return {
+    total: items.length,
+    expiring: items.filter((item) => item.bucket === 'expiring').length,
+    overdue: items.filter((item) => item.bucket === 'overdue').length,
+  }
+}
+
+function buildMood(stats) {
+  if (!stats || !stats.total) {
     return {
       mascot: '/images/mascot/fridge-empty.png',
       title: '冰箱还是空的',
-      desc: '点下面分区的 ＋ 号，把食材加进来吧～',
+      desc: '点分区右上角的 ＋ 号，把食材加进来吧～',
     }
   }
-
   if (stats.overdue > 0) {
     return {
       mascot: '/images/mascot/fridge-happy.png',
@@ -26,31 +59,17 @@ function buildHomeMood(stats) {
       desc: '记得尽快处理，别影响其他食材～',
     }
   }
-
-  if (stats.expiringSoon > 0) {
+  if (stats.expiring > 0) {
     return {
       mascot: '/images/mascot/fridge-happy.png',
-      title: `有 ${stats.expiringSoon} 样快到期咯`,
+      title: `有 ${stats.expiring} 样快到期咯`,
       desc: '趁新鲜赶紧安排吃掉吧！',
     }
   }
-
   return {
     mascot: '/images/mascot/fridge-happy.png',
     title: '今天冰箱状态很好～',
     desc: '继续保持，别让食材浪费啦！',
-  }
-}
-
-function getZoneDefinition(key) {
-  return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
-}
-
-function safeVibrateShort() {
-  if (typeof wx !== 'undefined' && wx.vibrateShort) {
-    wx.vibrateShort({
-      type: 'light',
-    })
   }
 }
 
@@ -60,501 +79,299 @@ function getZoneItems(items, zone) {
   return items.filter((item) => locations.includes(item.storageLocation))
 }
 
-function getExpiryTone(expireDate) {
-  const days = getDaysUntil(expireDate)
-
-  if (days < 0) {
-    return {
-      className: 'danger',
-      label: '已过期',
-    }
-  }
-
-  if (days <= 3) {
-    return {
-      className: 'warning',
-      label: days === 0 ? '今天到期' : `${days}天内到期`,
-    }
-  }
-
-  return {
-    className: 'normal',
-    label: '正常',
-  }
+function buildZoneConfigDraft(zones) {
+  return zoneConfigService.sanitizeZones(zones).map((zone) => ({
+    ...getZoneDefinition(zone.key),
+    enabled: zone.enabled !== false,
+  }))
 }
 
-function getFoodThumb(item) {
-  return getIngredientVisual(item)
+function buildHomeZones(items, draft) {
+  return draft
+    .filter((zone) => zone.enabled)
+    .map((zone) => {
+      const zoneItems = getZoneItems(items, zone)
+      const expiring = zoneItems.filter((item) => item.bucket === 'expiring').length
+      const overdue = zoneItems.filter((item) => item.bucket === 'overdue').length
+
+      return {
+        ...zone,
+        itemCount: zoneItems.length,
+        expiring,
+        overdue,
+        alertClass: overdue ? 'danger' : expiring ? 'warning' : 'normal',
+        alertText: overdue
+          ? `${overdue} 已过期`
+          : expiring
+            ? `${expiring} 临期`
+            : '状态正常',
+        items: zoneItems,
+      }
+    })
 }
 
-function buildZoneCategoryGroups(items) {
-  const groups = items.reduce((result, item) => {
+function groupByCategory(items) {
+  const groups = items.reduce((acc, item) => {
     const category = item.category || '其他'
-
-    if (!result[category]) {
-      result[category] = []
-    }
-
-    result[category].push(item)
-    return result
+    ;(acc[category] = acc[category] || []).push(item)
+    return acc
   }, {})
 
   return Object.keys(groups)
     .sort((left, right) => {
       const leftIndex = CATEGORY_OPTIONS.indexOf(left)
       const rightIndex = CATEGORY_OPTIONS.indexOf(right)
-      const safeLeftIndex = leftIndex >= 0 ? leftIndex : CATEGORY_OPTIONS.length
-      const safeRightIndex = rightIndex >= 0 ? rightIndex : CATEGORY_OPTIONS.length
-
-      if (safeLeftIndex !== safeRightIndex) {
-        return safeLeftIndex - safeRightIndex
-      }
-
-      return left.localeCompare(right, 'zh-CN')
+      return (leftIndex < 0 ? 99 : leftIndex) - (rightIndex < 0 ? 99 : rightIndex)
     })
-    .map((category) => ({
-      category,
-      count: groups[category].length,
-      items: groups[category],
-    }))
+    .map((category) => ({ category, items: groups[category] }))
 }
 
-function getFilteredZoneItems(items, filterType) {
-  if (filterType === 'expiring') {
-    return items.filter((item) => {
-      const days = getDaysUntil(item.expireDate)
-      return days >= 0 && days <= 3
-    })
+function filterByContext(items, context) {
+  if (!context) return items
+
+  if (context.kind === 'search') {
+    const keyword = String(context.keyword || '').trim().toLowerCase()
+    return items.filter((item) =>
+      String(item.name || '').toLowerCase().includes(keyword),
+    )
   }
 
-  if (filterType === 'overdue') {
-    return items.filter((item) => getDaysUntil(item.expireDate) < 0)
+  let pool = items
+  if (context.zoneKey) {
+    const zone = getZoneDefinition(context.zoneKey)
+    if (zone) pool = getZoneItems(items, zone)
   }
-
-  return items
-}
-
-function getZoneFilterLabel(filterType) {
-  const labels = {
-    total: '全部食品',
-    expiring: '临期食品',
-    overdue: '已过期食品',
+  if (context.filter === 'expiring') {
+    return pool.filter((item) => item.bucket === 'expiring')
   }
-
-  return labels[filterType] || labels.total
-}
-
-function buildZonePanelData(zone, items, filterType = 'total') {
-  const zoneItems = getZoneItems(items, zone)
-  const selectedZoneItems = getFilteredZoneItems(zoneItems, filterType)
-
-  return {
-    selectedZoneFilter: filterType,
-    selectedZoneFilterLabel: getZoneFilterLabel(filterType),
-    selectedZone: {
-      ...zone,
-      itemCount: zoneItems.length,
-    },
-    selectedZoneItems,
-    selectedZoneGroups: buildZoneCategoryGroups(selectedZoneItems),
+  if (context.filter === 'overdue') {
+    return pool.filter((item) => item.bucket === 'overdue')
   }
-}
-
-function buildZoneConfigDraft(configZones) {
-  return zoneConfigService.sanitizeZones(configZones).map((zone) => {
-    const definition = getZoneDefinition(zone.key)
-
-    return {
-      ...definition,
-      enabled: zone.enabled !== false,
-    }
-  })
-}
-
-function getStatPanelItems(type, items) {
-  if (type === 'expiring') {
-    return items.filter((item) => {
-      const days = getDaysUntil(item.expireDate)
-      return days >= 0 && days <= 3
-    })
-  }
-
-  if (type === 'overdue') {
-    return items.filter((item) => getDaysUntil(item.expireDate) < 0)
-  }
-
-  return items
-}
-
-function buildStatPanelData(type, items) {
-  const statPanelItems = getStatPanelItems(type, items)
-  const panelConfig = {
-    total: {
-      title: '全部食品',
-      subtitle: '全部库存',
-      emptyTitle: '冰箱还是空的',
-      emptyDesc: '点击冰箱图片分区，再从分区清单添加食品。',
-    },
-    expiring: {
-      title: '临期食品',
-      subtitle: '3天内到期',
-      emptyTitle: '暂无临期食品',
-      emptyDesc: '3天内没有需要优先处理的食品。',
-    },
-    overdue: {
-      title: '已过期食品',
-      subtitle: '已经超过到期日',
-      emptyTitle: '暂无已过期食品',
-      emptyDesc: '目前没有已经过期的食品。',
-    },
-  }
-  const config = panelConfig[type] || panelConfig.total
-
-  return {
-    selectedStatType: type,
-    statPanelTitle: config.title,
-    statPanelSubtitle: `${config.subtitle} · ${statPanelItems.length} 项食品`,
-    statPanelItems,
-    statPanelEmptyTitle: config.emptyTitle,
-    statPanelEmptyDesc: config.emptyDesc,
-  }
-}
-
-function buildSearchPanelData(keyword, items) {
-  const normalizedKeyword = String(keyword || '').trim().toLowerCase()
-  const statPanelItems = normalizedKeyword
-    ? items.filter((item) =>
-        String(item.name || '').toLowerCase().includes(normalizedKeyword),
-      )
-    : []
-
-  return {
-    selectedStatType: 'search',
-    statPanelTitle: '搜索结果',
-    statPanelSubtitle:
-      `关键词：${String(keyword || '').trim()} · ${statPanelItems.length} 项食品`,
-    statPanelItems,
-    statPanelEmptyTitle: '没有找到相关食品',
-    statPanelEmptyDesc: '换个食品名称试试。',
-  }
-}
-
-function buildHomeZones(items, configZones) {
-  return buildZoneConfigDraft(configZones)
-    .filter((zone) => zone.enabled)
-    .map((zone) => {
-      const zoneItems = getZoneItems(items, zone)
-      const expiringSoon = zoneItems.filter((item) => {
-        const days = getDaysUntil(item.expireDate)
-        return days >= 0 && days <= 3
-      }).length
-      const overdue = zoneItems.filter(
-        (item) => getDaysUntil(item.expireDate) < 0,
-      ).length
-      const alertText = overdue
-        ? `${overdue} 已过期`
-        : expiringSoon
-          ? `${expiringSoon} 临期`
-          : '状态正常'
-      const alertClass = overdue
-        ? 'danger'
-        : expiringSoon
-          ? 'warning'
-          : 'normal'
-
-      return {
-        ...zone,
-        itemCount: zoneItems.length,
-        expiringSoon,
-        overdue,
-        items: zoneItems,
-        alertText,
-        alertClass,
-      }
-    })
+  return pool
 }
 
 Page({
   data: {
     loading: false,
-    photoParseEnabled: FEATURE_FLAGS.photoParse,
-    homeMood: buildHomeMood(null),
-    zoneConfigLoaded: false,
-    zoneConfigId: '',
-    zoneConfigDraft: buildZoneConfigDraft([]),
-    zoneConfigPanelVisible: false,
-    zoneConfigDraggingIndex: -1,
-    zoneConfigSaving: false,
+    homeMood: buildMood(null),
+    stats: { total: 0, expiring: 0, overdue: 0 },
     allItems: [],
-    homeZones: buildHomeZones([], []),
-    stats: {
-      total: 0,
-      expiringSoon: 0,
-      overdue: 0,
-    },
+    homeZones: [],
     noticeMessage: '',
     searchKeyword: '',
-    zonePanelVisible: false,
-    selectedZone: null,
-    selectedZoneFilter: 'total',
-    selectedZoneFilterLabel: '全部食品',
-    selectedZoneItems: [],
-    selectedZoneGroups: [],
-    statPanelVisible: false,
-    selectedStatType: 'total',
-    statPanelTitle: '',
-    statPanelSubtitle: '',
-    statPanelItems: [],
-    statPanelEmptyTitle: '',
-    statPanelEmptyDesc: '',
-    zoneAddPanelVisible: false,
-    selectedAddZone: null,
+
+    // 通用列表面板（合并：分区清单 / 统计清单 / 搜索结果）
+    listPanelVisible: false,
+    listPanelTitle: '',
+    listPanelSubtitle: '',
+    listPanelGroups: [],
+    listPanelEmpty: '',
+
+    // 食品详情
     foodDetailVisible: false,
     selectedFood: null,
+
+    // 分区管理
+    zoneConfigLoaded: false,
+    zoneConfigId: '',
+    zoneConfigDraft: [],
+    zoneConfigVisible: false,
+    zoneConfigSaving: false,
+
+    // 设置 / 隐私
+    settingsVisible: false,
   },
 
   onShow() {
     if (!this.data.zoneConfigLoaded) {
-      this.loadZoneConfig().finally(() => {
-        this.loadItems()
-      })
+      this.loadZoneConfig().finally(() => this.loadItems())
       return
     }
-
     this.loadItems()
   },
 
   onUnload() {
-    if (this.noticeTimer) {
-      clearTimeout(this.noticeTimer)
-    }
+    if (this.noticeTimer) clearTimeout(this.noticeTimer)
   },
 
   onPullDownRefresh() {
-    this.loadItems({ forceRefresh: true }).finally(() => {
-      wx.stopPullDownRefresh()
-    })
+    this.loadItems().finally(() => wx.stopPullDownRefresh())
   },
 
   loadZoneConfig() {
     return zoneConfigService.getZoneConfig().then((config) => {
-      const zoneConfigDraft = buildZoneConfigDraft(config.zones)
-
       this.setData({
         zoneConfigLoaded: true,
         zoneConfigId: config._id || '',
-        zoneConfigDraft,
-        zoneConfigPanelVisible: !config.hasSavedConfig,
-        homeZones: buildHomeZones(this.data.allItems, zoneConfigDraft),
+        zoneConfigDraft: buildZoneConfigDraft(config.zones),
+        zoneConfigVisible: !config.hasSavedConfig,
       })
     })
   },
 
-  loadItems(options = {}) {
-    this.setData({
-      loading: true,
-    })
+  loadItems() {
+    this.setData({ loading: true })
 
     return itemService
-      .getItems(options)
+      .getItems()
       .then((items) => {
-        const decoratedItems = items.map((item) => this.decorateItem(item))
-        const stats = this.buildStats(decoratedItems)
-        const homeZones = buildHomeZones(
-          decoratedItems,
-          this.data.zoneConfigDraft,
-        )
-        const selectedZone = this.data.selectedZone
-          ? homeZones.find((zone) => zone.key === this.data.selectedZone.key)
-          : null
-        const zonePanelData = selectedZone
-          ? buildZonePanelData(
-              selectedZone,
-              decoratedItems,
-              this.data.selectedZoneFilter,
-            )
-          : {}
-        const statPanelData = this.data.statPanelVisible
-          ? this.data.selectedStatType === 'search'
-            ? buildSearchPanelData(this.data.searchKeyword, decoratedItems)
-            : buildStatPanelData(this.data.selectedStatType, decoratedItems)
-          : {}
-
-        this.setData({
-          allItems: decoratedItems,
+        const allItems = items.map(decorateItem)
+        const stats = buildStats(allItems)
+        const homeZones = buildHomeZones(allItems, this.data.zoneConfigDraft)
+        const patch = {
+          allItems,
           stats,
-          homeMood: buildHomeMood(stats),
+          homeMood: buildMood(stats),
           homeZones,
           loading: false,
-          ...zonePanelData,
-          ...statPanelData,
-        })
+        }
+
+        if (this.data.listPanelVisible && this.panelContext) {
+          Object.assign(patch, this.buildListPanel(this.panelContext, allItems))
+        }
+
+        this.setData(patch)
       })
       .catch(() => {
-        this.setData({
-          loading: false,
-        })
-        wx.showToast({
-          title: '读取失败',
-          icon: 'none',
-        })
+        this.setData({ loading: false })
+        wx.showToast({ title: '读取失败', icon: 'none' })
       })
   },
 
-  decorateItem(item) {
-    const status = getExpiryStatus(item.expireDate)
-    const tone = getExpiryTone(item.expireDate)
-    const thumb = getFoodThumb(item)
+  buildListPanel(context, items) {
+    const matched = filterByContext(items || this.data.allItems, context)
 
     return {
-      ...item,
-      amountText: `${item.quantity || 1}${item.unit || '份'}`,
-      expireDateText: formatDate(item.expireDate),
-      statusKey: status.key,
-      statusLabel: status.label,
-      statusHint: status.hint,
-      statusClass: status.className,
-      visualStatusLabel: tone.label,
-      visualStatusClass: tone.className,
-      thumbType: thumb.type,
-      thumbImage: thumb.image,
-      thumbClass: thumb.className,
-      categoryIcon:
-        thumb.image || getIngredientVisual({ category: '其他' }).image,
+      listPanelVisible: true,
+      listPanelTitle: context.title,
+      listPanelSubtitle: `${context.subtitle} · ${matched.length} 项`,
+      listPanelGroups: groupByCategory(matched),
+      listPanelEmpty: matched.length ? '' : context.emptyText || '这里暂时没有食材',
     }
   },
 
-  buildStats(items) {
-    return {
-      total: items.length,
-      expiringSoon: items.filter((item) => {
-        const days = getDaysUntil(item.expireDate)
-        return days >= 0 && days <= 3
-      }).length,
-      overdue: items.filter((item) => getDaysUntil(item.expireDate) < 0).length,
-    }
+  openListPanel(context) {
+    this.panelContext = context
+    this.setData(this.buildListPanel(context, this.data.allItems))
   },
 
-  handleZoneView(event) {
-    const { key } = event.currentTarget.dataset
-    const zone = this.data.homeZones.find((item) => item.key === key)
+  handleCloseListPanel() {
+    this.panelContext = null
+    this.setData({ listPanelVisible: false })
+  },
 
-    if (!zone) {
-      return
-    }
+  noop() {},
 
-    this.openZoneAddPanel(zone)
+  // ---- 分区交互 ----
+  handleZoneAdd(event) {
+    const location = event.currentTarget.dataset.location
+    wx.navigateTo({
+      url: `${ITEM_FORM_URL}?storageLocation=${encodeURIComponent(location)}`,
+    })
   },
 
   handleZoneStatTap(event) {
     const { key, filter } = event.currentTarget.dataset
-    const zone = this.data.homeZones.find((item) => item.key === key)
+    const zone = getZoneDefinition(key)
+    if (!zone) return
 
-    if (!zone) {
-      return
-    }
-
-    this.setData({
-      zonePanelVisible: true,
-      zoneAddPanelVisible: false,
-      statPanelVisible: false,
-      ...buildZonePanelData(zone, this.data.allItems, filter || 'total'),
-    })
-  },
-
-  handleCloseZonePanel() {
-    this.setData({
-      zonePanelVisible: false,
-    })
-  },
-
-  handlePanelTap() {
-    return true
-  },
-
-  handleZoneFilterTap(event) {
-    const { filter } = event.currentTarget.dataset
-
-    if (!this.data.selectedZone) {
-      return
-    }
-
-    this.setData({
-      ...buildZonePanelData(
-        this.data.selectedZone,
-        this.data.allItems,
-        filter || 'total',
-      ),
+    const labels = { total: '全部', expiring: '临期', overdue: '已过期' }
+    this.openListPanel({
+      kind: 'zone',
+      zoneKey: key,
+      filter: filter || 'total',
+      title: `${zone.name} · ${labels[filter] || labels.total}食品`,
+      subtitle: zone.name,
+      emptyText: '这个分区暂时没有对应食材',
     })
   },
 
   handleStatsTap(event) {
-    const { type } = event.currentTarget.dataset
-
-    this.setData({
-      statPanelVisible: true,
-      zonePanelVisible: false,
-      zoneAddPanelVisible: false,
-      ...buildStatPanelData(type || 'total', this.data.allItems),
+    const type = event.currentTarget.dataset.type || 'total'
+    const titles = { total: '全部食品', expiring: '临期食品（3天内）', overdue: '已过期食品' }
+    this.openListPanel({
+      kind: 'stat',
+      filter: type,
+      title: titles[type] || titles.total,
+      subtitle: '全部分区',
+      emptyText: type === 'overdue' ? '没有已过期食材，很棒！' : '暂无对应食材',
     })
   },
 
-  handleCloseStatPanel() {
-    this.setData({
-      statPanelVisible: false,
-    })
-  },
-
-  handleStatPanelTap() {
-    return true
-  },
-
+  // ---- 搜索 ----
   handleSearchInput(event) {
-    this.setData({
-      searchKeyword: event.detail.value,
-    })
+    this.setData({ searchKeyword: event.detail.value })
   },
 
   handleSearchConfirm() {
     const keyword = String(this.data.searchKeyword || '').trim()
-
     if (!keyword) {
-      wx.showToast({
-        title: '请输入食品名称',
-        icon: 'none',
-      })
+      wx.showToast({ title: '请输入食品名称', icon: 'none' })
       return
     }
-
-    this.setData({
-      statPanelVisible: true,
-      zonePanelVisible: false,
-      zoneAddPanelVisible: false,
-      searchKeyword: keyword,
-      ...buildSearchPanelData(keyword, this.data.allItems),
+    this.openListPanel({
+      kind: 'search',
+      keyword,
+      title: '搜索结果',
+      subtitle: `关键词「${keyword}」`,
+      emptyText: '没有找到相关食材，换个名称试试',
     })
   },
 
-  handleSmartAdd() {
-    wx.navigateTo({
-      url: '/pages/quick-add/quick-add',
+  // ---- 食品详情 / 编辑 / 删除 ----
+  handleFoodTap(event) {
+    const food = this.data.allItems.find((item) => item._id === event.currentTarget.dataset.id)
+    if (food) this.setData({ selectedFood: food, foodDetailVisible: true })
+  },
+
+  handleCloseFoodDetail() {
+    this.setData({ foodDetailVisible: false, selectedFood: null })
+  },
+
+  handleEdit(event) {
+    const id = event.currentTarget.dataset.id || (this.data.selectedFood && this.data.selectedFood._id)
+    if (!id) return
+    this.setData({ foodDetailVisible: false, selectedFood: null })
+    wx.navigateTo({ url: `${ITEM_FORM_URL}?id=${id}` })
+  },
+
+  handleDelete(event) {
+    const { id, name } = event.currentTarget.dataset
+    this.confirmDelete(
+      id || (this.data.selectedFood && this.data.selectedFood._id),
+      name || (this.data.selectedFood && this.data.selectedFood.name),
+    )
+  },
+
+  confirmDelete(id, name) {
+    if (!id) return
+    wx.showModal({
+      title: '确认删除',
+      content: `确定删除「${name}」吗？`,
+      confirmText: '删除',
+      confirmColor: '#c94238',
+      success: (res) => {
+        if (!res.confirm) return
+        wx.showLoading({ title: '删除中' })
+        itemService
+          .deleteItem(id)
+          .then(() => {
+            wx.hideLoading()
+            this.setData({ foodDetailVisible: false, selectedFood: null })
+            this.showNotice(`已删除「${name}」`)
+            this.loadItems()
+          })
+          .catch(() => {
+            wx.hideLoading()
+            wx.showToast({ title: '删除失败', icon: 'none' })
+          })
+      },
     })
   },
 
-  handleOpenProfile() {
-    wx.navigateTo({
-      url: '/pages/profile/profile',
-    })
-  },
-
-  handleKnownHint() {
-    this.showNotice('点分区右上角的加号，就能添加到指定位置')
-  },
-
+  // ---- 分区管理 ----
   handleOpenZoneConfig() {
-    this.setData({
-      zoneConfigPanelVisible: true,
-    })
+    this.setData({ zoneConfigVisible: true })
   },
 
   handleCloseZoneConfig() {
@@ -562,412 +379,109 @@ Page({
       this.showNotice('请先保存一次分区配置')
       return
     }
-
-    this.setData({
-      zoneConfigPanelVisible: false,
-      zoneConfigDraggingIndex: -1,
-    })
-    this.zoneConfigDragState = null
+    this.setData({ zoneConfigVisible: false })
   },
 
-  handleShowZoneConfig(event) {
+  handleZoneToggle(event) {
     const index = Number(event.currentTarget.dataset.index)
-    const zoneConfigDraft = this.data.zoneConfigDraft.map((zone, zoneIndex) =>
-      zoneIndex === index
-        ? {
-            ...zone,
-            enabled: true,
-          }
-        : zone,
-    )
+    const draft = this.data.zoneConfigDraft.slice()
+    const enabledCount = draft.filter((zone) => zone.enabled).length
 
-    this.setData({
-      zoneConfigDraft,
-    })
+    if (draft[index].enabled && enabledCount <= 1) {
+      wx.showToast({ title: '至少保留一个分区', icon: 'none' })
+      return
+    }
+    draft[index] = { ...draft[index], enabled: !draft[index].enabled }
+    this.setData({ zoneConfigDraft: draft })
   },
 
-  handleDeleteZoneConfig(event) {
+  handleZoneMove(event) {
     const index = Number(event.currentTarget.dataset.index)
-    const targetZone = this.data.zoneConfigDraft[index]
+    const dir = Number(event.currentTarget.dataset.dir)
+    const target = index + dir
+    const draft = this.data.zoneConfigDraft.slice()
 
-    if (!targetZone || !targetZone.enabled) {
-      return
-    }
-
-    const enabledCount = this.data.zoneConfigDraft.filter(
-      (zone) => zone.enabled,
-    ).length
-
-    if (enabledCount <= 1) {
-      wx.showToast({
-        title: '至少保留一个分区',
-        icon: 'none',
-      })
-      return
-    }
-
-    const zoneConfigDraft = this.data.zoneConfigDraft.map((zone, zoneIndex) =>
-      zoneIndex === index
-        ? {
-            ...zone,
-            enabled: false,
-          }
-        : zone,
-    )
-
-    this.setData({
-      zoneConfigDraft,
-    })
-  },
-
-  handleZoneConfigDragStart(event) {
-    const index = Number(event.currentTarget.dataset.index)
-    const touch = event.touches && event.touches[0]
-
-    if (
-      !touch ||
-      event.touches.length !== 1 ||
-      index < 0 ||
-      index >= this.data.zoneConfigDraft.length
-    ) {
-      return
-    }
-
-    this.zoneConfigDragState = {
-      index,
-      startIndex: index,
-      startY: touch.clientY,
-      rowStep: 62,
-    }
-
-    this.setData({
-      zoneConfigDraggingIndex: index,
-    })
-    safeVibrateShort()
-  },
-
-  handleZoneConfigDragMove(event) {
-    const dragState = this.zoneConfigDragState
-    const touch = event.touches && event.touches[0]
-
-    if (!dragState || !touch) {
-      return
-    }
-
-    const offset = Math.round((touch.clientY - dragState.startY) / dragState.rowStep)
-    const targetIndex = Math.max(
-      0,
-      Math.min(
-        this.data.zoneConfigDraft.length - 1,
-        dragState.startIndex + offset,
-      ),
-    )
-    const zoneConfigDraft = this.data.zoneConfigDraft.slice()
-
-    if (targetIndex === dragState.index) {
-      return
-    }
-
-    const current = zoneConfigDraft.splice(dragState.index, 1)[0]
-
-    zoneConfigDraft.splice(targetIndex, 0, current)
-
-    dragState.index = targetIndex
-
-    this.setData({
-      zoneConfigDraft,
-      zoneConfigDraggingIndex: targetIndex,
-    })
-    safeVibrateShort()
-  },
-
-  handleZoneConfigDragEnd() {
-    this.zoneConfigDragState = null
-    this.setData({
-      zoneConfigDraggingIndex: -1,
-    })
+    if (target < 0 || target >= draft.length) return
+    const tmp = draft[index]
+    draft[index] = draft[target]
+    draft[target] = tmp
+    this.setData({ zoneConfigDraft: draft })
   },
 
   handleSaveZoneConfig() {
-    if (this.data.zoneConfigSaving) {
+    if (this.data.zoneConfigSaving) return
+    if (!this.data.zoneConfigDraft.some((zone) => zone.enabled)) {
+      wx.showToast({ title: '至少保留一个分区', icon: 'none' })
       return
     }
-
-    const enabledCount = this.data.zoneConfigDraft.filter(
-      (zone) => zone.enabled,
-    ).length
-
-    if (enabledCount === 0) {
-      wx.showToast({
-        title: '至少保留一个分区',
-        icon: 'none',
-      })
-      return
-    }
-
-    this.setData({
-      zoneConfigSaving: true,
-    })
+    this.setData({ zoneConfigSaving: true })
 
     zoneConfigService
-      .saveZoneConfig({
-        _id: this.data.zoneConfigId,
-        zones: this.data.zoneConfigDraft,
-      })
+      .saveZoneConfig({ _id: this.data.zoneConfigId, zones: this.data.zoneConfigDraft })
       .then((config) => {
         const zoneConfigDraft = buildZoneConfigDraft(config.zones)
-
         this.setData({
           zoneConfigId: config._id,
           zoneConfigDraft,
-          zoneConfigPanelVisible: false,
+          zoneConfigVisible: false,
           zoneConfigSaving: false,
           homeZones: buildHomeZones(this.data.allItems, zoneConfigDraft),
         })
+        this.showNotice('分区已更新')
       })
       .catch(() => {
-        this.setData({
-          zoneConfigSaving: false,
-        })
-        wx.showToast({
-          title: '保存失败，请检查云集合',
-          icon: 'none',
-        })
+        this.setData({ zoneConfigSaving: false })
+        wx.showToast({ title: '保存失败，请检查云集合', icon: 'none' })
       })
   },
 
-  openZoneAddPanel(zone) {
-    this.setData({
-      selectedAddZone: zone,
-      zoneAddPanelVisible: true,
-      zonePanelVisible: false,
-      statPanelVisible: false,
-    })
+  // ---- 设置 / 隐私 ----
+  handleOpenSettings() {
+    this.setData({ settingsVisible: true })
   },
 
-  handleCloseZoneAddPanel() {
-    this.setData({
-      zoneAddPanelVisible: false,
-    })
+  handleCloseSettings() {
+    this.setData({ settingsVisible: false })
   },
 
-  navigateToSingleConfirm(result) {
-    const cacheKey = parseService.saveTempParsePayload(result, 'single')
-
-    wx.navigateTo({
-      url: `/pages/parse-confirm/parse-confirm?cacheKey=${encodeURIComponent(
-        cacheKey,
-      )}`,
-    })
-  },
-
-  runZoneParseTask(task) {
-    let loadingVisible = false
-    const showRecognizing = () => {
-      if (loadingVisible) {
-        return
-      }
-
-      loadingVisible = true
-      wx.showLoading({
-        title: '识别中',
-        mask: true,
+  handleOpenPrivacy() {
+    if (wx.openPrivacyContract) {
+      wx.openPrivacyContract({
+        fail: () => wx.showToast({ title: '请在小程序后台配置隐私协议', icon: 'none' }),
       })
-    }
-
-    task(showRecognizing)
-      .then((result) => {
-        if (loadingVisible) {
-          wx.hideLoading()
-        }
-
-        this.setData({
-          zonePanelVisible: false,
-          zoneAddPanelVisible: false,
-        })
-        this.navigateToSingleConfirm(result)
-      })
-      .catch((error) => {
-        if (loadingVisible) {
-          wx.hideLoading()
-        }
-
-        if (parseService.isCancelError(error)) {
-          return
-        }
-
-        wx.showToast({
-          title: '识别失败',
-          icon: 'none',
-        })
-      })
-  },
-
-  handleZoneAdd(event) {
-    const { location } = event.currentTarget.dataset
-
-    this.setData({
-      zonePanelVisible: false,
-      zoneAddPanelVisible: false,
-    })
-
-    wx.navigateTo({
-      url: `/pkg-add/item-form/item-form?storageLocation=${encodeURIComponent(
-        location,
-      )}`,
-    })
-  },
-
-  handleZonePhotoAdd(event) {
-    const { location } = event.currentTarget.dataset
-
-    this.runZoneParseTask((showRecognizing) =>
-      parseService.parseFoodPhoto({
-        preferredStorageLocation: location,
-        onProcessingStart: showRecognizing,
-      }),
-    )
-  },
-
-  handleZonePackageAdd(event) {
-    const { location } = event.currentTarget.dataset
-
-    this.runZoneParseTask((showRecognizing) =>
-      parseService.parsePackagePhoto({
-        preferredStorageLocation: location,
-        onProcessingStart: showRecognizing,
-      }),
-    )
-  },
-
-  handleZoneItemEdit(event) {
-    const { id } = event.currentTarget.dataset
-
-    this.setData({
-      zonePanelVisible: false,
-    })
-
-    wx.navigateTo({
-      url: `/pkg-add/item-form/item-form?id=${id}`,
-    })
-  },
-
-  handleFoodImageTap(event) {
-    const { id } = event.currentTarget.dataset
-    const selectedFood = this.data.allItems.find((item) => item._id === id)
-
-    if (!selectedFood) {
       return
     }
-
-    this.setData({
-      selectedFood,
-      foodDetailVisible: true,
-    })
+    wx.showToast({ title: '当前微信版本不支持查看', icon: 'none' })
   },
 
-  handleCloseFoodDetail() {
-    this.setData({
-      foodDetailVisible: false,
-      selectedFood: null,
-    })
-  },
-
-  handleFoodDetailEdit() {
-    const food = this.data.selectedFood
-
-    if (!food) {
-      return
-    }
-
-    this.setData({
-      foodDetailVisible: false,
-      selectedFood: null,
-    })
-
-    wx.navigateTo({
-      url: `/pkg-add/item-form/item-form?id=${food._id}`,
-    })
-  },
-
-  showNotice(message) {
-    if (this.noticeTimer) {
-      clearTimeout(this.noticeTimer)
-    }
-
-    this.setData({
-      noticeMessage: message,
-    })
-
-    this.noticeTimer = setTimeout(() => {
-      this.setData({
-        noticeMessage: '',
-      })
-    }, 2600)
-  },
-
-  handleStatItemEdit(event) {
-    const { id } = event.currentTarget.dataset
-
-    this.setData({
-      statPanelVisible: false,
-    })
-
-    wx.navigateTo({
-      url: `/pkg-add/item-form/item-form?id=${id}`,
-    })
-  },
-
-  handleDelete(event) {
-    const { id, name } = event.currentTarget.dataset
-
-    this.confirmDeleteFood(id, name)
-  },
-
-  handleFoodDetailDelete() {
-    const food = this.data.selectedFood
-
-    if (!food) {
-      return
-    }
-
-    this.confirmDeleteFood(food._id, food.name)
-  },
-
-  confirmDeleteFood(id, name) {
+  handleClearAll() {
     wx.showModal({
-      title: '确认删除',
-      content: `确定删除「${name}」吗？`,
-      confirmText: '删除',
-      confirmColor: '#d95d55',
+      title: '清空全部数据',
+      content: '确定清空当前账号下的全部食品记录吗？此操作不可恢复。',
+      confirmText: '清空',
+      confirmColor: '#c94238',
       success: (res) => {
-        if (!res.confirm) {
-          return
-        }
-
-        wx.showLoading({
-          title: '删除中',
-        })
-
+        if (!res.confirm) return
+        wx.showLoading({ title: '清空中' })
         itemService
-          .deleteItem(id)
+          .clearItems()
           .then(() => {
             wx.hideLoading()
-            this.showNotice(`已删除「${name}」`)
-            this.setData({
-              foodDetailVisible: false,
-              selectedFood: null,
-            })
+            this.setData({ settingsVisible: false })
+            this.showNotice('已清空全部数据')
             this.loadItems()
           })
           .catch(() => {
             wx.hideLoading()
-            wx.showToast({
-              title: '删除失败',
-              icon: 'none',
-            })
+            wx.showToast({ title: '清空失败', icon: 'none' })
           })
       },
     })
+  },
+
+  showNotice(message) {
+    if (this.noticeTimer) clearTimeout(this.noticeTimer)
+    this.setData({ noticeMessage: message })
+    this.noticeTimer = setTimeout(() => this.setData({ noticeMessage: '' }), 2400)
   },
 })

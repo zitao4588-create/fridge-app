@@ -1,4 +1,5 @@
 {
-  "navigationBarTitleText": "冰箱",
-  "enablePullDownRefresh": true
+  "navigationBarTitleText": "冰箱小雷达",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }
