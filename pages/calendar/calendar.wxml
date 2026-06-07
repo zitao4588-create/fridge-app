@@ -1,9 +1,12 @@
 <view class="page calendar-page">
-  <view class="calendar-card card">
+  <view class="cal-card">
     <view class="month-row">
-      <view class="month-button prev" bindtap="handlePrevMonth">上月</view>
-      <view class="month-title">{{monthTitle}}</view>
-      <view class="month-button next" bindtap="handleNextMonth">下月</view>
+      <view class="month-nav" bindtap="handlePrevMonth">‹</view>
+      <view class="month-center">
+        <text class="month-title">{{monthTitle}}</text>
+        <text class="today-btn" bindtap="handleToday">回到今天</text>
+      </view>
+      <view class="month-nav" bindtap="handleNextMonth">›</view>
     </view>
 
     <view class="week-grid">
@@ -16,180 +19,75 @@
         wx:key="date"
         data-date="{{item.date}}"
         bindtap="handleSelectDay"
-        class="day-cell {{item.inCurrentMonth ? '' : 'muted'}} {{item.selected ? 'selected' : ''}} {{item.hasEvents ? 'marked' : ''}}"
+        class="day-cell {{item.inCurrentMonth ? '' : 'muted'}} {{item.selected ? 'selected' : ''}}"
       >
         <text class="day-number">{{item.day}}</text>
-        <text wx:if="{{item.hasEvents}}" class="day-dot">{{item.eventCount}}</text>
+        <text wx:if="{{item.hasEvents}}" class="day-dot"></text>
       </view>
     </view>
   </view>
 
-  <view class="calendar-stats-grid">
-    <view class="calendar-stat-card total" data-type="total" bindtap="handleOpenCalendarStats">
-      <text class="calendar-stat-label">库存</text>
-      <text class="calendar-stat-value total">{{stats.total}}</text>
+  <view class="stat-row">
+    <view class="stat-card" data-type="total" bindtap="handleStatsTap">
+      <text class="stat-num">{{stats.total}}</text>
+      <text class="stat-name">总库存</text>
     </view>
-    <view class="calendar-stat-card warning" data-type="expiring" bindtap="handleOpenCalendarStats">
-      <text class="calendar-stat-label">临期</text>
-      <text class="calendar-stat-value warning">{{stats.expiringSoon}}</text>
+    <view class="stat-card warning" data-type="expiring" bindtap="handleStatsTap">
+      <text class="stat-num">{{stats.expiring}}</text>
+      <text class="stat-name">临期</text>
     </view>
-    <view class="calendar-stat-card danger" data-type="overdue" bindtap="handleOpenCalendarStats">
-      <text class="calendar-stat-label">过期</text>
-      <text class="calendar-stat-value danger">{{stats.overdue}}</text>
+    <view class="stat-card danger" data-type="overdue" bindtap="handleStatsTap">
+      <text class="stat-num">{{stats.overdue}}</text>
+      <text class="stat-name">已过期</text>
     </view>
   </view>
 
-  <view wx:if="{{selectedItems.length === 0}}" class="date-empty card">当天没有食品到期</view>
-  <view wx:else class="selected-list">
-    <view class="selected-item card" wx:for="{{selectedItems}}" wx:key="_id">
+  <view class="sel-head">
+    <text class="sel-title">{{selectedDateText}} 到期</text>
+    <text class="sel-count">{{selectedItems.length}} 项</text>
+  </view>
+
+  <view wx:if="{{selectedItems.length === 0}}" class="sel-empty">这一天没有食材到期</view>
+  <view wx:else>
+    <view class="list-row" wx:for="{{selectedItems}}" wx:key="_id">
+      <view class="list-main">
+        <text class="list-name">{{item.name}} · {{item.amountText}}</text>
+        <text class="list-meta">{{item.category}} · {{item.storageLocation}}</text>
+      </view>
+      <text class="tag-inline {{item.bucket}}">{{item.statusLabel}}</text>
+      <view class="row-actions">
+        <view class="row-btn" data-id="{{item._id}}" bindtap="handleEdit">编辑</view>
+        <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="handleDelete">删除</view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 统计清单弹层 -->
+<view wx:if="{{listPanelVisible}}" class="mask" bindtap="handleCloseListPanel">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-head">
       <view>
-        <text class="selected-name">{{item.name}}</text>
-        <text class="selected-meta">{{item.quantity}}{{item.unit}} · {{item.category}} · {{item.storageLocation}}</text>
+        <text class="sheet-title">{{listPanelTitle}}</text>
+        <text class="sheet-sub">{{listPanelSubtitle}}</text>
       </view>
-      <text class="status-chip {{item.statusClass}}">{{item.statusLabel}}</text>
+      <view class="sheet-close" bindtap="handleCloseListPanel">关闭</view>
     </view>
-  </view>
-
-  <view class="meal-radar-card card">
-    <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" />
-
-    <view class="meal-radar-head">
-      <view class="meal-radar-title-wrap">
-        <image class="meal-radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
-        <view class="meal-radar-title-block">
-          <text class="meal-radar-title">开饭雷达检测报告</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="meal-radar-console">
-      <view class="meal-radar-screen {{mealRadarReport.levelClass}}">
-        <view class="radar-orbit orbit-one"></view>
-        <view class="radar-orbit orbit-two"></view>
-        <view class="radar-orbit orbit-three"></view>
-        <view class="radar-sweep"></view>
-        <view class="radar-core">
-          <text class="radar-score-label">可开饭指数</text>
-          <text class="radar-score-value">{{mealRadarReport.score}}</text>
-        </view>
-      </view>
-
-      <view class="meal-radar-explain">
-        <text class="meal-radar-explain-main">{{mealRadarReport.explanation}}</text>
-        <view class="meal-radar-ranges">
-          <text>高 80-99：适合开饭</text>
-          <text>中 50-79：建议补 1-2 样</text>
-          <text>低 0-49：先处理风险或补货</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="meal-radar-priority {{mealRadarReport.priorityItems.length > 0 ? '' : 'empty'}}" data-type="threeDay" bindtap="handleOpenExpiryList">
-      <text class="meal-radar-priority-label">今日优先用掉</text>
-      <view wx:if="{{mealRadarReport.priorityItems.length > 0}}" class="meal-radar-priority-chips">
-        <text wx:for="{{mealRadarReport.priorityItems}}" wx:key="id">{{item.name}}</text>
-      </view>
-      <text wx:else class="meal-radar-priority-empty">暂无临期压力，可以按心情安排一顿。</text>
-    </view>
-
-    <block wx:if="{{recipeFeatureEnabled}}">
-    <view wx:if="{{radarRecipeLoading}}" class="expiry-ai-status loading">
-      <text>{{radarRecipeStatusText}}</text>
-    </view>
-
-    <view wx:elif="{{expiryUsage.recommendations.length > 0}}" class="expiry-recipe-list">
-      <view
-        class="meal-recipe-card"
-        wx:for="{{expiryUsage.recommendations}}"
-        wx:key="id"
-        data-id="{{item.id}}"
-        bindtap="handleOpenRecipeDetail"
-      >
-        <image class="meal-recipe-image" src="{{item.image || '/images/recipe/default.png'}}" mode="aspectFill" />
-        <view class="meal-recipe-content">
-          <view class="meal-recipe-head">
-            <text class="meal-recipe-title">{{item.title}}</text>
-            <text
-              class="meal-recipe-action {{item.isSaved ? 'saved' : ''}}"
-              data-id="{{item.id}}"
-              data-recipe-key="{{item.recipeKey}}"
-              catchtap="handleToggleRecipeRecord"
-            >{{item.isSaved ? '已收藏' : '收藏'}}</text>
+    <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
+      <view wx:if="{{listPanelEmpty}}" class="sel-empty">{{listPanelEmpty}}</view>
+      <view wx:else>
+        <view class="list-row" wx:for="{{listPanelItems}}" wx:key="_id">
+          <view class="list-main">
+            <text class="list-name">{{item.name}} · {{item.amountText}}</text>
+            <text class="list-meta">到期 {{item.expireDateText}} · {{item.storageLocation}}</text>
           </view>
-          <view class="expiry-chip-row">
-            <text wx:if="{{item.availableItems.length === 0}}" class="expiry-empty-chip">暂无可用库存</text>
-            <text class="expiry-food-chip" wx:for="{{item.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
-            <text class="expiry-food-chip missing" wx:for="{{item.missingItems}}" wx:for-item="food" wx:key="*this">缺 {{food}}</text>
+          <text class="tag-inline {{item.bucket}}">{{item.statusHint}}</text>
+          <view class="row-actions">
+            <view class="row-btn" data-id="{{item._id}}" catchtap="handleEdit">编辑</view>
+            <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" catchtap="handleDelete">删除</view>
           </view>
         </view>
       </view>
-    </view>
-    <view wx:else class="expiry-empty">{{radarRecipeStatusText || '云端 AI 暂未生成可用菜谱，请稍后再试。'}}</view>
-    </block>
-
-    <view wx:if="{{expiryUsage.safetyTips.length > 0}}" class="safety-box">
-      <text class="safety-title">已过期提醒</text>
-      <text class="safety-line" wx:for="{{expiryUsage.safetyTips}}" wx:key="id">{{item.text}}</text>
-    </view>
-  </view>
-
-  <view wx:if="{{recipeDetailVisible}}" class="recipe-detail-mask" bindtap="handleCloseRecipeDetail">
-    <view class="recipe-detail-panel card" catchtap="noop">
-      <view class="recipe-detail-head">
-        <view>
-          <text class="recipe-detail-kicker">开饭雷达检测报告</text>
-          <text class="recipe-detail-title">{{recipeDetail.title}}</text>
-        </view>
-        <text class="recipe-detail-close" bindtap="handleCloseRecipeDetail">×</text>
-      </view>
-
-      <view class="recipe-detail-summary">
-        <text>{{recipeDetail.timeCost}}</text>
-        <text>{{recipeDetail.difficulty}}</text>
-        <text>{{recipeDetail.matchLabel}}</text>
-      </view>
-
-      <view class="recipe-detail-block">
-        <text class="recipe-detail-block-title">食材匹配</text>
-        <view class="recipe-detail-chip-row">
-          <text wx:if="{{recipeDetail.availableItems.length === 0}}" class="expiry-empty-chip">暂无可用库存</text>
-          <text class="expiry-food-chip" wx:for="{{recipeDetail.availableItems}}" wx:for-item="food" wx:key="id">{{food.name}}</text>
-          <text class="expiry-food-chip missing" wx:for="{{recipeDetail.missingItems}}" wx:for-item="food" wx:key="*this">缺 {{food}}</text>
-        </view>
-      </view>
-
-      <view class="recipe-detail-block">
-        <text class="recipe-detail-block-title">做菜步骤</text>
-        <view class="recipe-step" wx:for="{{recipeDetail.steps}}" wx:for-item="step" wx:for-index="stepIndex" wx:key="*this">
-          <text class="recipe-step-number">{{stepIndex + 1}}</text>
-          <text class="recipe-step-text">{{step}}</text>
-        </view>
-      </view>
-
-      <view wx:if="{{recipeDetail.safetyNote}}" class="recipe-safety-note">{{recipeDetail.safetyNote}}</view>
-    </view>
-  </view>
-
-  <view wx:if="{{inventoryPanelVisible}}" class="inventory-mask" bindtap="handleCloseInventoryPanel">
-    <view class="inventory-panel card" catchtap="noop">
-      <view class="inventory-head">
-        <text class="inventory-title">{{inventoryPanelTitle}}</text>
-        <text class="inventory-close" bindtap="handleCloseInventoryPanel">×</text>
-      </view>
-
-      <view wx:if="{{inventoryPanelItems.length === 0}}" class="inventory-empty">暂无食品</view>
-      <view wx:else class="inventory-list">
-        <view class="inventory-item" wx:for="{{inventoryPanelItems}}" wx:key="id">
-          <view class="inventory-item-main">
-            <text class="inventory-name">{{item.name}}</text>
-            <text class="inventory-meta">{{item.category}} · {{item.storageLocation}} · {{item.expiryHint}}</text>
-          </view>
-          <view class="inventory-actions">
-            <text class="status-chip {{item.statusClass}}">{{item.statusLabel}}</text>
-            <text class="inventory-delete" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="handleDeleteInventoryItem">删除</text>
-          </view>
-        </view>
-      </view>
-    </view>
+    </scroll-view>
   </view>
 </view>
