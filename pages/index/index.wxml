@@ -1,5 +1,6 @@
 <view class="page index-page">
   <view class="hero">
+    <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" />
     <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" />
     <view class="hero-copy">
       <text class="hero-title">{{homeMood.title}}</text>
@@ -23,8 +24,11 @@
     <view class="zone-card {{zone.theme}}" wx:for="{{homeZones}}" wx:for-item="zone" wx:key="key">
       <view class="zone-head">
         <view class="zone-title-wrap">
-          <text class="zone-title">{{zone.name}}</text>
-          <text class="zone-temp">{{zone.temperature}}</text>
+          <text class="zone-icon">{{zone.icon}}</text>
+          <view class="zone-title-text">
+            <text class="zone-title">{{zone.name}}</text>
+            <text class="zone-temp">{{zone.temperature}}</text>
+          </view>
         </view>
         <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd">＋</view>
       </view>

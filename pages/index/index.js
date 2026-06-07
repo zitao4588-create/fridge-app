@@ -72,6 +72,14 @@ function buildMood(stats) {
   }
 }
 
+const ZONE_ICONS = {
+  cold: '🧊',
+  freeze: '❄️',
+  door: '🥤',
+  produce: '🥬',
+  temp: '🌡️',
+}
+
 function getZoneItems(items, zone) {
   const locations = zone.locations || [zone.location]
 
@@ -86,6 +94,7 @@ function buildHomeZones(items) {
 
     return {
       ...zone,
+      icon: ZONE_ICONS[zone.theme] || '🍱',
       itemCount: zoneItems.length,
       expiring,
       overdue,

@@ -102,4 +102,36 @@ page {
   --font-lg: 32rpx;
   --font-xl: 40rpx;
   --font-xxl: 48rpx;
+
+  /* ===== 高级质感升级（轻奢黏土） ===== */
+  /* 渐变 */
+  --grad-mint: linear-gradient(135deg, #34c785 0%, #1fa368 100%);
+  --grad-honey: linear-gradient(135deg, #ffc766 0%, #ff9f45 100%);
+  --grad-card: linear-gradient(180deg, #ffffff 0%, #fffdf6 100%);
+  --grad-hero: linear-gradient(135deg, #eaf8ee 0%, #fff6e8 100%);
+
+  /* 黏土阴影 + 内高光 */
+  --shadow-1: 0 6rpx 16rpx rgba(124, 138, 112, 0.10), 0 2rpx 4rpx rgba(124, 138, 112, 0.05);
+  --shadow-2: 0 14rpx 34rpx rgba(124, 138, 112, 0.16);
+  --shadow-mint: 0 10rpx 22rpx rgba(40, 185, 120, 0.26);
+  --shadow-honey: 0 10rpx 22rpx rgba(255, 160, 70, 0.26);
+  --shadow-press: 0 3rpx 8rpx rgba(124, 138, 112, 0.12);
+  --hi-inset: inset 0 2rpx 0 rgba(255, 255, 255, 0.75);
+
+  /* 分区彩色身份：tint 底 / accent 强调 / ink 文字 */
+  --zone-cold-tint: #ecf6ff;
+  --zone-cold-accent: #5bb8dd;
+  --zone-cold-ink: #1f6d89;
+  --zone-freeze-tint: #eaf0ff;
+  --zone-freeze-accent: #7c9be0;
+  --zone-freeze-ink: #3a52a3;
+  --zone-door-tint: #fff3dc;
+  --zone-door-accent: #ffb23e;
+  --zone-door-ink: #b96a12;
+  --zone-produce-tint: #e9f8ee;
+  --zone-produce-accent: #34c785;
+  --zone-produce-ink: #087a49;
+  --zone-temp-tint: #f1eefa;
+  --zone-temp-accent: #9b86d6;
+  --zone-temp-ink: #5d46a3;
 }

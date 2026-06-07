@@ -4,11 +4,10 @@
 
 /* 月历卡片 */
 .cal-card {
-  padding: 24rpx 22rpx 28rpx;
-  border-radius: 28rpx;
-  background: var(--cream-surface, #fffef8);
-  border: 2rpx solid var(--cream-line, #eadbc4);
-  box-shadow: var(--shadow-soft, 0 10rpx 22rpx rgba(135, 105, 64, 0.08));
+  padding: 26rpx 22rpx 30rpx;
+  border-radius: 34rpx;
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1), var(--hi-inset);
 }
 
 .month-row {
@@ -26,6 +25,7 @@
   font-size: 40rpx;
   color: var(--brand-mint-deep, #087a49);
   background: var(--brand-mint-soft, #eaf8ee);
+  box-shadow: var(--shadow-1);
 }
 
 .month-center {
@@ -65,12 +65,12 @@
 }
 
 .day-cell {
-  height: 84rpx;
+  height: 88rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4rpx;
+  gap: 6rpx;
 }
 
 .day-number {
@@ -79,16 +79,17 @@
 }
 
 .day-cell.muted .day-number {
-  color: var(--text-light, #cfd8d3);
+  color: #cfd8d3;
 }
 
 .day-cell.selected .day-number {
-  width: 56rpx;
-  height: 56rpx;
-  line-height: 56rpx;
+  width: 60rpx;
+  height: 60rpx;
+  line-height: 60rpx;
   border-radius: 50%;
   color: #ffffff;
-  background: var(--brand-mint, #28b978);
+  background: var(--grad-mint);
+  box-shadow: var(--shadow-mint), var(--hi-inset);
 }
 
 .day-dot {
@@ -98,28 +99,51 @@
   background: var(--honey, #ffb23e);
 }
 
-/* 统计 */
+/* 统计卡（图标 + 大数字） */
 .stat-row {
   display: flex;
-  gap: 16rpx;
-  margin-top: 20rpx;
+  gap: 14rpx;
+  margin-top: 22rpx;
 }
 
 .stat-card {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6rpx;
-  padding: 22rpx 0;
+  gap: 12rpx;
+  padding: 18rpx 16rpx;
   border-radius: 24rpx;
-  background: var(--cream-surface, #fffef8);
-  border: 2rpx solid var(--cream-line, #eadbc4);
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1), var(--hi-inset);
+}
+
+.stat-ic {
+  width: 52rpx;
+  height: 52rpx;
+  line-height: 52rpx;
+  text-align: center;
+  font-size: 28rpx;
+  border-radius: 16rpx;
+  background: var(--brand-mint-soft, #eaf8ee);
+}
+
+.stat-card.warning .stat-ic {
+  background: var(--honey-bg, #fff5dc);
+}
+
+.stat-card.danger .stat-ic {
+  background: var(--coral-bg, #ffece6);
+}
+
+.stat-col {
+  display: flex;
+  flex-direction: column;
 }
 
 .stat-num {
-  font-size: 40rpx;
+  font-size: 38rpx;
   font-weight: 800;
+  line-height: 1.1;
   color: var(--brand-mint-deep, #087a49);
 }
 
@@ -132,7 +156,7 @@
 }
 
 .stat-name {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: var(--text-sub, #6f7c74);
 }
 
@@ -161,19 +185,19 @@
   font-size: 26rpx;
   color: var(--text-light, #9aa9a1);
   border: 2rpx dashed var(--cream-line, #eadbc4);
-  border-radius: 20rpx;
+  border-radius: 22rpx;
 }
 
-/* 列表行（与首页一致的视觉） */
+/* 列表行 */
 .list-row {
   display: flex;
   align-items: center;
   gap: 12rpx;
   padding: 18rpx 20rpx;
   margin-bottom: 12rpx;
-  border-radius: 20rpx;
-  background: var(--cream-surface, #fffef8);
-  border: 2rpx solid var(--cream-line, #eadbc4);
+  border-radius: 22rpx;
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1);
 }
 
 .list-main {
@@ -199,6 +223,7 @@
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
   font-size: 20rpx;
+  font-weight: 700;
 }
 
 .tag-inline.normal {
@@ -239,25 +264,39 @@
 .mask {
   position: fixed;
   inset: 0;
-  background: rgba(37, 55, 48, 0.35);
+  background: rgba(37, 55, 48, 0.38);
   z-index: 50;
   display: flex;
   align-items: flex-end;
 }
 
 .sheet {
+  position: relative;
   width: 100%;
   max-height: 78vh;
-  padding: 28rpx 28rpx 48rpx;
-  border-radius: 36rpx 36rpx 0 0;
+  padding: 32rpx 28rpx 48rpx;
+  border-radius: 40rpx 40rpx 0 0;
   background: var(--cream-bg-2, #fffaf0);
+  box-shadow: var(--shadow-2);
+}
+
+.sheet::before {
+  content: '';
+  position: absolute;
+  top: 14rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: rgba(37, 55, 48, 0.16);
 }
 
 .sheet-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20rpx;
+  margin: 12rpx 0 20rpx;
 }
 
 .sheet-title {
@@ -279,7 +318,8 @@
   border-radius: 999rpx;
   font-size: 24rpx;
   color: var(--text-sub, #6f7c74);
-  background: var(--cream-surface, #fffef8);
+  background: #ffffff;
+  box-shadow: var(--shadow-1);
 }
 
 .sheet-body {

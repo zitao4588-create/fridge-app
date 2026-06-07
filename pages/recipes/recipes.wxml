@@ -1,5 +1,8 @@
 <view class="page recipes-page">
   <view class="coming-card">
+    <image class="coming-spark spark-a" src="/images/decor/sparkle.png" mode="aspectFit" />
+    <image class="coming-spark spark-b" src="/images/decor/sparkle.png" mode="aspectFit" />
+    <image class="coming-leaf" src="/images/decor/leaf.png" mode="aspectFit" />
     <image class="coming-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
     <text class="coming-badge">敬请期待</text>
     <text class="coming-title">智能菜谱生成</text>
@@ -7,15 +10,15 @@
 
     <view class="coming-list">
       <view class="coming-item">
-        <text class="coming-dot">·</text>
+        <text class="coming-ic">🥗</text>
         <text>临期食材去化菜谱推荐</text>
       </view>
       <view class="coming-item">
-        <text class="coming-dot">·</text>
+        <text class="coming-ic">🍳</text>
         <text>按现有库存匹配「现在能做什么」</text>
       </view>
       <view class="coming-item">
-        <text class="coming-dot">·</text>
+        <text class="coming-ic">⭐</text>
         <text>收藏喜欢的菜谱</text>
       </view>
     </view>
