@@ -812,7 +812,7 @@ Page({
     })
 
     wx.navigateTo({
-      url: `/pages/item-form/item-form?storageLocation=${encodeURIComponent(
+      url: `/pkg-add/item-form/item-form?storageLocation=${encodeURIComponent(
         location,
       )}`,
     })
@@ -848,7 +848,7 @@ Page({
     })
 
     wx.navigateTo({
-      url: `/pages/item-form/item-form?id=${id}`,
+      url: `/pkg-add/item-form/item-form?id=${id}`,
     })
   },
 
@@ -886,7 +886,7 @@ Page({
     })
 
     wx.navigateTo({
-      url: `/pages/item-form/item-form?id=${food._id}`,
+      url: `/pkg-add/item-form/item-form?id=${food._id}`,
     })
   },
 
@@ -914,7 +914,7 @@ Page({
     })
 
     wx.navigateTo({
-      url: `/pages/item-form/item-form?id=${id}`,
+      url: `/pkg-add/item-form/item-form?id=${id}`,
     })
   },
 

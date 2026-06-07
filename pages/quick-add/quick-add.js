@@ -76,7 +76,7 @@ Page({
 
   handleManualSmart() {
     wx.navigateTo({
-      url: '/pages/item-form/item-form?smartRecommend=1',
+      url: '/pkg-add/item-form/item-form?smartRecommend=1',
     })
   },
 

@@ -3,10 +3,17 @@
     "pages/index/index",
     "pages/quick-add/quick-add",
     "pages/calendar/calendar",
-    "pages/item-form/item-form",
     "pages/parse-confirm/parse-confirm",
     "pages/batch-parse-confirm/batch-parse-confirm",
     "pages/profile/profile"
+  ],
+  "subPackages": [
+    {
+      "root": "pkg-add",
+      "pages": [
+        "item-form/item-form"
+      ]
+    }
   ],
   "window": {
     "navigationBarTitleText": "冰箱小雷达",

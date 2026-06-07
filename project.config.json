@@ -23,6 +23,14 @@
         "type": "file"
       },
       {
+        "value": "pkg-add/package.json",
+        "type": "file"
+      },
+      {
+        "value": "pkg-add/package-lock.json",
+        "type": "file"
+      },
+      {
         "value": "cloudfunctions",
         "type": "folder"
       },
@@ -99,8 +107,13 @@
     "compileWorklet": false,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
-    "packNpmManually": false,
-    "packNpmRelationList": [],
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./pkg-add/package.json",
+        "miniprogramNpmDistDir": "./pkg-add"
+      }
+    ],
     "minifyWXSS": true,
     "minifyWXML": true,
     "localPlugins": false,
