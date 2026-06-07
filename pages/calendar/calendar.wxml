@@ -97,7 +97,6 @@
 
       <view class="meal-radar-explain">
         <text class="meal-radar-verdict {{radar.levelClass}}">{{radar.levelTitle}}</text>
-        <text class="meal-radar-explain-main">{{radar.explanation}}</text>
         <view class="meal-radar-ranges">
           <text>高 80-99：适合开饭</text>
           <text>中 50-79：建议补 1-2 样</text>

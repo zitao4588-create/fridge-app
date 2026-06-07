@@ -1,5 +1,5 @@
 .calendar-page {
-  padding: 24rpx 28rpx calc(140rpx + env(safe-area-inset-bottom));
+  padding: 24rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
 }
 
 /* 月历卡片 */
@@ -455,12 +455,25 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 116rpx;
-  height: 116rpx;
-  border-radius: 0 116rpx 0 0;
-  background: linear-gradient(42deg, rgba(46, 156, 200, 0.32), rgba(46, 156, 200, 0));
-  transform-origin: 0 0;
-  animation: radarSweep 4s linear infinite;
+  width: 104rpx;
+  height: 4rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, rgba(46, 156, 200, 0) 0%, rgba(46, 156, 200, 0.9) 100%);
+  transform-origin: 0 50%;
+  animation: radarSweep 3.4s linear infinite;
+}
+
+.radar-sweep::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: rgba(46, 156, 200, 0.95);
+  transform: translateY(-50%);
+  box-shadow: 0 0 10rpx rgba(46, 156, 200, 0.6);
 }
 
 .radar-core {

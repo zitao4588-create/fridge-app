@@ -13,21 +13,21 @@
 
 .tab-item {
   flex: 1;
-  height: 100rpx;
+  height: 112rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
+  gap: 8rpx;
 }
 
 .tab-ic {
-  width: 44rpx;
-  height: 44rpx;
+  width: 54rpx;
+  height: 54rpx;
 }
 
 .tab-txt {
-  font-size: 20rpx;
+  font-size: 24rpx;
   color: #9aa9a1;
 }
 
