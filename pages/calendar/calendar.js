@@ -125,10 +125,15 @@ Page({
   },
 
   onShow() {
-    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1 })
-    }
+    this.setTabBar({ selected: 1, hidden: this.data.listPanelVisible })
     this.loadItems()
+  },
+
+  setTabBar(patch) {
+    const tabBar = typeof this.getTabBar === 'function' && this.getTabBar()
+    if (tabBar) {
+      tabBar.setData(patch)
+    }
   },
 
   onPullDownRefresh() {
@@ -236,11 +241,13 @@ Page({
     const type = event.currentTarget.dataset.type || 'total'
     this.panelType = type
     this.setData(this.buildListPanel(type, this.data.allItems))
+    this.setTabBar({ hidden: true })
   },
 
   handleCloseListPanel() {
     this.panelType = null
     this.setData({ listPanelVisible: false })
+    this.setTabBar({ hidden: false })
   },
 
   noop() {},

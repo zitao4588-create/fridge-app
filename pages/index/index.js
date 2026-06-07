@@ -163,10 +163,18 @@ Page({
   },
 
   onShow() {
-    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 0 })
-    }
+    this.setTabBar({
+      selected: 0,
+      hidden: this.data.listPanelVisible || this.data.foodDetailVisible,
+    })
     this.loadItems()
+  },
+
+  setTabBar(patch) {
+    const tabBar = typeof this.getTabBar === 'function' && this.getTabBar()
+    if (tabBar) {
+      tabBar.setData(patch)
+    }
   },
 
   onUnload() {
@@ -218,11 +226,13 @@ Page({
   openListPanel(context) {
     this.panelContext = context
     this.setData(this.buildListPanel(context, this.data.allItems))
+    this.setTabBar({ hidden: true })
   },
 
   handleCloseListPanel() {
     this.panelContext = null
     this.setData({ listPanelVisible: false })
+    this.setTabBar({ hidden: false })
   },
 
   noop() {},
@@ -271,11 +281,15 @@ Page({
 
   handleFoodTap(event) {
     const food = this.data.allItems.find((item) => item._id === event.currentTarget.dataset.id)
-    if (food) this.setData({ selectedFood: food, foodDetailVisible: true })
+    if (food) {
+      this.setData({ selectedFood: food, foodDetailVisible: true })
+      this.setTabBar({ hidden: true })
+    }
   },
 
   handleCloseFoodDetail() {
     this.setData({ foodDetailVisible: false, selectedFood: null })
+    this.setTabBar({ hidden: false })
   },
 
   handleEdit(event) {
@@ -308,6 +322,7 @@ Page({
           .then(() => {
             wx.hideLoading()
             this.setData({ foodDetailVisible: false, selectedFood: null })
+            this.setTabBar({ hidden: this.data.listPanelVisible })
             this.showNotice(`已删除「${name}」`)
             this.loadItems()
           })

@@ -79,12 +79,11 @@
         <view class="group" wx:for="{{listPanelGroups}}" wx:for-item="group" wx:key="category">
           <text class="group-name">{{group.category}}</text>
           <view class="list-row" wx:for="{{group.items}}" wx:for-item="food" wx:key="_id">
-            <image class="list-thumb" src="{{food.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" />
             <view class="list-main">
               <text class="list-name">{{food.name}} · {{food.amountText}}</text>
-              <text class="list-meta">{{food.storageLocation}} · 到期 {{food.expireDateText}}</text>
-              <text class="list-status {{food.bucket}}">{{food.statusHint}}</text>
+              <text class="list-meta">到期 {{food.expireDateText}}</text>
             </view>
+            <text class="tag-inline {{food.bucket}}">{{food.statusHint}}</text>
             <view class="row-actions">
               <view class="row-btn" data-id="{{food._id}}" catchtap="handleEdit">编辑</view>
               <view class="row-btn danger" data-id="{{food._id}}" data-name="{{food.name}}" catchtap="handleDelete">删除</view>

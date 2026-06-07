@@ -441,37 +441,6 @@
   color: var(--text-sub, #6f7c74);
 }
 
-.list-thumb {
-  width: 72rpx;
-  height: 72rpx;
-  flex-shrink: 0;
-  filter: drop-shadow(0 3rpx 5rpx rgba(60, 90, 70, 0.12));
-}
-
-.list-status {
-  display: inline-block;
-  margin-top: 8rpx;
-  padding: 2rpx 14rpx;
-  border-radius: 999rpx;
-  font-size: 20rpx;
-  font-weight: 700;
-}
-
-.list-status.normal {
-  color: var(--brand-mint-deep, #087a49);
-  background: var(--brand-mint-soft, #eaf8ee);
-}
-
-.list-status.expiring {
-  color: var(--honey-deep, #b96a12);
-  background: var(--honey-bg, #fff5dc);
-}
-
-.list-status.overdue {
-  color: var(--coral-deep, #c94238);
-  background: var(--coral-bg, #ffece6);
-}
-
 .tag-inline {
   padding: 2rpx 14rpx;
   border-radius: 999rpx;

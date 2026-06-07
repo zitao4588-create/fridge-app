@@ -11,6 +11,10 @@
   z-index: 100;
 }
 
+.tabbar.hidden {
+  display: none;
+}
+
 .tab-item {
   flex: 1;
   height: 112rpx;
