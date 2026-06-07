@@ -31,10 +31,6 @@
         "type": "folder"
       },
       {
-        "value": "custom-tab-bar",
-        "type": "folder"
-      },
-      {
         "value": ".codegraph",
         "type": "folder"
       },

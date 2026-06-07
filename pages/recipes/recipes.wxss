@@ -1,0 +1,106 @@
+.recipes-page {
+  padding: 32rpx 28rpx 64rpx;
+}
+
+.coming-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 32rpx 40rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(180deg, #ffffff 0%, var(--cream-surface, #fffef8) 100%);
+  border: 2rpx solid var(--cream-line, #eadbc4);
+  box-shadow: var(--shadow-soft, 0 10rpx 22rpx rgba(135, 105, 64, 0.08));
+}
+
+.coming-mascot {
+  width: 150rpx;
+  height: 150rpx;
+}
+
+.coming-badge {
+  margin-top: 12rpx;
+  padding: 6rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--brand-mint-deep, #087a49);
+  background: var(--brand-mint-soft, #eaf8ee);
+}
+
+.coming-title {
+  margin-top: 18rpx;
+  font-size: 36rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.coming-desc {
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--text-sub, #6f7c74);
+}
+
+.coming-list {
+  width: 100%;
+  margin-top: 28rpx;
+  padding: 24rpx 22rpx;
+  border-radius: 24rpx;
+  background: var(--cream-bg, #fff6e8);
+}
+
+.coming-item {
+  display: flex;
+  gap: 12rpx;
+  padding: 8rpx 0;
+  font-size: 26rpx;
+  color: var(--text-main, #253730);
+}
+
+.coming-dot {
+  color: var(--brand-mint, #28b978);
+  font-weight: 800;
+}
+
+.settings-card {
+  margin-top: 28rpx;
+  padding: 26rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--cream-surface, #fffef8);
+  border: 2rpx solid var(--cream-line, #eadbc4);
+}
+
+.settings-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.settings-text {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--text-sub, #6f7c74);
+}
+
+.settings-link {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--ice-ink, #1f6d89);
+}
+
+.clear-btn {
+  margin-top: 28rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--coral-deep, #c94238);
+  background: var(--coral-bg, #ffece6);
+}

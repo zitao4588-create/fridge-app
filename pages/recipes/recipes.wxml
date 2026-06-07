@@ -1,0 +1,31 @@
+<view class="page recipes-page">
+  <view class="coming-card">
+    <image class="coming-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
+    <text class="coming-badge">敬请期待</text>
+    <text class="coming-title">智能菜谱生成</text>
+    <text class="coming-desc">后续会根据冰箱里的库存和临期食材，自动推荐能消耗它们的菜谱，敬请期待～</text>
+
+    <view class="coming-list">
+      <view class="coming-item">
+        <text class="coming-dot">·</text>
+        <text>临期食材去化菜谱推荐</text>
+      </view>
+      <view class="coming-item">
+        <text class="coming-dot">·</text>
+        <text>按现有库存匹配「现在能做什么」</text>
+      </view>
+      <view class="coming-item">
+        <text class="coming-dot">·</text>
+        <text>收藏喜欢的菜谱</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="settings-card">
+    <text class="settings-title">隐私与数据</text>
+    <text class="settings-text">冰箱小雷达只保存你录入的食品信息，数据按当前微信账号隔离存储在微信云开发，仅你自己可见，不会收集与库存管理无关的个人信息。</text>
+    <view class="settings-link" bindtap="handleOpenPrivacy">查看隐私保护指引 ›</view>
+  </view>
+
+  <view class="clear-btn" bindtap="handleClearAll">清空全部食品数据</view>
+</view>

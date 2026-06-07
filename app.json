@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/calendar/calendar"
+    "pages/calendar/calendar",
+    "pages/recipes/recipes"
   ],
   "subPackages": [
     {
@@ -34,6 +35,12 @@
         "text": "日历",
         "iconPath": "images/tabbar/calendar.png",
         "selectedIconPath": "images/tabbar/calendar-active.png"
+      },
+      {
+        "pagePath": "pages/recipes/recipes",
+        "text": "菜谱",
+        "iconPath": "images/tabbar/recipe.png",
+        "selectedIconPath": "images/tabbar/recipe-active.png"
       }
     ]
   },

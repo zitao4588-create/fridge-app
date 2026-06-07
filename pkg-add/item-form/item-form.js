@@ -1,6 +1,5 @@
 const itemService = require('../../services/itemService')
 const parseService = require('../../services/parseService')
-const zoneConfigService = require('../../services/zoneConfigService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
@@ -111,29 +110,17 @@ Page({
     }
 
     this.setData({ form, smartRecommendEnabled: options.smartRecommend === '1' })
-    this.loadLocationOptions(form)
+    this.applyRecommendation(form)
   },
 
-  loadLocationOptions(form = this.data.form) {
-    return zoneConfigService.getZoneConfig().then((config) => {
-      const locationOptions = zoneConfigService.getEnabledStorageLocationOptions(
-        config.zones,
-      )
-      const storageLocation = getSupportedStorageLocation(
-        form.storageLocation,
-        locationOptions,
-      )
-      const nextForm = { ...form, storageLocation }
+  applyRecommendation(form = this.data.form) {
+    const locationOptions = STORAGE_LOCATION_OPTIONS
+    const storageLocation = getSupportedStorageLocation(form.storageLocation, locationOptions)
+    const nextForm = { ...form, storageLocation }
 
-      this.setData({
-        form: nextForm,
-        locationOptions,
-        ...buildRecommendationState(
-          nextForm,
-          this.data.smartRecommendEnabled,
-          locationOptions,
-        ),
-      })
+    this.setData({
+      form: nextForm,
+      ...buildRecommendationState(nextForm, this.data.smartRecommendEnabled, locationOptions),
     })
   },
 
@@ -154,7 +141,7 @@ Page({
           form.productionDate && form.shelfLifeDays ? 'production' : 'expire'
 
         this.setData({ form, dateMode, datePickerTarget: dateMode })
-        this.loadLocationOptions(form)
+        this.applyRecommendation(form)
       })
       .catch(() => {
         wx.hideLoading()
