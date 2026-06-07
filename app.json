@@ -1,11 +1,7 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/quick-add/quick-add",
-    "pages/calendar/calendar",
-    "pages/parse-confirm/parse-confirm",
-    "pages/batch-parse-confirm/batch-parse-confirm",
-    "pages/profile/profile"
+    "pages/calendar/calendar"
   ],
   "subPackages": [
     {
