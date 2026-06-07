@@ -1,0 +1,45 @@
+/*
+ * TDesign 主题层：把组件库的默认（蓝色/中性）观感对接到「冰箱小雷达」品牌色，
+ * 实现「混合策略」——TDesign 负责功能原语，配色仍是奶油 + 薄荷绿的轻生活化调性。
+ * 仅覆盖 CSS 变量，不改组件结构；颜色源与 styles/tokens.wxss 保持一致。
+ */
+page {
+  /* 主色：薄荷绿 */
+  --td-brand-color: #28b978;
+  --td-brand-color-light: #eaf8ee;
+  --td-brand-color-focus: #cdeede;
+  --td-brand-color-disabled: #a6e3c6;
+  --td-brand-color-hover: #34c785;
+  --td-brand-color-active: #087a49;
+
+  /* 语义色：临期=蜂蜜黄，过期/危险=珊瑚红，成功=薄荷绿 */
+  --td-success-color: #28b978;
+  --td-warning-color: #ffb23e;
+  --td-error-color: #f36c5b;
+
+  /* 文字 */
+  --td-text-color-primary: #253730;
+  --td-text-color-secondary: #6f7c74;
+  --td-text-color-placeholder: #9aa9a1;
+  --td-text-color-disabled: #c2ccc7;
+  --td-text-color-anti: #ffffff;
+
+  /* 背景：页面奶油底，容器近白 */
+  --td-bg-color-page: #fff6e8;
+  --td-bg-color-container: #fffef8;
+  --td-bg-color-secondarycontainer: #fffaf0;
+  --td-bg-color-component: #f3ece0;
+
+  /* 圆角：偏圆润，呼应轻量趣味定位 */
+  --td-radius-small: 12rpx;
+  --td-radius-default: 18rpx;
+  --td-radius-medium: 24rpx;
+  --td-radius-large: 32rpx;
+  --td-radius-extraLarge: 40rpx;
+
+  /* 描边 / 分割线：用奶油色系，避免突兀深灰 */
+  --td-component-stroke: rgba(234, 219, 196, 0.7);
+  --td-component-border: rgba(234, 219, 196, 0.7);
+  --td-border-level-1-color: rgba(234, 219, 196, 0.7);
+  --td-border-level-2-color: rgba(234, 219, 196, 0.9);
+}

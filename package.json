@@ -1,0 +1,18 @@
+{
+  "name": "prelaunch-fixes",
+  "version": "1.0.0",
+  "description": "冰箱小雷达是一个微信小程序，用来管理家庭冰箱中的食品和饮料库存。它帮助用户记录食材、查看存放分区、跟踪保质期，并提醒临期和过期食材。（AI 菜谱、拍照识别等能力已在代码中预留，当前阶段默认收起。）",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tdesign-miniprogram": "^1.15.1"
+  }
+}
