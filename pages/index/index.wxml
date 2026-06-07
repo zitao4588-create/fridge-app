@@ -25,10 +25,8 @@
       <view class="zone-head">
         <view class="zone-title-wrap">
           <text class="zone-icon">{{zone.icon}}</text>
-          <view class="zone-title-text">
-            <text class="zone-title">{{zone.name}}</text>
-            <text class="zone-temp">{{zone.temperature}}</text>
-          </view>
+          <text class="zone-title">{{zone.name}}</text>
+          <text class="zone-temp">{{zone.temperature}}</text>
         </view>
         <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd">＋</view>
       </view>

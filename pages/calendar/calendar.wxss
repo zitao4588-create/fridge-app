@@ -1,5 +1,5 @@
 .calendar-page {
-  padding: 24rpx 28rpx calc(170rpx + env(safe-area-inset-bottom));
+  padding: 24rpx 28rpx calc(140rpx + env(safe-area-inset-bottom));
 }
 
 /* 月历卡片 */
@@ -65,15 +65,19 @@
 }
 
 .day-cell {
-  height: 88rpx;
+  position: relative;
+  height: 92rpx;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
 }
 
 .day-number {
+  width: 58rpx;
+  height: 58rpx;
+  line-height: 58rpx;
+  text-align: center;
+  border-radius: 50%;
   font-size: 26rpx;
   color: var(--text-main, #253730);
 }
@@ -83,28 +87,26 @@
 }
 
 .day-cell.today .day-number {
-  width: 58rpx;
-  height: 58rpx;
   line-height: 54rpx;
-  border-radius: 50%;
   border: 2rpx solid var(--brand-mint, #28b978);
   color: var(--brand-mint-deep, #087a49);
   font-weight: 700;
 }
 
 .day-cell.selected .day-number {
-  width: 58rpx;
-  height: 58rpx;
-  line-height: 58rpx;
-  border-radius: 50%;
   border: none;
+  line-height: 58rpx;
   color: #ffffff;
   background: var(--brand-mint, #28b978);
 }
 
 .day-dot {
-  width: 10rpx;
-  height: 10rpx;
+  position: absolute;
+  left: 50%;
+  bottom: 6rpx;
+  transform: translateX(-50%);
+  width: 8rpx;
+  height: 8rpx;
   border-radius: 50%;
   background: var(--honey, #ffb23e);
 }
