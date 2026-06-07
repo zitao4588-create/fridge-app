@@ -1,5 +1,5 @@
 .index-page {
-  padding: 28rpx 28rpx 64rpx;
+  padding: 28rpx 28rpx calc(170rpx + env(safe-area-inset-bottom));
 }
 
 /* 吉祥物气泡 */
@@ -82,15 +82,15 @@
 }
 
 .search-btn {
+  width: 80rpx;
+  height: 80rpx;
   display: flex;
   align-items: center;
-  padding: 0 36rpx;
-  border-radius: 999rpx;
-  font-size: 26rpx;
-  font-weight: 800;
-  color: #ffffff;
-  background: var(--grad-mint);
-  box-shadow: var(--shadow-mint), var(--hi-inset);
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 34rpx;
+  background: #ffffff;
+  box-shadow: var(--shadow-1);
 }
 
 /* 分区卡片 */
@@ -168,7 +168,7 @@
   font-size: 42rpx;
   color: #ffffff;
   background: var(--grad-mint);
-  box-shadow: var(--shadow-mint), var(--hi-inset);
+  box-shadow: var(--shadow-1), var(--hi-inset);
 }
 
 /* 分区彩色身份 */

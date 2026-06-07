@@ -1,6 +1,12 @@
 const itemService = require('../../services/itemService')
 
 Page({
+  onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 2 })
+    }
+  },
+
   handleOpenPrivacy() {
     if (wx.openPrivacyContract) {
       wx.openPrivacyContract({

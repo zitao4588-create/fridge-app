@@ -19,7 +19,7 @@
         wx:key="date"
         data-date="{{item.date}}"
         bindtap="handleSelectDay"
-        class="day-cell {{item.inCurrentMonth ? '' : 'muted'}} {{item.selected ? 'selected' : ''}}"
+        class="day-cell {{item.inCurrentMonth ? '' : 'muted'}} {{item.selected ? 'selected' : ''}} {{item.isToday ? 'today' : ''}}"
       >
         <text class="day-number">{{item.day}}</text>
         <text wx:if="{{item.hasEvents}}" class="day-dot"></text>

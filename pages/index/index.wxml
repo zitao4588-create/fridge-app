@@ -17,7 +17,7 @@
       bindinput="handleSearchInput"
       bindconfirm="handleSearchConfirm"
     />
-    <view class="search-btn" bindtap="handleSearchConfirm">搜索</view>
+    <view class="search-btn" bindtap="handleSearchConfirm">🔍</view>
   </view>
 
   <view class="zone-list">

@@ -72,6 +72,9 @@ Page({
   },
 
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 1 })
+    }
     this.loadItems()
   },
 
@@ -109,9 +112,17 @@ Page({
   },
 
   renderCalendar(events = this.data.events) {
+    const today = getTodayString()
+    const days = buildMonthDays(
+      this.data.year,
+      this.data.monthIndex,
+      events,
+      this.data.selectedDate,
+    ).map((day) => ({ ...day, isToday: day.date === today }))
+
     this.setData({
       monthTitle: getMonthTitle(this.data.year, this.data.monthIndex),
-      days: buildMonthDays(this.data.year, this.data.monthIndex, events, this.data.selectedDate),
+      days,
     })
   },
 

@@ -1,5 +1,5 @@
 .recipes-page {
-  padding: 32rpx 28rpx 64rpx;
+  padding: 32rpx 28rpx calc(170rpx + env(safe-area-inset-bottom));
 }
 
 .coming-card {
