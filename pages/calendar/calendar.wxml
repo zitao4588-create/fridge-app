@@ -27,35 +27,6 @@
     </view>
   </view>
 
-  <view class="radar-card">
-    <image class="radar-spark" src="/images/decor/sparkle.png" mode="aspectFit" />
-    <view class="radar-head">
-      <image class="radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
-      <text class="radar-title">开饭雷达检测报告</text>
-      <text class="radar-badge">今日扫描完成</text>
-    </view>
-
-    <view class="radar-dial">
-      <view class="radar-ring" style="background: conic-gradient(#3aafd8 {{radar.score}}%, #e3eef2 {{radar.score}}%);">
-        <view class="radar-core">
-          <text class="radar-core-label">可开饭指数</text>
-          <text class="radar-core-score">{{radar.score}}<text class="radar-core-pct">%</text></text>
-        </view>
-      </view>
-    </view>
-
-    <view class="radar-level {{radar.levelClass}}">{{radar.levelTitle}}</view>
-    <text class="radar-explain">{{radar.explanation}}</text>
-
-    <view class="radar-priority">
-      <text class="radar-priority-label">⭐ 今日优先用掉</text>
-      <view wx:if="{{radar.priorityItems.length > 0}}" class="radar-chips">
-        <text class="radar-chip" wx:for="{{radar.priorityItems}}" wx:key="_id">{{item.name}}</text>
-      </view>
-      <text wx:else class="radar-priority-empty">暂无临期压力，按心情安排一顿就好～</text>
-    </view>
-  </view>
-
   <view class="stat-row">
     <view class="stat-card" data-type="total" bindtap="handleStatsTap">
       <text class="stat-ic">🧺</text>
@@ -97,6 +68,50 @@
         <view class="row-btn" data-id="{{item._id}}" bindtap="handleEdit">编辑</view>
         <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="handleDelete">删除</view>
       </view>
+    </view>
+  </view>
+
+  <view class="meal-radar-card card">
+    <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" />
+
+    <view class="meal-radar-head">
+      <view class="meal-radar-title-wrap">
+        <image class="meal-radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
+        <view class="meal-radar-title-block">
+          <text class="meal-radar-title">开饭雷达检测报告</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="meal-radar-console">
+      <view class="meal-radar-screen {{radar.levelClass}}">
+        <view class="radar-orbit orbit-one"></view>
+        <view class="radar-orbit orbit-two"></view>
+        <view class="radar-orbit orbit-three"></view>
+        <view class="radar-sweep"></view>
+        <view class="radar-core">
+          <text class="radar-score-label">可开饭指数</text>
+          <text class="radar-score-value">{{radar.score}}</text>
+        </view>
+      </view>
+
+      <view class="meal-radar-explain">
+        <text class="meal-radar-verdict {{radar.levelClass}}">{{radar.levelTitle}}</text>
+        <text class="meal-radar-explain-main">{{radar.explanation}}</text>
+        <view class="meal-radar-ranges">
+          <text>高 80-99：适合开饭</text>
+          <text>中 50-79：建议补 1-2 样</text>
+          <text>低 0-49：先处理风险或补货</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="meal-radar-priority {{radar.priorityItems.length > 0 ? '' : 'empty'}}">
+      <text class="meal-radar-priority-label">今日优先用掉</text>
+      <view wx:if="{{radar.priorityItems.length > 0}}" class="meal-radar-priority-chips">
+        <text wx:for="{{radar.priorityItems}}" wx:key="_id">{{item.name}}</text>
+      </view>
+      <text wx:else class="meal-radar-priority-empty">暂无临期压力，可以按心情安排一顿。</text>
     </view>
   </view>
 </view>
