@@ -27,6 +27,35 @@
     </view>
   </view>
 
+  <view class="radar-card">
+    <image class="radar-spark" src="/images/decor/sparkle.png" mode="aspectFit" />
+    <view class="radar-head">
+      <image class="radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
+      <text class="radar-title">开饭雷达检测报告</text>
+      <text class="radar-badge">今日扫描完成</text>
+    </view>
+
+    <view class="radar-dial">
+      <view class="radar-ring" style="background: conic-gradient(#3aafd8 {{radar.score}}%, #e3eef2 {{radar.score}}%);">
+        <view class="radar-core">
+          <text class="radar-core-label">可开饭指数</text>
+          <text class="radar-core-score">{{radar.score}}<text class="radar-core-pct">%</text></text>
+        </view>
+      </view>
+    </view>
+
+    <view class="radar-level {{radar.levelClass}}">{{radar.levelTitle}}</view>
+    <text class="radar-explain">{{radar.explanation}}</text>
+
+    <view class="radar-priority">
+      <text class="radar-priority-label">⭐ 今日优先用掉</text>
+      <view wx:if="{{radar.priorityItems.length > 0}}" class="radar-chips">
+        <text class="radar-chip" wx:for="{{radar.priorityItems}}" wx:key="_id">{{item.name}}</text>
+      </view>
+      <text wx:else class="radar-priority-empty">暂无临期压力，按心情安排一顿就好～</text>
+    </view>
+  </view>
+
   <view class="stat-row">
     <view class="stat-card" data-type="total" bindtap="handleStatsTap">
       <text class="stat-ic">🧺</text>
