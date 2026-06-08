@@ -244,22 +244,6 @@ Page({
     })
   },
 
-  handleZoneStatTap(event) {
-    const { key, filter } = event.currentTarget.dataset
-    const zone = getZoneDefinition(key)
-    if (!zone) return
-
-    const labels = { total: '全部', expiring: '临期', overdue: '已过期' }
-    this.openListPanel({
-      kind: 'zone',
-      zoneKey: key,
-      filter: filter || 'total',
-      title: `${zone.name} · ${labels[filter] || labels.total}食品`,
-      subtitle: zone.name,
-      emptyText: '这个分区暂时没有对应食材',
-    })
-  },
-
   handleSearchInput(event) {
     this.setData({ searchKeyword: event.detail.value })
   },

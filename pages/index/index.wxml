@@ -32,15 +32,15 @@
       </view>
 
       <view class="zone-stats">
-        <view class="zone-stat" data-key="{{zone.key}}" data-filter="total" catchtap="handleZoneStatTap">
+        <view class="zone-stat">
           <text class="zone-stat-num">{{zone.itemCount}}</text>
           <text class="zone-stat-name">库存</text>
         </view>
-        <view class="zone-stat warning" data-key="{{zone.key}}" data-filter="expiring" catchtap="handleZoneStatTap">
+        <view class="zone-stat warning">
           <text class="zone-stat-num">{{zone.expiring}}</text>
           <text class="zone-stat-name">临期</text>
         </view>
-        <view class="zone-stat danger" data-key="{{zone.key}}" data-filter="overdue" catchtap="handleZoneStatTap">
+        <view class="zone-stat danger">
           <text class="zone-stat-num">{{zone.overdue}}</text>
           <text class="zone-stat-name">过期</text>
         </view>
@@ -80,7 +80,7 @@
           <text class="group-name">{{group.category}}</text>
           <view class="list-row" wx:for="{{group.items}}" wx:for-item="food" wx:key="_id">
             <view class="list-main">
-              <text class="list-name">{{food.name}} · {{food.amountText}}</text>
+              <text class="list-name">{{food.name}}</text>
               <text class="list-meta">到期 {{food.expireDateText}}</text>
             </view>
             <text class="tag-inline {{food.bucket}}">{{food.statusHint}}</text>
@@ -101,10 +101,12 @@
     <image class="detail-img" src="{{selectedFood.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" />
     <text class="detail-name">{{selectedFood.name}}</text>
     <view class="detail-meta">
-      <text>数量：{{selectedFood.amountText}}</text>
-      <text>分区：{{selectedFood.storageLocation}}</text>
       <text>到期：{{selectedFood.expireDateText}}</text>
       <text class="tag-inline {{selectedFood.bucket}}">{{selectedFood.statusHint}}</text>
+    </view>
+    <view wx:if="{{selectedFood.note}}" class="detail-note">
+      <text class="detail-note-label">备注</text>
+      <text class="detail-note-text">{{selectedFood.note}}</text>
     </view>
     <view class="detail-actions">
       <view class="detail-btn" bindtap="handleEdit">编辑</view>

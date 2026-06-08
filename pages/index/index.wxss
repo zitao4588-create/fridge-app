@@ -507,9 +507,33 @@
   flex-direction: column;
   align-items: center;
   gap: 10rpx;
-  margin: 20rpx 0 28rpx;
+  margin: 20rpx 0 24rpx;
   font-size: 26rpx;
   color: var(--text-sub, #6f7c74);
+}
+
+.detail-note {
+  width: 100%;
+  margin-bottom: 28rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 20rpx;
+  background: var(--cream-bg, #fff6e8);
+  text-align: left;
+}
+
+.detail-note-label {
+  display: block;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--text-sub, #6f7c74);
+}
+
+.detail-note-text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--text-main, #253730);
 }
 
 .detail-actions {

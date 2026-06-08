@@ -60,7 +60,7 @@
   <view wx:else>
     <view class="list-row" wx:for="{{selectedItems}}" wx:key="_id">
       <view class="list-main">
-        <text class="list-name">{{item.name}} · {{item.amountText}}</text>
+        <text class="list-name">{{item.name}}</text>
         <text class="list-meta">{{item.category}} · {{item.storageLocation}}</text>
       </view>
       <text class="tag-inline {{item.bucket}}">{{item.statusLabel}}</text>
@@ -130,7 +130,7 @@
       <view wx:else>
         <view class="list-row" wx:for="{{listPanelItems}}" wx:key="_id">
           <view class="list-main">
-            <text class="list-name">{{item.name}} · {{item.amountText}}</text>
+            <text class="list-name">{{item.name}}</text>
             <text class="list-meta">到期 {{item.expireDateText}} · {{item.storageLocation}}</text>
           </view>
           <text class="tag-inline {{item.bucket}}">{{item.statusHint}}</text>
