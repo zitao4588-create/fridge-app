@@ -1,9 +1,9 @@
 <view class="page recipes-page">
   <view class="coming-card">
-    <image class="coming-spark spark-a" src="/images/decor/sparkle.png" mode="aspectFit" />
-    <image class="coming-spark spark-b" src="/images/decor/sparkle.png" mode="aspectFit" />
-    <image class="coming-leaf" src="/images/decor/leaf.png" mode="aspectFit" />
-    <image class="coming-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
+    <image class="coming-spark spark-a" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
+    <image class="coming-spark spark-b" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
+    <image class="coming-leaf" src="/images/decor/leaf.png" mode="aspectFit" aria-hidden="true" />
+    <image class="coming-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" aria-hidden="true" />
     <text class="coming-badge">敬请期待</text>
     <text class="coming-title">智能菜谱生成</text>
     <text class="coming-desc">上线后会结合你冰箱里的库存，帮你想好「今天吃什么」。</text>
@@ -27,6 +27,6 @@
   <view class="settings-card">
     <text class="settings-title">隐私与数据</text>
     <text class="settings-text">冰箱小雷达只保存你录入的食品信息，数据按当前微信账号隔离存储在微信云开发，仅你自己可见，不会收集与库存管理无关的个人信息。</text>
-    <view class="settings-link" bindtap="handleOpenPrivacy">查看隐私保护指引 ›</view>
+    <view class="settings-link" bindtap="handleOpenPrivacy" aria-role="button">查看隐私保护指引 ›</view>
   </view>
 </view>

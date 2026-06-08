@@ -21,11 +21,11 @@ page {
   --honey-soft: #FFE7B2;
   --honey-mid: #FFC76B;
   --honey: #FFB23E;
-  --honey-deep: #B96A12;
+  --honey-deep: #9a5a0e;   /* a11y：原 #B96A12 在 honey-bg 仅 3.77:1 → 5.0:1 */
 
   --coral-bg: #FFECE6;
   --coral: #F36C5B;
-  --coral-deep: #C94238;
+  --coral-deep: #b3392f;   /* a11y：原 #C94238 在 coral-bg 仅 4.26:1 → 5.2:1 */
 
   /* Brand mint */
   --mint-50: var(--brand-mint-soft);
@@ -66,7 +66,7 @@ page {
 
   /* Text */
   --text-main: #253730;
-  --text-sub: #6f7c74;
+  --text-sub: #5c6a62;     /* a11y：原 #6f7c74 仅 4.0-4.4:1 → 提至 ≥5.3:1 */
   --text-light: #647264;   /* 提升空态/浅字对比（原 #9aa9a1 不达标） */
   --text-inverse: #ffffff;
 

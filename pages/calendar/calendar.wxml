@@ -1,12 +1,12 @@
 <view class="page calendar-page">
   <view class="cal-card">
     <view class="month-row">
-      <view class="month-nav" bindtap="handlePrevMonth">‹</view>
+      <view class="month-nav" bindtap="handlePrevMonth" aria-role="button" aria-label="上个月">‹</view>
       <view class="month-center">
         <text class="month-title">{{monthTitle}}</text>
-        <text class="today-btn" bindtap="handleToday">回到今天</text>
+        <text class="today-btn" bindtap="handleToday" aria-role="button">回到今天</text>
       </view>
-      <view class="month-nav" bindtap="handleNextMonth">›</view>
+      <view class="month-nav" bindtap="handleNextMonth" aria-role="button" aria-label="下个月">›</view>
     </view>
 
     <view class="week-grid">
@@ -19,30 +19,32 @@
         wx:key="date"
         data-date="{{item.date}}"
         bindtap="handleSelectDay"
+        aria-role="button"
+        aria-label="{{item.day}}日{{item.hasEvents ? '，有食材到期' : ''}}"
         class="day-cell {{item.inCurrentMonth ? '' : 'muted'}} {{item.selected ? 'selected' : ''}} {{item.isToday ? 'today' : ''}}"
       >
         <text class="day-number">{{item.day}}</text>
-        <text wx:if="{{item.hasEvents}}" class="day-dot"></text>
+        <text wx:if="{{item.hasEvents}}" class="day-dot" aria-hidden="true"></text>
       </view>
     </view>
   </view>
 
   <view class="stat-row">
-    <view class="stat-card" data-type="total" bindtap="handleStatsTap">
+    <view class="stat-card" data-type="total" bindtap="handleStatsTap" aria-role="button">
       <text class="stat-ic">🧺</text>
       <view class="stat-col">
         <text class="stat-num">{{stats.total}}</text>
         <text class="stat-name">总库存</text>
       </view>
     </view>
-    <view class="stat-card warning" data-type="expiring" bindtap="handleStatsTap">
+    <view class="stat-card warning" data-type="expiring" bindtap="handleStatsTap" aria-role="button">
       <text class="stat-ic">⏰</text>
       <view class="stat-col">
         <text class="stat-num">{{stats.expiring}}</text>
         <text class="stat-name">临期</text>
       </view>
     </view>
-    <view class="stat-card danger" data-type="overdue" bindtap="handleStatsTap">
+    <view class="stat-card danger" data-type="overdue" bindtap="handleStatsTap" aria-role="button">
       <text class="stat-ic">⚠️</text>
       <view class="stat-col">
         <text class="stat-num">{{stats.overdue}}</text>
@@ -65,18 +67,18 @@
       </view>
       <text class="tag-inline {{item.bucket}}">{{item.statusLabel}}</text>
       <view class="row-actions">
-        <view class="row-btn" data-id="{{item._id}}" bindtap="handleEdit">编辑</view>
-        <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="handleDelete">删除</view>
+        <view class="row-btn" data-id="{{item._id}}" bindtap="handleEdit" aria-role="button">编辑</view>
+        <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="handleDelete" aria-role="button">删除</view>
       </view>
     </view>
   </view>
 
   <view class="meal-radar-card card">
-    <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" />
+    <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
 
     <view class="meal-radar-head">
       <view class="meal-radar-title-wrap">
-        <image class="meal-radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" />
+        <image class="meal-radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" aria-hidden="true" />
         <view class="meal-radar-title-block">
           <text class="meal-radar-title">开饭雷达检测报告</text>
         </view>
@@ -123,7 +125,7 @@
         <text class="sheet-title">{{listPanelTitle}}</text>
         <text class="sheet-sub">{{listPanelSubtitle}}</text>
       </view>
-      <view class="sheet-close" bindtap="handleCloseListPanel">关闭</view>
+      <view class="sheet-close" bindtap="handleCloseListPanel" aria-role="button">关闭</view>
     </view>
     <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
       <view wx:if="{{listPanelEmpty}}" class="sel-empty">{{listPanelEmpty}}</view>
@@ -135,8 +137,8 @@
           </view>
           <text class="tag-inline {{item.bucket}}">{{item.statusHint}}</text>
           <view class="row-actions">
-            <view class="row-btn" data-id="{{item._id}}" catchtap="handleEdit">编辑</view>
-            <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" catchtap="handleDelete">删除</view>
+            <view class="row-btn" data-id="{{item._id}}" catchtap="handleEdit" aria-role="button">编辑</view>
+            <view class="row-btn danger" data-id="{{item._id}}" data-name="{{item.name}}" catchtap="handleDelete" aria-role="button">删除</view>
           </view>
         </view>
       </view>

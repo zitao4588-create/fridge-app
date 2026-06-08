@@ -6,8 +6,10 @@
     data-path="{{item.pagePath}}"
     data-index="{{index}}"
     bindtap="switchTab"
+    aria-role="button"
+    aria-label="{{item.text}}{{selected === index ? '，已选中' : ''}}"
   >
-    <image class="tab-ic" src="{{selected === index ? item.active : item.icon}}" mode="aspectFit" />
+    <image class="tab-ic" src="{{selected === index ? item.active : item.icon}}" mode="aspectFit" aria-hidden="true" />
     <text class="tab-txt">{{item.text}}</text>
   </view>
 </view>

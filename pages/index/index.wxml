@@ -1,7 +1,7 @@
 <view class="page index-page">
   <view class="hero">
-    <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" />
-    <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" />
+    <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
+    <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" aria-hidden="true" />
     <view class="hero-copy">
       <text class="hero-title">{{homeMood.title}}</text>
       <text class="hero-desc">{{homeMood.desc}}</text>
@@ -9,10 +9,11 @@
   </view>
 
   <view class="search-bar">
-    <text class="search-ic" bindtap="handleSearchConfirm">🔍</text>
+    <text class="search-ic" bindtap="handleSearchConfirm" aria-role="button" aria-label="搜索">🔍</text>
     <input
       class="search-input"
       placeholder="搜索食材名称"
+      aria-label="搜索食材名称"
       confirm-type="search"
       value="{{searchKeyword}}"
       bindinput="handleSearchInput"
@@ -28,8 +29,8 @@
           <text class="zone-title">{{zone.name}}</text>
           <text class="zone-temp">{{zone.temperature}}</text>
         </view>
-        <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd">
-          <text class="zone-add-ic">＋</text>
+        <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd" aria-role="button" aria-label="加食材">
+          <text class="zone-add-ic" aria-hidden="true">＋</text>
           <text class="zone-add-txt">加食材</text>
         </view>
       </view>
@@ -44,8 +45,8 @@
 
       <scroll-view wx:if="{{zone.items.length > 0}}" class="food-scroll" scroll-x enhanced show-scrollbar="{{false}}">
         <view class="food-track">
-          <view class="food-chip" wx:for="{{zone.items}}" wx:for-item="food" wx:key="_id" data-id="{{food._id}}" catchtap="handleFoodTap">
-            <image class="food-img" src="{{food.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" />
+          <view class="food-chip" wx:for="{{zone.items}}" wx:for-item="food" wx:key="_id" data-id="{{food._id}}" catchtap="handleFoodTap" aria-role="button">
+            <image class="food-img" src="{{food.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" aria-hidden="true" />
             <text class="food-name">{{food.name}}</text>
             <text class="food-tag {{food.bucket}}">{{food.statusLabel}}</text>
           </view>
@@ -58,7 +59,7 @@
 
   <view class="danger-zone">
     <text class="danger-tip">清空后所有食品记录将无法恢复</text>
-    <view class="danger-clear" bindtap="handleClearAll">清空全部食品数据</view>
+    <view class="danger-clear" bindtap="handleClearAll" aria-role="button">清空全部食品数据</view>
   </view>
 
   <view wx:if="{{noticeMessage}}" class="notice">{{noticeMessage}}</view>
@@ -72,7 +73,7 @@
         <text class="sheet-title">{{listPanelTitle}}</text>
         <text class="sheet-sub">{{listPanelSubtitle}}</text>
       </view>
-      <view class="sheet-close" bindtap="handleCloseListPanel">关闭</view>
+      <view class="sheet-close" bindtap="handleCloseListPanel" aria-role="button">关闭</view>
     </view>
     <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
       <view wx:if="{{listPanelEmpty}}" class="sheet-empty">{{listPanelEmpty}}</view>
@@ -86,8 +87,8 @@
             </view>
             <text class="tag-inline {{food.bucket}}">{{food.statusHint}}</text>
             <view class="row-actions">
-              <view class="row-btn" data-id="{{food._id}}" catchtap="handleEdit">编辑</view>
-              <view class="row-btn danger" data-id="{{food._id}}" data-name="{{food.name}}" catchtap="handleDelete">删除</view>
+              <view class="row-btn" data-id="{{food._id}}" catchtap="handleEdit" aria-role="button">编辑</view>
+              <view class="row-btn danger" data-id="{{food._id}}" data-name="{{food.name}}" catchtap="handleDelete" aria-role="button">删除</view>
             </view>
           </view>
         </view>
@@ -99,7 +100,7 @@
 <!-- 食品详情 -->
 <view wx:if="{{foodDetailVisible}}" class="mask" bindtap="handleCloseFoodDetail">
   <view class="sheet detail" catchtap="noop">
-    <image class="detail-img" src="{{selectedFood.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" />
+    <image class="detail-img" src="{{selectedFood.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" aria-hidden="true" />
     <text class="detail-name">{{selectedFood.name}}</text>
     <view class="detail-meta">
       <text>到期：{{selectedFood.expireDateText}}</text>
@@ -110,8 +111,8 @@
       <text class="detail-note-text">{{selectedFood.note}}</text>
     </view>
     <view class="detail-actions">
-      <view class="detail-btn" bindtap="handleEdit">编辑</view>
-      <view class="detail-btn danger" bindtap="handleDelete">删除</view>
+      <view class="detail-btn" bindtap="handleEdit" aria-role="button">编辑</view>
+      <view class="detail-btn danger" bindtap="handleDelete" aria-role="button">删除</view>
     </view>
   </view>
 </view>

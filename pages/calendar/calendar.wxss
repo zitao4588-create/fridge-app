@@ -17,9 +17,9 @@
 }
 
 .month-nav {
-  width: 64rpx;
-  height: 64rpx;
-  line-height: 60rpx;
+  width: 80rpx;
+  height: 80rpx;
+  line-height: 76rpx;
   text-align: center;
   border-radius: 50%;
   font-size: 40rpx;
@@ -42,7 +42,11 @@
 }
 
 .today-btn {
-  padding: 6rpx 18rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56rpx;
+  padding: 0 18rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 700;
@@ -87,7 +91,7 @@
 }
 
 .day-cell.muted .day-number {
-  color: #cfd8d3;
+  color: #828d87;
 }
 
 .day-cell.today .day-number {
@@ -172,8 +176,8 @@
 }
 
 .stat-name {
-  font-size: 20rpx;
-  color: var(--text-sub, #6f7c74);
+  font-size: 22rpx;
+  color: var(--text-sub, #5c6a62);
 }
 
 /* 选中日 */
@@ -238,7 +242,7 @@
 .tag-inline {
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 700;
 }
 
@@ -263,7 +267,11 @@
 }
 
 .row-btn {
-  padding: 14rpx 20rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64rpx;
+  padding: 0 22rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 700;
@@ -330,10 +338,14 @@
 }
 
 .sheet-close {
-  padding: 14rpx 26rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64rpx;
+  padding: 0 26rpx;
   border-radius: 999rpx;
   font-size: 24rpx;
-  color: var(--text-sub, #6f7c74);
+  color: var(--text-sub, #5c6a62);
   background: #ffffff;
   box-shadow: var(--shadow-1);
 }
@@ -516,6 +528,11 @@
   to { transform: rotate(360deg); }
 }
 
+/* a11y：尊重「减少动态效果」系统偏好（WeChat 支持度有限，best-effort） */
+@media (prefers-reduced-motion: reduce) {
+  .radar-sweep { animation: none; }
+}
+
 .meal-radar-explain {
   min-width: 0;
   padding: 20rpx;
@@ -548,8 +565,8 @@
   padding: 8rpx 12rpx;
   border-radius: 999rpx;
   background: rgba(245, 252, 255, 0.92);
-  color: var(--text-sub, #6d7e76);
-  font-size: 20rpx;
+  color: var(--text-sub, #5c6a62);
+  font-size: 22rpx;
   font-weight: 800;
   line-height: 1.25;
   opacity: 0.5;
