@@ -1,21 +1,25 @@
 Component({
   data: {
     selected: 0,
+    hidden: false,
     list: [
       {
-        key: 'fridge',
-        path: '/pages/index/index',
+        pagePath: '/pages/index/index',
         text: '冰箱',
+        icon: '/images/tabbar/fridge.png',
+        active: '/images/tabbar/fridge-active.png',
       },
       {
-        key: 'calendar',
-        path: '/pages/calendar/calendar',
+        pagePath: '/pages/calendar/calendar',
         text: '日历',
+        icon: '/images/tabbar/calendar.png',
+        active: '/images/tabbar/calendar-active.png',
       },
       {
-        key: 'recipe',
-        path: '/pages/recipes/recipes',
+        pagePath: '/pages/recipes/recipes',
         text: '菜谱',
+        icon: '/images/tabbar/recipe.png',
+        active: '/images/tabbar/recipe-active.png',
       },
     ],
   },
@@ -28,9 +32,7 @@ Component({
         return
       }
 
-      wx.switchTab({
-        url: path,
-      })
+      wx.switchTab({ url: path })
     },
   },
 })

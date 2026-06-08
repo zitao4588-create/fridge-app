@@ -1,18 +1,15 @@
-<view class="fridge-tabbar">
-  <view class="fridge-tabbar-dock">
-    <view
-      class="tab-item {{selected === index ? 'active' : ''}}"
-      wx:for="{{list}}"
-      wx:key="key"
-      data-path="{{item.path}}"
-      data-index="{{index}}"
-      bindtap="switchTab"
-      hover-class="tab-item-pressed"
-    >
-      <view class="tab-icon {{item.key}}">
-        <view class="tab-icon-mark"></view>
-      </view>
-      <text class="tab-label">{{item.text}}</text>
-    </view>
+<view class="tabbar {{hidden ? 'hidden' : ''}}">
+  <view
+    class="tab-item {{selected === index ? 'on' : ''}}"
+    wx:for="{{list}}"
+    wx:key="pagePath"
+    data-path="{{item.pagePath}}"
+    data-index="{{index}}"
+    bindtap="switchTab"
+    aria-role="button"
+    aria-label="{{item.text}}{{selected === index ? '，已选中' : ''}}"
+  >
+    <image class="tab-ic" src="{{selected === index ? item.active : item.icon}}" mode="aspectFit" aria-hidden="true" />
+    <text class="tab-txt">{{item.text}}</text>
   </view>
 </view>

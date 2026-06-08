@@ -2339,3 +2339,25 @@
 - 已 push 到 GitHub `origin/main`，远端从 `fd8ad49` 更新到 `9bf9cef`。
 - 后续 GitHub README、release、issue 模板和开源申请材料，以本地 `main` 为准。
 - 不再把 `/Users/qzt/Developer/Playground/fridge-app` 当作主工作区。
+
+### 食材配图改为「品类共用写实图」+ 删除本地自动生成占位图（2026-06-08）
+
+决策：
+
+- 食材缩略图不再为单个食材配专图，改为按品类 / 食材族群共用一张写实图（`utils/visualAssets.js`）。
+- 取图优先级固定：用户拍照（`source==='photo' && imageFileId`）> 食材名关键词归桶 > 品类兜底 > 通用兜底。
+- 删除本地 PIL 自动生成的占位图（卡通色块），及已无人调用的菜谱配图逻辑 `getRecipeVisual` 与 `images/recipe/` 整目录。
+- `CATEGORY_OPTIONS` 拆旧「肉蛋」为「肉类 / 蛋」，新增「水产 / 豆制品」，旧数据自动兼容。
+
+原因：
+
+- per-食材专图永远补不完、推高主包体积，且旧「肉蛋」类共用 egg 图不符合实际。
+- 菜谱功能已收起，菜谱配图为死代码 / 死资源。
+- 写实图（用户提供批次）观感远好于自动生成色块占位图。
+
+后续影响：
+
+- `images/foods` 35 → 16 张全写实（12 张原批次 + 4 张新生成 default/drink/frozen/seasoning），均 176×176、≤9.8KB（pngquant 压）。
+- 主包约 1.88MB → 1.70MB。
+- 拍照录入接口已预留，未来接入只需给 item 写 `source:'photo'` + `imageFileId`，无需改取图逻辑。
+- 后续补图沿用「提示词生成 + pngquant 压缩」流程。

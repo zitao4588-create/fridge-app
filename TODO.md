@@ -1530,3 +1530,18 @@
 - [x] 将本地 `main` push 到 GitHub `origin/main`。
 - [ ] 如果推送，确认 GitHub README 截图是否正常展示。
 - [ ] 如继续申请 Codex for Open Source，补充真实使用证据和 release 说明。
+
+已完成（2026-06-08 食材图品类治理）：
+
+- [x] `visualAssets.js` 重写为「照片优先 → 关键词归桶 → 品类兜底」，删 per-食材专图表与族群表。
+- [x] 删菜谱配图逻辑 `getRecipeVisual` 及 `images/recipe/`（32 张）。
+- [x] 删 19 张本地自动生成的占位食材图。
+- [x] `CATEGORY_OPTIONS` 拆「肉蛋」为「肉类/蛋」，加「水产/豆制品」，旧数据兼容。
+- [x] 生成并 pngquant 压缩 4 张缺口写实图（通用兜底/饮料/速冻/调料），176×176、≤9.8KB。
+- [x] `project.config.json` 移除 `images/recipe` 的 packOptions.ignore。
+- [x] 归桶 node 自测通过；cli preview 通过，主包 ~1.70MB。
+
+待办（图片治理后续）：
+
+- [ ] 真机确认常见食材缩略图落桶正确、4 张新图清晰。
+- [ ] 如需「猪肉」等更细桶，再补写实图并加关键词。

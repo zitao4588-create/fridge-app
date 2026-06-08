@@ -1,385 +1,118 @@
 <view class="page index-page">
-  <view class="home-dashboard">
-    <view class="home-dashboard-shine"></view>
-    <view class="home-dashboard-head">
-      <view class="home-brand-lockup">
-        <text class="home-brand-name">我的冰箱</text>
-      </view>
-      <view class="zone-config-entry" bindtap="handleOpenZoneConfig">分区管理</view>
-    </view>
-
-    <view class="home-hero">
-      <image class="home-mascot" src="/images/mascot/fridge-happy.png" mode="aspectFit" />
-      <view class="home-speech">
-        <text class="home-speech-title">今天冰箱状态很好～</text>
-        <text class="home-speech-desc">继续保持，别让食材浪费啦！</text>
-      </view>
-    </view>
-
-    <view class="decision-guide">
-      <view class="decision-sign known" bindtap="handleKnownHint">
-        <view class="decision-copy">
-          <text class="decision-title">按分区添加</text>
-          <text class="decision-desc">点分区右上角加号</text>
-        </view>
-        <view class="decision-pointer down">
-          <view class="pointer-line"></view>
-          <view class="pointer-head"></view>
-        </view>
-      </view>
-
-      <view class="decision-sign unknown" bindtap="handleSmartAdd">
-        <view class="decision-copy">
-          <text class="decision-title">智能录入</text>
-          <text class="decision-desc">拍照识别后推荐分区</text>
-        </view>
-        <view class="decision-pointer right">
-          <view class="pointer-line"></view>
-          <view class="pointer-head"></view>
-        </view>
-      </view>
+  <view class="hero">
+    <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
+    <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" aria-hidden="true" />
+    <view class="hero-copy">
+      <text class="hero-title">{{homeMood.title}}</text>
+      <text class="hero-desc">{{homeMood.desc}}</text>
     </view>
   </view>
 
-  <view class="fridge-panel card">
-    <view class="fridge-panel-light"></view>
-    <view class="fridge-panel-hinge"></view>
-
-    <view class="search-card fridge-search-card card">
-      <input
-        class="search-input"
-        placeholder="搜索食材名称"
-        confirm-type="search"
-        value="{{searchKeyword}}"
-        bindinput="handleSearchInput"
-        bindconfirm="handleSearchConfirm"
-      />
-      <view class="search-button" bindtap="handleSearchConfirm">搜索</view>
-    </view>
-
-    <view class="home-zone-list">
-      <view class="fridge-shell-backlight"></view>
-      <view class="fridge-shell-top"></view>
-      <view class="fridge-shell-side left"></view>
-      <view class="fridge-shell-side right"></view>
-      <view class="fridge-shell-frost frost-a"></view>
-      <view class="fridge-shell-frost frost-b"></view>
-      <view class="fridge-shell-bottom"></view>
-
-      <view
-        class="home-zone-card {{zone.theme}}"
-        wx:for="{{homeZones}}"
-        wx:for-item="zone"
-        wx:key="key"
-      >
-        <view class="home-zone-glass"></view>
-        <view class="home-zone-handle"></view>
-        <view class="home-zone-head">
-          <view class="home-zone-title-group">
-            <view class="home-zone-title-row">
-              <text class="home-zone-title">{{zone.name}}</text>
-              <text class="home-zone-temp">{{zone.temperature}}</text>
-            </view>
-          </view>
-          <view class="home-zone-add-mark" data-key="{{zone.key}}" catchtap="handleZoneView">＋</view>
-        </view>
-
-        <view class="home-zone-stats">
-          <view
-            class="home-zone-stat total"
-            data-key="{{zone.key}}"
-            data-filter="total"
-            catchtap="handleZoneStatTap"
-          >
-            <text>库存</text>
-            <text>{{zone.itemCount}}</text>
-          </view>
-          <view
-            class="home-zone-stat warning"
-            data-key="{{zone.key}}"
-            data-filter="expiring"
-            catchtap="handleZoneStatTap"
-          >
-            <text>临期</text>
-            <text>{{zone.expiringSoon}}</text>
-          </view>
-          <view
-            class="home-zone-stat danger"
-            data-key="{{zone.key}}"
-            data-filter="overdue"
-            catchtap="handleZoneStatTap"
-          >
-            <text>过期</text>
-            <text>{{zone.overdue}}</text>
-          </view>
-        </view>
-
-        <scroll-view
-          wx:if="{{zone.items.length > 0}}"
-          class="food-card-scroll"
-          scroll-x
-          enhanced
-          show-scrollbar="{{false}}"
-        >
-          <view class="food-card-track">
-            <view
-              class="food-card {{food.visualStatusClass}}"
-              wx:for="{{zone.items}}"
-              wx:for-item="food"
-              wx:key="_id"
-              data-id="{{food._id}}"
-              catchtap="handleFoodImageTap"
-              >
-                <view
-                  class="food-image-wrap {{food.thumbClass}}"
-                  data-id="{{food._id}}"
-                  catchtap="handleFoodImageTap"
-                >
-                  <image
-                    class="food-image {{food.thumbType}}"
-                    mode="{{food.thumbType === 'photo' ? 'aspectFill' : 'aspectFit'}}"
-                    src="{{food.thumbImage || '/images/foods/default.png'}}"
-                />
-              </view>
-              <view class="food-info {{food.visualStatusClass}}">
-                <text class="food-name">{{food.name}}</text>
-                <text class="food-status">{{food.visualStatusLabel}}</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
-
-        <view wx:else class="home-zone-empty">
-          <view class="home-zone-empty-icon"></view>
-          <view class="home-zone-empty-copy">
-            <text class="home-zone-empty-title">暂无食材</text>
-          </view>
-        </view>
-      </view>
-    </view>
+  <view class="search-bar">
+    <text class="search-ic" bindtap="handleSearchConfirm" aria-role="button" aria-label="搜索">🔍</text>
+    <input
+      class="search-input"
+      placeholder="搜索食材名称"
+      aria-label="搜索食材名称"
+      confirm-type="search"
+      value="{{searchKeyword}}"
+      bindinput="handleSearchInput"
+      bindconfirm="handleSearchConfirm"
+    />
   </view>
 
-  <view wx:if="{{zoneAddPanelVisible}}" class="zone-panel-mask" bindtap="handleCloseZoneAddPanel">
-    <view class="zone-panel add-action-panel" catchtap="handlePanelTap">
-      <view class="zone-panel-head">
-        <view class="zone-panel-head-main">
-          <view class="zone-panel-kicker">选择添加方式</view>
-          <view class="zone-panel-title">添加到{{selectedAddZone.name}}</view>
+  <view class="zone-list">
+    <view class="zone-card {{zone.theme}}" wx:for="{{homeZones}}" wx:for-item="zone" wx:key="key">
+      <view class="zone-head">
+        <view class="zone-title-wrap">
+          <text class="zone-icon">{{zone.icon}}</text>
+          <text class="zone-title">{{zone.name}}</text>
+          <text class="zone-temp">{{zone.temperature}}</text>
+        </view>
+        <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd" aria-role="button" aria-label="加食材">
+          <text class="zone-add-ic" aria-hidden="true">＋</text>
+          <text class="zone-add-txt">加食材</text>
         </view>
       </view>
 
-      <view class="zone-add-grid action-grid">
-        <button class="zone-add-card photo" data-location="{{selectedAddZone.location}}" bindtap="handleZonePhotoAdd">
-          <view class="zone-add-icon">拍</view>
-          <view class="zone-add-copy">
-            <text class="zone-add-title">拍食品</text>
-            <text class="zone-add-desc">拍照识别，保存后首页显示照片</text>
-          </view>
-          <view class="zone-add-arrow">›</view>
-        </button>
-        <button class="zone-add-card package" data-location="{{selectedAddZone.location}}" bindtap="handleZonePackageAdd">
-          <view class="zone-add-icon">包</view>
-          <view class="zone-add-copy">
-            <text class="zone-add-title">拍包装</text>
-            <text class="zone-add-desc">识别包装说明文字</text>
-          </view>
-          <view class="zone-add-arrow">›</view>
-        </button>
-        <button class="zone-add-card manual" data-location="{{selectedAddZone.location}}" bindtap="handleZoneAdd">
-          <view class="zone-add-icon">写</view>
-          <view class="zone-add-copy">
-            <text class="zone-add-title">手动添加</text>
-            <text class="zone-add-desc">自己输入名称和日期</text>
-          </view>
-          <view class="zone-add-arrow">›</view>
-        </button>
-      </view>
-    </view>
-  </view>
-
-  <view wx:if="{{zonePanelVisible}}" class="zone-panel-mask" bindtap="handleCloseZonePanel">
-    <view class="zone-panel zone-section-panel" catchtap="handlePanelTap">
-      <view class="zone-panel-head">
-        <view class="zone-panel-head-main">
-          <view class="zone-panel-title">{{selectedZone.name}} · {{selectedZoneFilterLabel}}</view>
-        </view>
+      <view wx:if="{{zone.itemCount > 0}}" class="zone-summary">
+        <text class="sum-item"><text class="sum-num">{{zone.itemCount}}</text> 库存</text>
+        <text class="sum-dot">·</text>
+        <text class="sum-item warning"><text class="sum-num">{{zone.expiring}}</text> 临期</text>
+        <text class="sum-dot">·</text>
+        <text class="sum-item danger"><text class="sum-num">{{zone.overdue}}</text> 过期</text>
       </view>
 
-      <scroll-view class="zone-section-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-        <view wx:if="{{selectedZoneItems.length === 0}}" class="zone-panel-empty">
-          <view class="zone-panel-empty-title">这里暂时没有{{selectedZoneFilterLabel}}</view>
-          <view class="zone-panel-empty-desc">返回首页后可点分区右上角加号添加。</view>
-        </view>
-
-        <view wx:else class="zone-category-list">
-          <view
-            class="zone-category-group"
-            wx:for="{{selectedZoneGroups}}"
-            wx:for-item="group"
-            wx:key="category"
-          >
-            <view class="zone-category-head">
-              <text class="zone-category-name">{{group.category}}</text>
-            </view>
-
-            <view
-              class="zone-item-row"
-              wx:for="{{group.items}}"
-              wx:for-item="food"
-              wx:key="_id"
-            >
-              <view class="zone-item-main">
-                <view class="zone-item-name-row">
-                  <text class="zone-item-name">{{food.name}}</text>
-                </view>
-                <view class="zone-item-meta">
-                  <text>到期 {{food.expireDateText}}</text>
-                </view>
-              </view>
-              <view class="stat-item-actions">
-                <view class="zone-item-edit" data-id="{{food._id}}" bindtap="handleZoneItemEdit">编辑</view>
-                <view
-                  class="zone-item-delete"
-                  data-id="{{food._id}}"
-                  data-name="{{food.name}}"
-                  bindtap="handleDelete"
-                >
-                  删除
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-  </view>
-
-  <view wx:if="{{statPanelVisible}}" class="zone-panel-mask" bindtap="handleCloseStatPanel">
-    <view class="zone-panel stat-section-panel" catchtap="handleStatPanelTap">
-      <view class="zone-panel-head">
-        <view class="zone-panel-head-main">
-          <view class="zone-panel-title">{{statPanelTitle}}</view>
-          <view class="zone-panel-subtitle">{{statPanelSubtitle}}</view>
-        </view>
-      </view>
-
-      <scroll-view class="stat-section-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-        <view wx:if="{{statPanelItems.length === 0}}" class="zone-panel-empty">
-          <view class="zone-panel-empty-title">{{statPanelEmptyTitle}}</view>
-          <view class="zone-panel-empty-desc">{{statPanelEmptyDesc}}</view>
-        </view>
-
-        <view wx:else class="stat-item-list">
-          <view
-            class="stat-item-row"
-            wx:for="{{statPanelItems}}"
-            wx:for-item="food"
-            wx:key="_id"
-          >
-            <view class="zone-item-main">
-              <view class="zone-item-name-row">
-                <text class="zone-item-name">{{food.name}}</text>
-              </view>
-              <view class="zone-item-meta">
-                <text>到期 {{food.expireDateText}}</text>
-              </view>
-            </view>
-            <view class="stat-item-actions">
-              <view class="zone-item-edit" data-id="{{food._id}}" bindtap="handleStatItemEdit">编辑</view>
-              <view
-                class="zone-item-delete"
-                data-id="{{food._id}}"
-                data-name="{{food.name}}"
-                bindtap="handleDelete"
-              >
-                删除
-              </view>
-            </view>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-  </view>
-
-  <view wx:if="{{foodDetailVisible}}" class="zone-panel-mask" bindtap="handleCloseFoodDetail">
-    <view class="zone-panel food-detail-panel" catchtap="handlePanelTap">
-      <view class="food-detail-hero {{selectedFood.visualStatusClass}}">
-        <image
-          class="food-detail-image {{selectedFood.thumbType}}"
-          mode="{{selectedFood.thumbType === 'photo' ? 'aspectFill' : 'aspectFit'}}"
-          src="{{selectedFood.thumbImage || '/images/foods/default.png'}}"
-        />
-      </view>
-      <view class="food-detail-title-row">
-        <text class="food-detail-title">{{selectedFood.name}}</text>
-        <text class="food-detail-status {{selectedFood.visualStatusClass}}">{{selectedFood.visualStatusLabel}}</text>
-      </view>
-      <view class="food-detail-meta">
-        <text>{{selectedFood.quantity}}{{selectedFood.unit}}</text>
-        <text>{{selectedFood.category}}</text>
-        <text>{{selectedFood.storageLocation}}</text>
-        <text>到期 {{selectedFood.expireDateText}}</text>
-      </view>
-      <view wx:if="{{selectedFood.note}}" class="food-detail-note">{{selectedFood.note}}</view>
-      <view class="food-detail-actions">
-        <view class="detail-edit-button" bindtap="handleFoodDetailEdit">编辑</view>
-        <view class="detail-delete-button" bindtap="handleFoodDetailDelete">删除</view>
-      </view>
-    </view>
-  </view>
-
-  <view wx:if="{{zoneConfigPanelVisible}}" class="zone-panel-mask" bindtap="handleCloseZoneConfig">
-    <view class="zone-panel zone-config-panel" catchtap="handlePanelTap">
-      <view class="zone-panel-head">
-        <view class="zone-panel-head-main">
-          <view class="zone-panel-kicker">首页展示设置</view>
-          <view class="zone-panel-title">分区管理</view>
-        </view>
-      </view>
-
-      <scroll-view class="zone-config-body" scroll-y="true" enhanced="true" show-scrollbar="false">
-        <view class="zone-config-desc">按住分区拖动排序，右侧控制分区显示或删除。</view>
-
-        <view class="zone-config-list">
-          <view
-            class="zone-config-row {{item.enabled ? '' : 'disabled'}} {{index === zoneConfigDraggingIndex ? 'dragging' : ''}}"
-            wx:for="{{zoneConfigDraft}}"
-            wx:key="key"
-          >
-            <view
-              class="zone-config-touch"
-              data-index="{{index}}"
-              catchtouchstart="handleZoneConfigDragStart"
-              catchtouchmove="handleZoneConfigDragMove"
-              catchtouchend="handleZoneConfigDragEnd"
-              catchtouchcancel="handleZoneConfigDragEnd"
-            >
-              <view class="zone-config-drag">
-                <view class="zone-config-grip"></view>
-                <text>拖动</text>
-              </view>
-              <view class="zone-config-main">
-                <text class="zone-config-name">{{item.name}}</text>
-                <text class="zone-config-hint">{{item.temperature}} · {{item.hint}}</text>
-              </view>
-            </view>
-            <view class="zone-config-actions">
-              <view class="zone-config-show {{item.enabled ? 'active' : ''}}" data-index="{{index}}" catchtap="handleShowZoneConfig">显示</view>
-              <view class="zone-config-delete" data-index="{{index}}" catchtap="handleDeleteZoneConfig">删除</view>
-            </view>
+      <scroll-view wx:if="{{zone.items.length > 0}}" class="food-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="food-track">
+          <view class="food-chip" wx:for="{{zone.items}}" wx:for-item="food" wx:key="_id" data-id="{{food._id}}" catchtap="handleFoodTap" aria-role="button">
+            <image class="food-img" src="{{food.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" aria-hidden="true" />
+            <text class="food-name">{{food.name}}</text>
+            <text class="food-tag {{food.bucket}}">{{food.statusLabel}}</text>
           </view>
         </view>
       </scroll-view>
 
-      <view class="zone-config-footer">
-        <view class="zone-config-save {{zoneConfigSaving ? 'loading' : ''}}" bindtap="handleSaveZoneConfig">
-          <text>{{zoneConfigSaving ? '保存中' : '保存分区设置'}}</text>
-        </view>
-      </view>
+      <view wx:else class="zone-empty">这一格还空着，点右上角「＋ 加食材」</view>
     </view>
   </view>
 
-  <view wx:if="{{noticeMessage}}" class="notice-bar">
-    {{noticeMessage}}
+  <view class="danger-zone">
+    <text class="danger-tip">清空后所有食品记录将无法恢复</text>
+    <view class="danger-clear" bindtap="handleClearAll" aria-role="button">清空全部食品数据</view>
+  </view>
+
+  <view wx:if="{{noticeMessage}}" class="notice">{{noticeMessage}}</view>
+</view>
+
+<!-- 通用列表面板：分区清单 / 搜索结果 -->
+<view wx:if="{{listPanelVisible}}" class="mask" bindtap="handleCloseListPanel">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-head">
+      <view>
+        <text class="sheet-title">{{listPanelTitle}}</text>
+        <text class="sheet-sub">{{listPanelSubtitle}}</text>
+      </view>
+      <view class="sheet-close" bindtap="handleCloseListPanel" aria-role="button">关闭</view>
+    </view>
+    <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
+      <view wx:if="{{listPanelEmpty}}" class="sheet-empty">{{listPanelEmpty}}</view>
+      <view wx:else>
+        <view class="group" wx:for="{{listPanelGroups}}" wx:for-item="group" wx:key="category">
+          <text class="group-name">{{group.category}}</text>
+          <view class="list-row" wx:for="{{group.items}}" wx:for-item="food" wx:key="_id">
+            <view class="list-main">
+              <text class="list-name">{{food.name}}</text>
+              <text class="list-meta">到期 {{food.expireDateText}}</text>
+            </view>
+            <text class="tag-inline {{food.bucket}}">{{food.statusHint}}</text>
+            <view class="row-actions">
+              <view class="row-btn" data-id="{{food._id}}" catchtap="handleEdit" aria-role="button">编辑</view>
+              <view class="row-btn danger" data-id="{{food._id}}" data-name="{{food.name}}" catchtap="handleDelete" aria-role="button">删除</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>
+
+<!-- 食品详情 -->
+<view wx:if="{{foodDetailVisible}}" class="mask" bindtap="handleCloseFoodDetail">
+  <view class="sheet detail" catchtap="noop">
+    <image class="detail-img" src="{{selectedFood.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" aria-hidden="true" />
+    <text class="detail-name">{{selectedFood.name}}</text>
+    <view class="detail-meta">
+      <text>到期：{{selectedFood.expireDateText}}</text>
+      <text class="tag-inline {{selectedFood.bucket}}">{{selectedFood.statusHint}}</text>
+    </view>
+    <view wx:if="{{selectedFood.note}}" class="detail-note">
+      <text class="detail-note-label">备注</text>
+      <text class="detail-note-text">{{selectedFood.note}}</text>
+    </view>
+    <view class="detail-actions">
+      <view class="detail-btn" bindtap="handleEdit" aria-role="button">编辑</view>
+      <view class="detail-btn danger" bindtap="handleDelete" aria-role="button">删除</view>
+    </view>
   </view>
 </view>

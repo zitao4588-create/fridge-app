@@ -1,0 +1,9 @@
+{
+  "name": "pkg-add",
+  "version": "1.0.0",
+  "description": "冰箱小雷达 添加/录入 分包（分包级 npm，承载 TDesign 组件）",
+  "private": true,
+  "dependencies": {
+    "tdesign-miniprogram": "^1.15.1"
+  }
+}

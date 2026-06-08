@@ -7,27 +7,23 @@
         "type": "folder"
       },
       {
-        "value": "dist",
-        "type": "folder"
+        "value": "package.json",
+        "type": "file"
       },
       {
-        "value": "src",
-        "type": "folder"
+        "value": "package-lock.json",
+        "type": "file"
       },
       {
-        "value": "public",
-        "type": "folder"
+        "value": "pkg-add/package.json",
+        "type": "file"
+      },
+      {
+        "value": "pkg-add/package-lock.json",
+        "type": "file"
       },
       {
         "value": "cloudfunctions",
-        "type": "folder"
-      },
-      {
-        "value": "custom-tab-bar",
-        "type": "folder"
-      },
-      {
-        "value": "miniprogram_npm",
         "type": "folder"
       },
       {
@@ -71,38 +67,6 @@
         "type": "file"
       },
       {
-        "value": "package.json",
-        "type": "file"
-      },
-      {
-        "value": "package-lock.json",
-        "type": "file"
-      },
-      {
-        "value": "tsconfig.json",
-        "type": "file"
-      },
-      {
-        "value": "tsconfig.app.json",
-        "type": "file"
-      },
-      {
-        "value": "tsconfig.node.json",
-        "type": "file"
-      },
-      {
-        "value": "eslint.config.js",
-        "type": "file"
-      },
-      {
-        "value": "vite.config.ts",
-        "type": "file"
-      },
-      {
-        "value": "index.html",
-        "type": "file"
-      },
-      {
         "value": "preview-qrcode.png",
         "type": "file"
       },
@@ -131,8 +95,13 @@
     "compileWorklet": false,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
-    "packNpmManually": false,
-    "packNpmRelationList": [],
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./pkg-add/package.json",
+        "miniprogramNpmDistDir": "./pkg-add"
+      }
+    ],
     "minifyWXSS": true,
     "minifyWXML": true,
     "localPlugins": false,

@@ -21,11 +21,11 @@ page {
   --honey-soft: #FFE7B2;
   --honey-mid: #FFC76B;
   --honey: #FFB23E;
-  --honey-deep: #B96A12;
+  --honey-deep: #9a5a0e;   /* a11y：原 #B96A12 在 honey-bg 仅 3.77:1 → 5.0:1 */
 
   --coral-bg: #FFECE6;
   --coral: #F36C5B;
-  --coral-deep: #C94238;
+  --coral-deep: #b3392f;   /* a11y：原 #C94238 在 coral-bg 仅 4.26:1 → 5.2:1 */
 
   /* Brand mint */
   --mint-50: var(--brand-mint-soft);
@@ -66,9 +66,13 @@ page {
 
   /* Text */
   --text-main: #253730;
-  --text-sub: #6f7c74;
-  --text-light: #9aa9a1;
+  --text-sub: #5c6a62;     /* a11y：原 #6f7c74 仅 4.0-4.4:1 → 提至 ≥5.3:1 */
+  --text-light: #647264;   /* 提升空态/浅字对比（原 #9aa9a1 不达标） */
   --text-inverse: #ffffff;
+
+  /* Neutral 中性操作（编辑等非语义动作，替代误用的冰蓝） */
+  --neutral-soft: #eef0ec;
+  --neutral-ink: #4d5a52;
 
   /* Material shadows */
   --shadow-soft: 0 10rpx 22rpx rgba(135, 105, 64, 0.08);
@@ -103,37 +107,35 @@ page {
   --font-xl: 40rpx;
   --font-xxl: 48rpx;
 
-  /* Backward-compatible aliases used by older pages. */
-  --color-primary: var(--mint-500);
-  --color-primary-deep: var(--mint-600);
-  --color-primary-light: var(--mint-100);
-  --color-bg: var(--cream-bg);
-  --color-bg-soft: var(--cream-bg-2);
-  --color-bg-ice: var(--ice-100);
-  --color-surface: rgba(255, 254, 248, 0.94);
-  --color-surface-cream: rgba(255, 250, 240, 0.94);
-  --color-line: rgba(234, 219, 196, 0.78);
-  --color-line-ice: rgba(169, 221, 241, 0.34);
-  --color-mint: var(--mint-100);
-  --color-cream: var(--cream-bg);
-  --color-orange: var(--honey-500);
-  --color-orange-light: var(--honey-100);
-  --color-peach: var(--coral-400);
-  --color-peach-light: var(--coral-100);
-  --color-blue-ice: var(--ice-100);
-  --color-blue-ice-deep: var(--ice-500);
-  --color-text-main: var(--text-main);
-  --color-text-title: var(--text-main);
-  --color-text-sub: var(--text-sub);
-  --color-text-light: var(--text-light);
-  --color-text-inverse: var(--text-inverse);
-  --color-fresh: var(--mint-500);
-  --color-expiring: var(--honey-500);
-  --color-expired: var(--coral-600);
-  --color-info: var(--ice-500);
-  --color-ai: var(--ai-500);
-  --color-ai-deep: var(--ai-700);
-  --color-ai-light: var(--ai-100);
-  --color-disabled: #d8e0dc;
-  --shadow-button: var(--shadow-button-green);
+  /* ===== 高级质感升级（轻奢黏土） ===== */
+  /* 渐变 */
+  --grad-mint: linear-gradient(135deg, #34c785 0%, #1fa368 100%);
+  --grad-honey: linear-gradient(135deg, #ffc766 0%, #ff9f45 100%);
+  --grad-card: linear-gradient(180deg, #ffffff 0%, #fffdf6 100%);
+  --grad-hero: linear-gradient(135deg, #eaf8ee 0%, #fff6e8 100%);
+
+  /* 黏土阴影 + 内高光 */
+  --shadow-1: 0 6rpx 16rpx rgba(124, 138, 112, 0.10), 0 2rpx 4rpx rgba(124, 138, 112, 0.05);
+  --shadow-2: 0 14rpx 34rpx rgba(124, 138, 112, 0.16);
+  --shadow-mint: 0 10rpx 22rpx rgba(40, 185, 120, 0.26);
+  --shadow-honey: 0 10rpx 22rpx rgba(255, 160, 70, 0.26);
+  --shadow-press: 0 3rpx 8rpx rgba(124, 138, 112, 0.12);
+  --hi-inset: inset 0 2rpx 0 rgba(255, 255, 255, 0.75);
+
+  /* 分区彩色身份：tint 底 / accent 强调 / ink 文字 */
+  --zone-cold-tint: #ecf6ff;
+  --zone-cold-accent: #5bb8dd;
+  --zone-cold-ink: #1f6d89;
+  --zone-freeze-tint: #eaf0ff;
+  --zone-freeze-accent: #7c9be0;
+  --zone-freeze-ink: #3a52a3;
+  --zone-door-tint: #f1ece3;     /* 暖棕：避开蜜橙(临期)撞色 */
+  --zone-door-accent: #bfa074;
+  --zone-door-ink: #7d5f38;
+  --zone-produce-tint: #e9f8ee;
+  --zone-produce-accent: #34c785;
+  --zone-produce-ink: #087a49;
+  --zone-temp-tint: #f1eefa;
+  --zone-temp-accent: #9b86d6;
+  --zone-temp-ink: #5d46a3;
 }

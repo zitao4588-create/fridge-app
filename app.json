@@ -1,12 +1,16 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/quick-add/quick-add",
     "pages/calendar/calendar",
-    "pages/recipes/recipes",
-    "pages/item-form/item-form",
-    "pages/parse-confirm/parse-confirm",
-    "pages/batch-parse-confirm/batch-parse-confirm"
+    "pages/recipes/recipes"
+  ],
+  "subPackages": [
+    {
+      "root": "pkg-add",
+      "pages": [
+        "item-form/item-form"
+      ]
+    }
   ],
   "window": {
     "navigationBarTitleText": "冰箱小雷达",
@@ -15,6 +19,7 @@
     "backgroundColor": "#FFF4DE"
   },
   "tabBar": {
+    "custom": true,
     "color": "#8FA39A",
     "selectedColor": "#159A5B",
     "backgroundColor": "#FFFEF8",
@@ -41,5 +46,6 @@
     ]
   },
   "sitemapLocation": "sitemap.json",
-  "style": "v2"
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
 }
