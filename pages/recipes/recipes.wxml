@@ -5,21 +5,21 @@
     <image class="coming-leaf" src="/images/decor/leaf.png" mode="aspectFit" aria-hidden="true" />
     <image class="coming-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" aria-hidden="true" />
     <text class="coming-badge">敬请期待</text>
-    <text class="coming-title">智能菜谱生成</text>
-    <text class="coming-desc">上线后会结合你冰箱里的库存，帮你想好「今天吃什么」。</text>
+    <text class="coming-title">菜谱搭配</text>
+    <text class="coming-desc">后续会陆续加入家常菜谱，帮你把冰箱里的食材安排成一餐。</text>
 
     <view class="coming-list">
       <view class="coming-item">
         <text class="coming-ic">🥗</text>
-        <text>临期食材去化菜谱推荐</text>
+        <text>临期食材的家常吃法，减少浪费</text>
       </view>
       <view class="coming-item">
         <text class="coming-ic">🍳</text>
-        <text>按现有库存匹配「现在能做什么」</text>
+        <text>按现有库存看「现在能做什么」</text>
       </view>
       <view class="coming-item">
         <text class="coming-ic">⭐</text>
-        <text>收藏喜欢的菜谱</text>
+        <text>收藏常做的菜谱</text>
       </view>
     </view>
   </view>
