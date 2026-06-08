@@ -42,8 +42,12 @@
 }
 
 .today-btn {
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
   font-size: 22rpx;
-  color: var(--ice-ink, #1f6d89);
+  font-weight: 700;
+  color: var(--brand-mint-deep, #087a49);
+  background: var(--brand-mint-soft, #eaf8ee);
 }
 
 .week-grid {
@@ -55,7 +59,7 @@
 .week-grid text {
   text-align: center;
   font-size: 22rpx;
-  color: var(--text-light, #9aa9a1);
+  color: var(--text-light, #647264);
 }
 
 .day-grid {
@@ -195,7 +199,7 @@
   padding: 48rpx 20rpx;
   text-align: center;
   font-size: 26rpx;
-  color: var(--text-light, #9aa9a1);
+  color: var(--text-light, #647264);
   border: 2rpx dashed var(--cream-line, #eadbc4);
   border-radius: 22rpx;
 }
@@ -255,16 +259,16 @@
 
 .row-actions {
   display: flex;
-  gap: 10rpx;
+  gap: 16rpx;
 }
 
 .row-btn {
-  padding: 8rpx 18rpx;
+  padding: 14rpx 20rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--ice-ink, #1f6d89);
-  background: var(--ice-soft, #ddf4ff);
+  color: var(--neutral-ink, #4d5a52);
+  background: var(--neutral-soft, #eef0ec);
 }
 
 .row-btn.danger {
@@ -326,7 +330,7 @@
 }
 
 .sheet-close {
-  padding: 8rpx 22rpx;
+  padding: 14rpx 26rpx;
   border-radius: 999rpx;
   font-size: 24rpx;
   color: var(--text-sub, #6f7c74);
@@ -532,15 +536,6 @@
 .meal-radar-verdict.medium { color: var(--honey-deep, #b96a12); }
 .meal-radar-verdict.low { color: var(--coral-deep, #c94238); }
 
-.meal-radar-explain-main {
-  display: block;
-  margin-top: 8rpx;
-  color: var(--text-main, #24352f);
-  font-size: 24rpx;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
 .meal-radar-ranges {
   display: flex;
   flex-direction: column;
@@ -557,6 +552,14 @@
   font-size: 20rpx;
   font-weight: 800;
   line-height: 1.25;
+  opacity: 0.5;
+}
+
+.meal-radar-ranges text.on {
+  opacity: 1;
+  background: #ffffff;
+  color: var(--ice-ink, #1f6d89);
+  box-shadow: var(--shadow-1);
 }
 
 .meal-radar-priority {

@@ -318,6 +318,30 @@ Page({
     })
   },
 
+  handleClearAll() {
+    wx.showModal({
+      title: '清空全部数据',
+      content: '将删除所有食品记录，且无法恢复。确定继续？',
+      confirmText: '清空',
+      confirmColor: '#c94238',
+      success: (res) => {
+        if (!res.confirm) return
+        wx.showLoading({ title: '清空中' })
+        itemService
+          .clearItems()
+          .then(() => {
+            wx.hideLoading()
+            this.showNotice('已清空全部数据')
+            this.loadItems()
+          })
+          .catch(() => {
+            wx.hideLoading()
+            wx.showToast({ title: '清空失败', icon: 'none' })
+          })
+      },
+    })
+  },
+
   showNotice(message) {
     if (this.noticeTimer) clearTimeout(this.noticeTimer)
     this.setData({ noticeMessage: message })

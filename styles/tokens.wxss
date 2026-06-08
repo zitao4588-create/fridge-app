@@ -67,8 +67,12 @@ page {
   /* Text */
   --text-main: #253730;
   --text-sub: #6f7c74;
-  --text-light: #9aa9a1;
+  --text-light: #647264;   /* 提升空态/浅字对比（原 #9aa9a1 不达标） */
   --text-inverse: #ffffff;
+
+  /* Neutral 中性操作（编辑等非语义动作，替代误用的冰蓝） */
+  --neutral-soft: #eef0ec;
+  --neutral-ink: #4d5a52;
 
   /* Material shadows */
   --shadow-soft: 0 10rpx 22rpx rgba(135, 105, 64, 0.08);
@@ -125,9 +129,9 @@ page {
   --zone-freeze-tint: #eaf0ff;
   --zone-freeze-accent: #7c9be0;
   --zone-freeze-ink: #3a52a3;
-  --zone-door-tint: #fff3dc;
-  --zone-door-accent: #ffb23e;
-  --zone-door-ink: #b96a12;
+  --zone-door-tint: #f1ece3;     /* 暖棕：避开蜜橙(临期)撞色 */
+  --zone-door-accent: #bfa074;
+  --zone-door-ink: #7d5f38;
   --zone-produce-tint: #e9f8ee;
   --zone-produce-accent: #34c785;
   --zone-produce-ink: #087a49;

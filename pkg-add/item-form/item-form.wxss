@@ -35,7 +35,7 @@
 }
 
 .chip {
-  padding: 12rpx 28rpx;
+  padding: 16rpx 28rpx;
   border-radius: 999rpx;
   font-size: 26rpx;
   color: var(--text-sub, #6f7c74);
@@ -84,7 +84,7 @@
   display: block;
   margin-top: 16rpx;
   font-size: 24rpx;
-  color: var(--text-light, #9aa9a1);
+  color: var(--text-light, #647264);
 }
 
 .date-result.active {
@@ -96,7 +96,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
-  margin-bottom: 24rpx;
+  margin-top: 16rpx;
   padding: 18rpx 22rpx;
   border-radius: 22rpx;
   background: var(--brand-mint-soft, #eaf8ee);

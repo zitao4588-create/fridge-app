@@ -98,9 +98,9 @@
       <view class="meal-radar-explain">
         <text class="meal-radar-verdict {{radar.levelClass}}">{{radar.levelTitle}}</text>
         <view class="meal-radar-ranges">
-          <text>高 80-99：适合开饭</text>
-          <text>中 50-79：建议补 1-2 样</text>
-          <text>低 0-49：先处理风险或补货</text>
+          <text class="{{radar.levelClass === 'high' ? 'on' : ''}}">高 80-99：适合开饭</text>
+          <text class="{{radar.levelClass === 'medium' ? 'on' : ''}}">中 50-79：建议补 1-2 样</text>
+          <text class="{{radar.levelClass === 'low' ? 'on' : ''}}">低 0-49：先处理风险或补货</text>
         </view>
       </view>
     </view>

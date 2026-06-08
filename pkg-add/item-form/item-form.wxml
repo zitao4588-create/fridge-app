@@ -24,11 +24,6 @@
       </view>
     </view>
 
-    <view wx:if="{{showLocationRecommend}}" class="recommend">
-      <text class="recommend-text">推荐放「{{recommendedStorageLocation}}」（当前：{{form.storageLocation}}）</text>
-      <t-button size="extra-small" theme="primary" variant="outline" bindtap="handleApplyRecommendedLocation">采纳</t-button>
-    </view>
-
     <view class="field">
       <text class="field-label">存放分区</text>
       <view class="chip-row">
@@ -39,6 +34,10 @@
           data-index="{{index}}"
           bindtap="handleLocationTap"
         >{{item}}</view>
+      </view>
+      <view wx:if="{{showLocationRecommend}}" class="recommend">
+        <text class="recommend-text">推荐放「{{recommendedStorageLocation}}」（当前：{{form.storageLocation}}）</text>
+        <t-button size="extra-small" theme="primary" variant="outline" bindtap="handleApplyRecommendedLocation">采纳</t-button>
       </view>
     </view>
 

@@ -131,17 +131,5 @@
   margin-top: 18rpx;
   font-size: 26rpx;
   font-weight: 700;
-  color: var(--ice-ink, #1f6d89);
-}
-
-.clear-btn {
-  margin-top: 28rpx;
-  padding: 24rpx 0;
-  text-align: center;
-  border-radius: 999rpx;
-  font-size: 30rpx;
-  font-weight: 800;
-  color: var(--coral-deep, #c94238);
-  background: var(--coral-bg, #ffece6);
-  box-shadow: var(--shadow-1);
+  color: var(--brand-mint-deep, #087a49);
 }

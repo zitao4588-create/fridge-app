@@ -9,6 +9,7 @@
   </view>
 
   <view class="search-bar">
+    <text class="search-ic" bindtap="handleSearchConfirm">🔍</text>
     <input
       class="search-input"
       placeholder="搜索食材名称"
@@ -17,7 +18,6 @@
       bindinput="handleSearchInput"
       bindconfirm="handleSearchConfirm"
     />
-    <view class="search-btn" bindtap="handleSearchConfirm">🔍</view>
   </view>
 
   <view class="zone-list">
@@ -28,22 +28,18 @@
           <text class="zone-title">{{zone.name}}</text>
           <text class="zone-temp">{{zone.temperature}}</text>
         </view>
-        <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd">＋</view>
+        <view class="zone-add" data-location="{{zone.location}}" catchtap="handleZoneAdd">
+          <text class="zone-add-ic">＋</text>
+          <text class="zone-add-txt">加食材</text>
+        </view>
       </view>
 
-      <view class="zone-stats">
-        <view class="zone-stat">
-          <text class="zone-stat-num">{{zone.itemCount}}</text>
-          <text class="zone-stat-name">库存</text>
-        </view>
-        <view class="zone-stat warning">
-          <text class="zone-stat-num">{{zone.expiring}}</text>
-          <text class="zone-stat-name">临期</text>
-        </view>
-        <view class="zone-stat danger">
-          <text class="zone-stat-num">{{zone.overdue}}</text>
-          <text class="zone-stat-name">过期</text>
-        </view>
+      <view wx:if="{{zone.itemCount > 0}}" class="zone-summary">
+        <text class="sum-item"><text class="sum-num">{{zone.itemCount}}</text> 库存</text>
+        <text class="sum-dot">·</text>
+        <text class="sum-item warning"><text class="sum-num">{{zone.expiring}}</text> 临期</text>
+        <text class="sum-dot">·</text>
+        <text class="sum-item danger"><text class="sum-num">{{zone.overdue}}</text> 过期</text>
       </view>
 
       <scroll-view wx:if="{{zone.items.length > 0}}" class="food-scroll" scroll-x enhanced show-scrollbar="{{false}}">
@@ -56,8 +52,13 @@
         </view>
       </scroll-view>
 
-      <view wx:else class="zone-empty">这一格还空着，点右上角 ＋ 添加</view>
+      <view wx:else class="zone-empty">这一格还空着，点右上角「＋ 加食材」</view>
     </view>
+  </view>
+
+  <view class="danger-zone">
+    <text class="danger-tip">清空后所有食品记录将无法恢复</text>
+    <view class="danger-clear" bindtap="handleClearAll">清空全部食品数据</view>
   </view>
 
   <view wx:if="{{noticeMessage}}" class="notice">{{noticeMessage}}</view>

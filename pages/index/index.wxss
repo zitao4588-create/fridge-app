@@ -44,7 +44,8 @@
   content: '';
   position: absolute;
   left: -12rpx;
-  top: 38rpx;
+  top: 50%;
+  transform: translateY(-50%);
   border-width: 12rpx 14rpx 12rpx 0;
   border-style: solid;
   border-color: transparent rgba(255, 255, 255, 0.85) transparent transparent;
@@ -66,29 +67,25 @@
 
 /* 搜索 */
 .search-bar {
-  display: flex;
-  gap: 14rpx;
-  margin-top: 22rpx;
+  position: relative;
+  margin-top: 24rpx;
+}
+
+.search-ic {
+  position: absolute;
+  left: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30rpx;
+  opacity: 0.55;
+  z-index: 1;
 }
 
 .search-input {
-  flex: 1;
-  height: 80rpx;
-  padding: 0 28rpx;
+  height: 88rpx;
+  padding: 0 28rpx 0 70rpx;
   border-radius: 999rpx;
   font-size: 26rpx;
-  background: #ffffff;
-  box-shadow: var(--shadow-1);
-}
-
-.search-btn {
-  width: 80rpx;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 34rpx;
   background: #ffffff;
   box-shadow: var(--shadow-1);
 }
@@ -150,94 +147,88 @@
 
 .zone-temp {
   display: inline-block;
-  padding: 3rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--text-sub, #6f7c74);
+}
+
+.zone-add {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  min-height: 56rpx;
+  padding: 0 22rpx;
   border-radius: 999rpx;
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 700;
   color: var(--brand-mint-deep, #087a49);
   background: var(--brand-mint-soft, #eaf8ee);
 }
 
-.zone-add {
-  width: 54rpx;
-  height: 54rpx;
-  line-height: 50rpx;
-  text-align: center;
-  border-radius: 50%;
-  font-size: 38rpx;
-  color: var(--brand-mint-deep, #087a49);
-  background: var(--brand-mint-soft, #eaf8ee);
+.zone-add::after {
+  content: '';
+  position: absolute;
+  inset: -16rpx;
+}
+
+.zone-add-ic {
+  font-size: 32rpx;
+  line-height: 1;
 }
 
 /* 分区彩色身份 */
 .zone-card.cold::before { background: var(--zone-cold-accent); }
 .zone-card.cold .zone-icon { background: var(--zone-cold-tint); }
-.zone-card.cold .zone-temp { color: var(--zone-cold-ink); background: var(--zone-cold-tint); }
+.zone-card.cold .zone-temp { color: var(--zone-cold-ink); }
 
 .zone-card.freeze::before { background: var(--zone-freeze-accent); }
 .zone-card.freeze .zone-icon { background: var(--zone-freeze-tint); }
-.zone-card.freeze .zone-temp { color: var(--zone-freeze-ink); background: var(--zone-freeze-tint); }
+.zone-card.freeze .zone-temp { color: var(--zone-freeze-ink); }
 
 .zone-card.door::before { background: var(--zone-door-accent); }
 .zone-card.door .zone-icon { background: var(--zone-door-tint); }
-.zone-card.door .zone-temp { color: var(--zone-door-ink); background: var(--zone-door-tint); }
+.zone-card.door .zone-temp { color: var(--zone-door-ink); }
 
 .zone-card.produce::before { background: var(--zone-produce-accent); }
 .zone-card.produce .zone-icon { background: var(--zone-produce-tint); }
-.zone-card.produce .zone-temp { color: var(--zone-produce-ink); background: var(--zone-produce-tint); }
+.zone-card.produce .zone-temp { color: var(--zone-produce-ink); }
 
 .zone-card.temp::before { background: var(--zone-temp-accent); }
 .zone-card.temp .zone-icon { background: var(--zone-temp-tint); }
-.zone-card.temp .zone-temp { color: var(--zone-temp-ink); background: var(--zone-temp-tint); }
+.zone-card.temp .zone-temp { color: var(--zone-temp-ink); }
 
-.zone-stats {
-  display: flex;
-  gap: 12rpx;
-  margin-top: 20rpx;
-}
-
-.zone-stat {
-  flex: 1;
+/* 分区统计：拍扁成内联汇总行，去卡片化以消除“可点”错觉 */
+.zone-summary {
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: 8rpx;
-  padding: 16rpx 0;
-  border-radius: 18rpx;
-  background: rgba(255, 255, 255, 0.6);
-  box-shadow: var(--shadow-1);
-}
-
-.zone-stat-num {
-  font-size: 32rpx;
-  font-weight: 800;
-  color: var(--text-main, #253730);
-}
-
-.zone-stat.warning {
-  background: var(--honey-bg, #fff5dc);
-}
-
-.zone-stat.warning .zone-stat-num {
-  color: var(--honey-deep, #b96a12);
-}
-
-.zone-stat.danger {
-  background: var(--coral-bg, #ffece6);
-}
-
-.zone-stat.danger .zone-stat-num {
-  color: var(--coral-deep, #c94238);
-}
-
-.zone-stat-name {
+  gap: 10rpx;
+  margin-top: 12rpx;
   font-size: 22rpx;
   color: var(--text-sub, #6f7c74);
 }
 
+.sum-num {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.sum-item.warning .sum-num {
+  color: var(--honey-deep, #b96a12);
+}
+
+.sum-item.danger .sum-num {
+  color: var(--coral-deep, #c94238);
+}
+
+.sum-dot {
+  color: var(--text-light, #647264);
+}
+
 /* 食材玻璃磁贴 */
 .food-scroll {
-  margin-top: 20rpx;
+  margin-top: 16rpx;
   white-space: nowrap;
 }
 
@@ -273,16 +264,19 @@
   max-width: 118rpx;
   font-size: 22rpx;
   font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
   color: var(--text-main, #253730);
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .food-tag {
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 700;
 }
 
@@ -306,7 +300,7 @@
   padding: 30rpx;
   text-align: center;
   font-size: 24rpx;
-  color: var(--text-light, #9aa9a1);
+  color: var(--text-light, #647264);
   border: 2rpx dashed var(--cream-line, #eadbc4);
   border-radius: 22rpx;
 }
@@ -315,7 +309,7 @@
 .notice {
   position: fixed;
   left: 50%;
-  bottom: 80rpx;
+  bottom: calc(152rpx + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   padding: 18rpx 36rpx;
   border-radius: 999rpx;
@@ -323,7 +317,7 @@
   color: #ffffff;
   background: rgba(37, 55, 48, 0.92);
   box-shadow: var(--shadow-2);
-  z-index: 60;
+  z-index: 110;
 }
 
 /* 通用底部弹层 */
@@ -396,7 +390,7 @@
   padding: 60rpx 20rpx;
   text-align: center;
   font-size: 26rpx;
-  color: var(--text-light, #9aa9a1);
+  color: var(--text-light, #647264);
 }
 
 .group {
@@ -465,16 +459,16 @@
 
 .row-actions {
   display: flex;
-  gap: 10rpx;
+  gap: 16rpx;
 }
 
 .row-btn {
-  padding: 8rpx 18rpx;
+  padding: 14rpx 20rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--ice-ink, #1f6d89);
-  background: var(--ice-soft, #ddf4ff);
+  color: var(--neutral-ink, #4d5a52);
+  background: var(--neutral-soft, #eef0ec);
 }
 
 .row-btn.danger {
@@ -549,11 +543,49 @@
   border-radius: 999rpx;
   font-size: 28rpx;
   font-weight: 800;
-  color: var(--ice-ink, #1f6d89);
-  background: var(--ice-soft, #ddf4ff);
+  color: var(--neutral-ink, #4d5a52);
+  background: var(--neutral-soft, #eef0ec);
 }
 
 .detail-btn.danger {
   color: var(--coral-deep, #c94238);
   background: var(--coral-bg, #ffece6);
+}
+
+/* 按压反馈：能点的有反馈（与拍扁后的统计行区分开） */
+.food-chip:active,
+.zone-add:active,
+.search-ic:active,
+.row-btn:active,
+.detail-btn:active,
+.sheet-close:active,
+.danger-clear:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+/* 底部危险区：清空全部数据（降权 + 二次确认） */
+.danger-zone {
+  margin-top: 48rpx;
+  padding-top: 28rpx;
+  border-top: 2rpx solid var(--cream-line, #eadbc4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.danger-tip {
+  font-size: 22rpx;
+  color: var(--text-light, #647264);
+}
+
+.danger-clear {
+  padding: 14rpx 36rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--coral-deep, #c94238);
+  background: transparent;
+  border: 2rpx solid var(--coral-bg, #ffece6);
 }
