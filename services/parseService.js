@@ -428,34 +428,10 @@ function getMediaTempPath(res) {
 }
 
 function chooseImageForParse() {
-  return new Promise((resolve, reject) => {
-    if (typeof wx === 'undefined') {
-      reject(new Error('当前环境不支持拍照'))
-      return
-    }
-
-    if (wx.chooseMedia) {
-      wx.chooseMedia({
-        count: 1,
-        mediaType: ['image'],
-        sourceType: ['camera', 'album'],
-        success: (res) => {
-          resolve(getMediaTempPath(res))
-        },
-        fail: reject,
-      })
-      return
-    }
-
-    wx.chooseImage({
-      count: 1,
-      sourceType: ['camera', 'album'],
-      success: (res) => {
-        resolve(getMediaTempPath(res))
-      },
-      fail: reject,
-    })
-  })
+  // 拍照 / 相册录入为后续版本（需企业主体）功能。
+  // 当前版本不调用相册或摄像头隐私接口，以便声明「未采集用户隐私」。
+  // 接回拍照识别时，在此恢复选择媒体的接口调用。
+  return Promise.reject(new Error('当前版本未开放拍照录入'))
 }
 
 function getFileExt(filePath) {
