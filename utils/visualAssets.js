@@ -1,221 +1,72 @@
+// 食材配图：用户照片优先 > 品类系统图 > 通用兜底。
+//
+// 设计原则（见 NEXT_VERSION_GUIDE.md「图片资源治理」）：
+// - 不再为单个食材配专图，改为按「品类 / 食材族群」共用一张写实图。
+// - 主包只保留少量必要桶图（写实风），其余食材靠关键词归桶。
+// - 已移除本地自动生成（PIL 占位图）那套逻辑与菜谱配图逻辑。
+//
+// 拍照录入接口（预留，优先级最高）：
+//   item.source === 'photo' && item.imageFileId → 直接用用户照片。
+//   未来接入拍照录入时，只需给 item 写 source:'photo' + imageFileId，
+//   itemService 已持久化 imageFileId，无需再改本文件。
+
 const FOOD_DEFAULT_IMAGE = '/images/foods/default.png'
-const RECIPE_DEFAULT_IMAGE = '/images/recipe/default.png'
 
-const CATEGORY_VISUALS = {
-  '蔬菜': { image: '/images/foods/vegetable.png', className: 'vegetable' },
-  '水果': { image: '/images/foods/fruit.png', className: 'fruit' },
-  '肉蛋': { image: '/images/foods/egg.png', className: 'protein' },
-  '乳制品': { image: '/images/foods/dairy.png', className: 'dairy' },
-  '饮料': { image: '/images/foods/drink.png', className: 'drink' },
-  '速冻': { image: '/images/foods/frozen.png', className: 'frozen' },
-  '调料': { image: '/images/foods/seasoning.png', className: 'seasoning' },
-  '主食': { image: '/images/foods/rice.png', className: 'staple' },
-  '其他': { image: FOOD_DEFAULT_IMAGE, className: 'other' },
+// 品类桶 → 写实图（主包内保留的必要图）
+const BUCKET_IMAGES = {
+  leafy: '/images/foods/leafy.png', // 叶菜
+  root: '/images/foods/root.png', // 根茎
+  mushroom: '/images/foods/mushroom.png', // 菌菇
+  fruit: '/images/foods/fruit.png', // 水果
+  meat: '/images/foods/beef.png', // 肉类（红肉 / 猪肉合并）
+  poultry: '/images/foods/chicken.png', // 禽肉
+  seafood: '/images/foods/fish.png', // 水产（鱼 / 蟹 / 贝）
+  shrimp: '/images/foods/shrimp.png', // 虾
+  egg: '/images/foods/egg.png', // 蛋
+  dairy: '/images/foods/milk.png', // 乳制品
+  soy: '/images/foods/tofu.png', // 豆制品
+  staple: '/images/foods/rice.png', // 主食（米 / 面）
+  drink: '/images/foods/drink.png', // 饮料（待替换写实图）
+  frozen: '/images/foods/frozen.png', // 速冻（待替换写实图）
+  seasoning: '/images/foods/seasoning.png', // 调料（待替换写实图）
+  other: FOOD_DEFAULT_IMAGE, // 通用兜底（待替换写实图）
 }
 
-const INGREDIENT_EXACT_VISUALS = {
-  '米饭': '/images/foods/rice.png',
-  '白米饭': '/images/foods/rice.png',
-  '鸡蛋': '/images/foods/egg.png',
-  '鸭蛋': '/images/foods/egg.png',
-  '牛肉': '/images/foods/beef.png',
-  '猪肉': '/images/foods/pork.png',
-  '鸡肉': '/images/foods/chicken.png',
-  '鸡胸肉': '/images/foods/chicken.png',
-  '虾仁': '/images/foods/shrimp.png',
-  '虾': '/images/foods/shrimp.png',
-  '鱼': '/images/foods/fish.png',
-  '三文鱼': '/images/foods/salmon.png',
-  '螃蟹': '/images/foods/crab.png',
-  '蟹': '/images/foods/crab.png',
-  '番茄': '/images/foods/tomato.png',
-  '西红柿': '/images/foods/tomato.png',
-  '苹果': '/images/foods/apple.png',
-  '香蕉': '/images/foods/banana.png',
-  '蓝莓': '/images/foods/blueberry.png',
-  '牛奶': '/images/foods/milk.png',
-  '酸奶': '/images/foods/yogurt.png',
-  '奶酪': '/images/foods/cheese.png',
-  '豆腐': '/images/foods/tofu.png',
-  '面条': '/images/foods/noodle.png',
-  '粥': '/images/foods/porridge.png',
-  '饺子': '/images/foods/dumpling.png',
-  '西兰花': '/images/foods/broccoli.png',
+// 表单品类 → 桶（含历史数据兼容）
+const CATEGORY_BUCKET = {
+  蔬菜: 'leafy',
+  水果: 'fruit',
+  肉类: 'meat',
+  水产: 'seafood',
+  蛋: 'egg',
+  乳制品: 'dairy',
+  豆制品: 'soy',
+  主食: 'staple',
+  饮料: 'drink',
+  速冻: 'frozen',
+  调料: 'seasoning',
+  其他: 'other',
+  // 兼容旧品类
+  肉蛋: 'meat',
 }
 
-const INGREDIENT_FAMILY_VISUALS = [
-  {
-    className: 'protein',
-    image: '/images/foods/beef.png',
-    keywords: ['牛', '羊', '肉排', '肥牛', '牛腩'],
-  },
-  {
-    className: 'protein',
-    image: '/images/foods/pork.png',
-    keywords: ['猪', '排骨', '五花', '里脊', '火腿', '午餐肉'],
-  },
-  {
-    className: 'protein',
-    image: '/images/foods/chicken.png',
-    keywords: ['鸡', '鸡腿', '鸡翅', '鸡胸', '禽'],
-  },
-  {
-    className: 'protein',
-    image: '/images/foods/fish.png',
-    keywords: ['鱼', '鲫', '鲈', '鳕', '金枪', '三文'],
-  },
-  {
-    className: 'protein',
-    image: '/images/foods/seafood.png',
-    keywords: ['虾', '蟹', '贝', '蛤', '海鲜', '鱿鱼', '墨鱼'],
-  },
-  {
-    className: 'dairy',
-    image: '/images/foods/dairy.png',
-    keywords: ['奶', '酸奶', '芝士', '奶酪', '黄油', '乳'],
-  },
-  {
-    className: 'vegetable',
-    image: '/images/foods/leafy.png',
-    keywords: [
-      '青菜',
-      '生菜',
-      '菠菜',
-      '白菜',
-      '油麦',
-      '香菜',
-      '芹菜',
-      '韭菜',
-      '叶菜',
-    ],
-  },
-  {
-    className: 'vegetable',
-    image: '/images/foods/root.png',
-    keywords: ['土豆', '萝卜', '胡萝卜', '山药', '莲藕', '红薯', '南瓜', '根茎'],
-  },
-  {
-    className: 'vegetable',
-    image: '/images/foods/mushroom.png',
-    keywords: ['蘑菇', '香菇', '菌', '菇', '木耳', '银耳'],
-  },
-  {
-    className: 'staple',
-    image: '/images/foods/noodle.png',
-    keywords: ['面', '粉', '米线', '河粉', '意面'],
-  },
-  {
-    className: 'staple',
-    image: '/images/foods/porridge.png',
-    keywords: ['粥', '小米', '燕麦', '麦片'],
-  },
-  {
-    className: 'staple',
-    image: '/images/foods/staple.png',
-    keywords: ['饭', '米', '馒头', '包子', '吐司', '面包', '主食'],
-  },
-  {
-    className: 'drink',
-    image: '/images/foods/juice.png',
-    keywords: ['果汁', '茶', '饮料', '气泡水', '汽水', '椰汁'],
-  },
-  {
-    className: 'frozen',
-    image: '/images/foods/frozen.png',
-    keywords: ['速冻', '冷冻', '冰淇淋', '雪糕', '冻'],
-  },
-]
-
-const RECIPE_EXACT_VISUALS = {
-  'tomato-egg': '/images/recipe/tomato-egg.png',
-  'vegetable-tofu-soup': '/images/recipe/vegetable-tofu-soup.png',
-  'egg-fried-rice': '/images/recipe/egg-fried-rice.png',
-  'warm-noodle': '/images/recipe/warm-noodle.png',
-  'yogurt-fruit-bowl': '/images/recipe/yogurt-fruit-bowl.png',
-  'milk-oat-cup': '/images/recipe/milk-oat-cup.png',
-  'stir-fry-greens': '/images/recipe/stir-fry-greens.png',
-  'cucumber-egg-salad': '/images/recipe/cucumber-egg-salad.png',
-  'blind-rice-bowl': '/images/recipe/blind-rice-bowl.png',
-  'blind-soup': '/images/recipe/blind-soup.png',
-  'blind-sandwich': '/images/recipe/blind-sandwich.png',
-  'seasonal-mung-bean-soup': '/images/recipe/type-soup.png',
-  'seasonal-lotus-pear-soup': '/images/recipe/type-soup.png',
-  'seasonal-yam-congee': '/images/recipe/type-rice.png',
-  'seasonal-tomato-tofu-soup': '/images/recipe/vegetable-tofu-soup.png',
-  'seasonal-ginger-noodle': '/images/recipe/type-noodle.png',
-  'tipsy-peach-tea': '/images/recipe/tipsy-peach-tea.png',
-  'tipsy-citrus-soda': '/images/recipe/tipsy-citrus-soda.png',
-  'healthy-apple-yogurt': '/images/recipe/healthy-apple-yogurt.png',
-  'healthy-banana-milk': '/images/recipe/healthy-banana-milk.png',
-}
-
-const RECIPE_TITLE_EXACT_VISUALS = {
-  '番茄炒蛋': '/images/recipe/tomato-egg.png',
-  '西红柿炒蛋': '/images/recipe/tomato-egg.png',
-  '蔬菜豆腐汤': '/images/recipe/vegetable-tofu-soup.png',
-  '鸡蛋蔬菜炒饭': '/images/recipe/egg-fried-rice.png',
-  '暖胃热汤面': '/images/recipe/warm-noodle.png',
-  '酸奶水果碗': '/images/recipe/yogurt-fruit-bowl.png',
-  '牛奶燕麦杯': '/images/recipe/milk-oat-cup.png',
-  '清炒时蔬': '/images/recipe/stir-fry-greens.png',
-  '黄瓜鸡蛋轻拌': '/images/recipe/cucumber-egg-salad.png',
-}
-
-const RECIPE_TITLE_VISUALS = [
-  { keywords: ['番茄炒蛋', '西红柿炒蛋'], image: '/images/recipe/tomato-egg.png' },
-  {
-    keywords: ['蔬菜豆腐汤', '番茄豆腐'],
-    image: '/images/recipe/vegetable-tofu-soup.png',
-  },
-  { keywords: ['鸡蛋炒饭', '炒饭'], image: '/images/recipe/egg-fried-rice.png' },
-  { keywords: ['水果碗', '酸奶杯'], image: '/images/recipe/yogurt-fruit-bowl.png' },
-]
-
-const RECIPE_TYPE_VISUALS = [
-  { keywords: ['汤', '羹', '煲'], image: '/images/recipe/type-soup.png' },
-  { keywords: ['炒', '爆', '煎'], image: '/images/recipe/type-stir-fry.png' },
-  { keywords: ['饭', '焖饭', '盖饭', '粥', '米'], image: '/images/recipe/type-rice.png' },
-  { keywords: ['面', '粉', '米线', '河粉'], image: '/images/recipe/type-noodle.png' },
-  { keywords: ['沙拉', '凉拌', '轻拌'], image: '/images/recipe/type-salad.png' },
-  { keywords: ['蒸'], image: '/images/recipe/type-steam.png' },
-  { keywords: ['炖', '烧', '焖', '卤'], image: '/images/recipe/type-braise.png' },
-  {
-    keywords: ['饮', '茶', '奶昔', '气泡', '汁', '杯'],
-    image: '/images/recipe/type-drink.png',
-  },
-]
-
-const RECIPE_FAMILY_VISUALS = [
-  {
-    keywords: ['虾', '蟹', '贝', '蛤', '鱼', '海鲜'],
-    image: '/images/recipe/family-seafood.png',
-  },
-  {
-    keywords: ['牛', '猪', '鸡', '肉', '排骨', '火腿'],
-    image: '/images/recipe/family-meat.png',
-  },
-  { keywords: ['鸡蛋', '蛋', '滑蛋'], image: '/images/recipe/family-egg.png' },
-  { keywords: ['豆腐'], image: '/images/recipe/vegetable-tofu-soup.png' },
-  {
-    keywords: [
-      '青菜',
-      '菠菜',
-      '白菜',
-      '西兰花',
-      '蔬菜',
-      '时蔬',
-      '瓜',
-      '笋',
-      '藕',
-      '萝卜',
-    ],
-    image: '/images/recipe/family-vegetable.png',
-  },
-  { keywords: ['菌', '菇', '木耳', '香菇'], image: '/images/recipe/family-mushroom.png' },
-  {
-    keywords: ['苹果', '香蕉', '水果', '酸奶', '牛奶', '乳'],
-    image: '/images/recipe/family-fruit-dairy.png',
-  },
+// 食材名关键词 → 桶（顺序敏感：先具体、后宽泛，避免「鸡蛋」落入「鸡」、「果汁」落入「水果」）
+const KEYWORD_BUCKETS = [
+  { bucket: 'egg', keywords: ['鸡蛋', '鸭蛋', '鹌鹑蛋', '咸蛋', '松花蛋', '皮蛋', '蛋'] },
+  { bucket: 'soy', keywords: ['豆腐', '豆干', '豆皮', '腐竹', '豆浆', '纳豆', '千张', '素鸡'] },
+  { bucket: 'dairy', keywords: ['牛奶', '酸奶', '奶酪', '芝士', '黄油', '奶油', '淡奶', '炼乳', '乳', '奶'] },
+  { bucket: 'shrimp', keywords: ['虾'] },
+  { bucket: 'seafood', keywords: ['鱼', '蟹', '贝', '蛤', '鱿', '墨鱼', '海鲜', '三文', '鲈', '鳕', '鲫', '带鱼', '黄鱼', '扇贝', '生蚝', '蛏', '鲍'] },
+  { bucket: 'poultry', keywords: ['鸡', '鸭', '鹅', '禽'] },
+  { bucket: 'meat', keywords: ['牛', '羊', '猪', '五花', '排骨', '里脊', '培根', '火腿', '午餐肉', '腊肉', '肥牛', '牛腩', '肉'] },
+  { bucket: 'mushroom', keywords: ['香菇', '金针', '杏鲍', '蘑菇', '木耳', '银耳', '菌', '菇'] },
+  { bucket: 'root', keywords: ['土豆', '马铃薯', '萝卜', '胡萝卜', '山药', '莲藕', '藕', '红薯', '地瓜', '南瓜', '芋', '姜', '葱', '蒜', '洋葱'] },
+  { bucket: 'leafy', keywords: ['菜心', '青菜', '生菜', '菠菜', '白菜', '油麦', '香菜', '芹菜', '韭菜', '茼蒿', '娃娃菜', '西兰花', '西蓝花', '花菜', '芥蓝', '叶'] },
+  { bucket: 'frozen', keywords: ['速冻', '冷冻', '冰淇淋', '雪糕', '汤圆', '冻'] },
+  { bucket: 'drink', keywords: ['果汁', '汁', '饮料', '汽水', '可乐', '气泡水', '椰汁', '咖啡', '奶茶', '茶', '啤酒', '饮'] },
+  { bucket: 'fruit', keywords: ['苹果', '香蕉', '橙', '橘', '葡萄', '提子', '草莓', '蓝莓', '莓', '梨', '桃', '西瓜', '哈密瓜', '芒果', '柚', '猕猴桃', '车厘子', '樱桃', '菠萝', '火龙果', '牛油果', '柠檬', '果'] },
+  { bucket: 'staple', keywords: ['米饭', '米', '面条', '面包', '吐司', '馒头', '包子', '饺子', '馄饨', '粉', '米线', '河粉', '粥', '燕麦', '麦片', '年糕', '饼', '意面', '面'] },
+  { bucket: 'seasoning', keywords: ['酱油', '生抽', '老抽', '蚝油', '料酒', '味精', '鸡精', '番茄酱', '沙拉酱', '醋', '盐', '糖', '酱', '油'] },
 ]
 
 function normalizeText(value) {
@@ -226,116 +77,40 @@ function includesAny(text, keywords) {
   return keywords.some((keyword) => text.includes(normalizeText(keyword)))
 }
 
-function ensureImagePath(image, fallback) {
-  return String(image || fallback || FOOD_DEFAULT_IMAGE)
+function ensureImagePath(image) {
+  return String(image || FOOD_DEFAULT_IMAGE)
+}
+
+function visualForBucket(bucket) {
+  return {
+    type: 'icon',
+    image: ensureImagePath(BUCKET_IMAGES[bucket] || FOOD_DEFAULT_IMAGE),
+    className: bucket || 'other',
+  }
 }
 
 function getIngredientVisual(item) {
+  // 1) 用户拍照优先（预留接口）
   if (item && item.source === 'photo' && item.imageFileId) {
     return {
       type: 'photo',
-      image: ensureImagePath(item.imageFileId, FOOD_DEFAULT_IMAGE),
+      image: ensureImagePath(item.imageFileId),
       className: 'photo',
     }
   }
 
-  const name = String((item && item.name) || '').trim()
-  const exactImage = INGREDIENT_EXACT_VISUALS[name]
-
-  if (exactImage) {
-    return {
-      type: 'icon',
-      image: ensureImagePath(exactImage, FOOD_DEFAULT_IMAGE),
-      className: 'ingredient',
-    }
+  // 2) 按食材名关键词归桶
+  const name = normalizeText(item && item.name)
+  if (name) {
+    const hit = KEYWORD_BUCKETS.find((entry) => includesAny(name, entry.keywords))
+    if (hit) return visualForBucket(hit.bucket)
   }
 
-  const text = normalizeText(`${name} ${(item && item.category) || ''}`)
-  const family = INGREDIENT_FAMILY_VISUALS.find((entry) =>
-    includesAny(text, entry.keywords),
-  )
-
-  if (family) {
-    return {
-      type: 'icon',
-      image: ensureImagePath(family.image, FOOD_DEFAULT_IMAGE),
-      className: family.className,
-    }
-  }
-
+  // 3) 按品类归桶（含历史数据），最终兜底 other
   const category = (item && item.category) || '其他'
-  const categoryVisual = CATEGORY_VISUALS[category] || CATEGORY_VISUALS['其他']
-
-  return {
-    type: 'icon',
-    image: ensureImagePath(categoryVisual.image, FOOD_DEFAULT_IMAGE),
-    className: categoryVisual.className,
-  }
-}
-
-function getRecipeText(recipe) {
-  let parts = []
-
-  if (recipe) {
-    parts.push(recipe.id)
-    parts.push(recipe.title)
-
-    if (Array.isArray(recipe.ingredients)) {
-      parts = parts.concat(recipe.ingredients)
-    }
-
-    if (Array.isArray(recipe.availableItems)) {
-      parts = parts.concat(
-        recipe.availableItems.map((item) => (item && item.name) || item),
-      )
-    }
-
-    if (Array.isArray(recipe.missingItems)) {
-      parts = parts.concat(recipe.missingItems)
-    }
-  }
-
-  return parts.map(normalizeText).join(' ')
-}
-
-function findRecipeImage(entries, text) {
-  const matched = entries.find((entry) => includesAny(text, entry.keywords))
-  return matched ? matched.image : ''
-}
-
-function getRecipeVisual(recipe) {
-  if (recipe && recipe.image) {
-    return ensureImagePath(recipe.image, RECIPE_DEFAULT_IMAGE)
-  }
-
-  const id = recipe && recipe.id
-
-  if (id && RECIPE_EXACT_VISUALS[id]) {
-    return ensureImagePath(RECIPE_EXACT_VISUALS[id], RECIPE_DEFAULT_IMAGE)
-  }
-
-  const title = recipe && recipe.title
-
-  if (title && RECIPE_TITLE_EXACT_VISUALS[title]) {
-    return ensureImagePath(
-      RECIPE_TITLE_EXACT_VISUALS[title],
-      RECIPE_DEFAULT_IMAGE,
-    )
-  }
-
-  const text = getRecipeText(recipe)
-
-  return (
-    ensureImagePath(
-      findRecipeImage(RECIPE_TITLE_VISUALS, text) ||
-        findRecipeImage(RECIPE_TYPE_VISUALS, text) ||
-        findRecipeImage(RECIPE_FAMILY_VISUALS, text),
-      RECIPE_DEFAULT_IMAGE,
-    )
-  )
+  return visualForBucket(CATEGORY_BUCKET[category] || 'other')
 }
 
 module.exports = {
   getIngredientVisual,
-  getRecipeVisual,
 }

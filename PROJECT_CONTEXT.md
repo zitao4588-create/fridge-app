@@ -2945,3 +2945,22 @@ type FridgeItem = {
 
 - 需要在 GitHub 页面确认 README 截图和文档链接展示正常。
 - 4 个原未推送提交的 author / committer 已改为 GitHub noreply 邮箱并完成 push。
+
+本轮改动（2026-06-08 食材图品类治理）：
+
+- 食材配图改为品类 / 族群共用写实图，删除本地 PIL 自动生成占位图与菜谱配图死代码。
+- `utils/visualAssets.js`：照片优先 > 关键词归桶 > 品类兜底 > 通用兜底；仅导出 `getIngredientVisual`。
+- `utils/constants.js`：`CATEGORY_OPTIONS` 拆「肉蛋」→「肉类/蛋」并加「水产/豆制品」，旧值兼容。
+- `images/foods` 35 → 16 张全写实；删 19 张占位 + `images/recipe/` 32 张；`project.config.json` 去 recipe ignore。
+- 4 张缺口图（default/drink/frozen/seasoning）按提示词生成、pngquant 压到 176×176 且 ≤9.8KB。
+
+本轮验证：
+
+- `node --check utils/visualAssets.js`、`utils/constants.js` 通过。
+- 归桶 node 自测：鸡蛋/鸡肉/牛肉/三文鱼/虾/酸奶/橙汁/速冻水饺等均落对桶；拍照优先返回照片 fileID。
+- `cli preview` 通过，主包约 1.70MB（余量 ~330KB），TDesign 分包 ~276KB。
+
+当前还没解决的问题：
+
+- 4 张新写实图为 AI 生成，真机需确认清晰度与风格一致性。
+- 「猪肉」暂并入「肉类」，如需单独图后续再补。

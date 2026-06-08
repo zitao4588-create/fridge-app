@@ -3,10 +3,6 @@
   "packOptions": {
     "ignore": [
       {
-        "value": "images/recipe",
-        "type": "folder"
-      },
-      {
         "value": "node_modules",
         "type": "folder"
       },
