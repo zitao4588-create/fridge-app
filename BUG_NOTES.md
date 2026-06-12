@@ -1,6 +1,6 @@
 # BUG_NOTES.md
 
-最后更新：2026-06-04
+最后更新：2026-06-12
 
 ## 本轮涉及的问题与处理
 
@@ -2039,3 +2039,45 @@
 后续注意：
 
 - 在 Codex 沙盒里运行会写入 `node_modules/.tmp` 的构建命令时，如果出现 EPERM，先判断是否为沙盒权限问题，再看代码错误。
+
+## 2026-06-12 主线同步与文档口径问题记录
+
+### 1. 根目录 main 与 Claude Code 上线 worktree 不一致
+
+现象：
+
+- 用户说明 Claude Code 已做调整和上线。
+- 根目录 `main` 仍是较早的开源准备版本。
+- Claude Code 的实际上线代码位于 `.claude/worktrees/prelaunch-fixes`，分支为 `worktree-prelaunch-fixes`。
+
+处理：
+
+- 检查确认 `main` 是 `worktree-prelaunch-fixes` 的祖先，可以快进合并。
+- 创建备份分支：`backup/main-before-v1-sync-20260612`。
+- 执行 `git merge --ff-only worktree-prelaunch-fixes`，将上线分支合并为新的 `main`。
+
+后续注意：
+
+- 当前 `main` 领先 `origin/main`，需要用户确认后再 push。
+- `.claude/` 是本地 worktree 目录，不应提交。
+
+### 2. 文档仍混有旧 AI / 拍照识别版本描述
+
+现象：
+
+- 合并后的 README 已是 v1.0 个人主体稳定版口径。
+- 但 `AGENTS.md`、`PROJECT_CONTEXT.md`、`TODO.md` 前半段仍保留旧 AI 菜谱、拍照识别、小票识别、旧页面结构等描述。
+
+原因：
+
+- Claude Code 上线分支主要改了代码和 README，项目上下文文档只在末尾追加了部分新记录，没有整体收口。
+
+处理：
+
+- 重写 `AGENTS.md`、`PROJECT_CONTEXT.md`、`TODO.md`、`NEXT_VERSION_GUIDE.md`，统一为 v1.0 线上真实状态。
+- 在 `DECISIONS.md` 追加本轮主线切换和文档口径统一决策。
+
+后续注意：
+
+- 后续新会话应以 v1.0 稳定版为主线。
+- 不要在个人主体阶段误恢复 AI、深度合成、拍照识别或支付。

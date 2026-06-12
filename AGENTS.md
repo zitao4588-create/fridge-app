@@ -1,125 +1,148 @@
 # AGENTS.md
 
+## 协作规则
+
+- 始终用中文和用户沟通。
+- 把用户当成 vibe coding 新手，解释时少用未说明的工程术语。
+- 每次改代码前，先说明准备改哪些文件、为什么改。
+- 优先小步迭代，先做最小可运行版本。
+- 不要未经确认引入数据库重构、登录、支付、Docker、独立后端、微服务等复杂能力。
+- 禁止脚本批量删除文件或目录；如确需批量删除，必须先停下来让用户确认。
+- 旧文件清理、云端资源删除、历史函数删除都按高风险操作处理。
+
+## 新会话启动流程
+
+每次在本项目开启新会话时，先只读同步，不要直接改代码。
+
+优先阅读：
+
+- `AGENTS.md`
+- `README.md`
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `DECISIONS.md`
+- `BUG_NOTES.md`
+- `NEXT_VERSION_GUIDE.md`
+
+阅读后先用中文复述：
+
+- 当前项目目标
+- 当前技术栈
+- 已完成内容
+- 当前待办事项
+- 重要限制
+- 下一步建议
+
+等用户确认后再开始修改代码。
+
 ## 项目目标
 
-本项目当前主线是微信小程序“冰箱小雷达”，用于管理冰箱食品饮料库存。
+本项目是微信小程序「冰箱小雷达」，用于家庭冰箱食品饮料库存管理。
 
-当前阶段目标：
+当前主线是已上线的 v1.0 个人主体稳定版：
 
-- 用户可以手动添加冰箱食品饮料
-- 首页可以查看库存、过期状态、统计、搜索和筛选
-- 支持编辑、删除食品
-- 数据保存到微信云开发 CloudBase 云数据库
-- 每条食品数据绑定当前用户 `_openid`
-- 日历页显示到期食品，并在日历下方直接承接临期 / 过期食材去化
-- 菜谱页固定为 AI 菜谱体验页，已接入云函数 AI 路径和腾讯实时天气；雷达建议独立根据城市、天气、气候生成；用户点选入口后生成独立菜谱系列
-- 拍食品、拍包装、拍购物小票必须经过确认页后保存；条形码扫描模块已从用户入口移除
+- 记录食材名称、品类、生产日期、保质期、过期日期、存放分区和备注
+- 首页按 5 个冰箱分区查看库存、临期和过期状态
+- 支持添加、编辑、删除、搜索食品
+- 数据保存到微信云开发 CloudBase 云数据库，按当前微信用户 `_openid` 隔离
+- 日历页展示到期日，并用本地算法计算「开饭雷达」可开饭指数
+- 菜谱页当前是「菜谱搭配，敬请期待」占位页，只保留隐私说明入口
 
-## 技术栈
+## 当前技术栈
 
 - 微信小程序原生开发
 - 原生 JavaScript
 - WXML
 - WXSS
+- TDesign 小程序组件库，放在 `pkg-add` 分包独立 npm 中
 - 微信云开发 / CloudBase
-- 云数据库集合：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs`、`recipeRecords`
-- 云函数：`getOpenId`、`parseFoodImage`、`parseBarcode`、`generateRecipes`、`sendExpiryReminders`
 
-补充说明：
+当前主要数据集合：
 
-- 当前不做登录页
-- 当前不获取用户头像、昵称、手机号
-- 当前不接独立后端服务器
-- 当前不接 Vercel、Supabase、Next.js
-- 当前不接真实条形码商品库
-- 当前真实天气只通过云函数读取腾讯位置服务，小程序前端不直接放 API key
-- 当前不接真实联网搜索
-- 当前不做订阅消息真实推送
-- 旧 React/Vite H5 文件仍保留，但不是当前开发主线
+- `items`：当前 v1.0 主业务集合
+- `reminders`：提醒能力预留
+- `parseLogs`：识别能力历史 / 后续预留
+- `fridgeZoneConfigs`：历史分区配置集合，当前 v1.0 首页使用固定 5 分区
+
+当前云函数目录仍保留：
+
+- `getOpenId`
+- `parseFoodImage`
+- `parseBarcode`
+- `generateRecipes`
+- `sendExpiryReminders`
+
+说明：v1.0 前端不开放 AI、拍照识别、条形码、支付、登录、UGC。相关云函数属于历史实现或后续企业主体版本预留。
 
 ## 当前已完成功能
 
-当前第一阶段 MVP 已经完成：
-
-- 微信小程序项目结构
-- CloudBase 初始化
-- CloudBase 数据库集合：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs`、`recipeRecords`
-- 云函数部署：`getOpenId`、`parseFoodImage`、`parseBarcode`、`generateRecipes`、`sendExpiryReminders`
-- 首页库存列表
-- 手动添加食品
-- 编辑已有食品
-- 删除食品和二次确认
-- 食品名称搜索
-- 品类筛选
-- 存放位置筛选
-- 顶部统计：总数、3 天内过期、已过期
-- 过期状态计算
+- 微信小程序原生项目结构已收敛为纯小程序工程，旧 React/Vite H5 已移除
+- 底部 3 个 Tab：冰箱、日历、菜谱
+- 首页 5 个固定分区：
+  - 冷藏区
+  - 冷冻区
+  - 门上储物格
+  - 果蔬抽屉
+  - 变温区
+- 首页每个分区显示库存、临期、过期统计和横向食品卡片
+- 首页支持搜索食材
+- 首页支持点击食品卡片查看详情、编辑、删除
+- 首页支持清空全部食品数据，带二次确认
+- 添加 / 编辑页已移到分包 `pkg-add/item-form`
+- 添加 / 编辑支持字段级校验
+- 食材缩略图按品类 / 食材族群共用写实图
+- 用户拍照图的显示接口已预留：`source === "photo"` 且有 `imageFileId` 时优先显示用户照片
 - 日历页展示到期食品
-- 日历页临期去化：今日到期、3 天内、7 天内、已过期统计，优先处理食材，3 道去化菜谱卡片，过期安全提醒
-- AI 菜谱体验页：气候养生雷达建议、可修改城市、菜谱收藏、菜谱盲盒、我来选食材
-- 菜谱盲盒：不读取冰箱库存，只根据城市、天气、温度、湿度、季节 / 节气推荐应季养生家常菜
-- 我来选食材：只围绕料理碗中选择的库存 / 临时食材生成菜谱，并保留上一次生成结果直到用户清空
-- 拍食品真实视觉识别 + mock 兜底确认流程
-- 拍包装识别确认流程
-- 拍购物小票 mock 批量确认流程
-- 首页“智能录入”独立入口
-- 首页“确定放哪 / 不确定放哪”指示牌式决策入口
-- 首页已改为分区货架展示，支持 5 个标准分区启用 / 排序 DIY
-- 首页分区 DIY 配置保存到 CloudBase 集合 `fridgeZoneConfigs`
-- 分区弹窗内支持手动添加、拍食品、拍包装
-- 智能录入支持手动输入名称后推荐分区
-- 小票批量确认页支持手动补充漏识别食品
-- 日历页库存弹窗支持删除食品
-- 存放分区收敛为冷藏、冷冻、门架、果蔬抽屉、变温 5 个标准分区，取消存放分区 `其他`
-- 首页空状态优化
-- 搜索 / 筛选无结果时可清空筛选
-- 删除成功后页面内提示
-- 添加 / 编辑页字段级校验提示
-- 添加 / 编辑页品类、存放分区快捷点选
+- 日历页统计总库存、临期、过期
+- 日历页「开饭雷达」使用纯本地评分算法，不调用云端 AI
+- 菜谱页为占位页，不提供 AI 生成
+- 隐私保护指引入口已接入 `wx.openPrivacyContract`
+- 已完成轻奢黏土风格 UI 重构和基础无障碍整改
+- 主包约 1.70MB，TDesign 放入分包，避免主包超过微信 2MB 限制
 
-当前页面行为：
+## 当前不做
 
-- 可录入食品名称
-- 可录入品类
-- 可录入生产日期
-- 可录入保质期天数
-- 可录入过期日期
-- 可录入存放分区
-- 可录入备注
-- 数量和单位不再在添加 / 识别确认流程中展示，保存时使用兼容默认值 `1 / 份`
-- 品类、存放分区可直接点选，选中项会高亮
-- 可编辑已有食品
-- 列表按过期日期从近到远排序
-- 顶部展示总数、3 天内过期数、已过期数
-- 无库存时提示“冰箱还是空的”
-- 搜索或筛选无结果时提示清空筛选
-- 菜谱页可查看菜谱详情，支持收藏 / 取消收藏菜谱
-- 菜谱盲盒展示应季建议食材、步骤和安全提示
-- 我来选食材展示匹配食材、缺少食材、步骤和安全提示
-- “我来选食材”可从冰箱库存选择 1 到 5 个未过期食材生成推荐
-- “我来选食材”生成时显示加载提示，等待云端刷新完成后再关闭
-- AI 菜谱页进入后不自动展示“临期去化攻略”，必须点选“菜谱盲盒”或“我来选食材”后才生成下方内容
+v1.0 / 个人主体阶段不要做：
 
-当前过期状态规则：
+- 登录页
+- 获取头像、昵称、手机号
+- 支付 / 会员
+- AI 菜谱生成
+- 深度合成相关能力
+- 拍照识别入口
+- 条形码扫描入口
+- 真实商品库
+- 独立后端服务器
+- Vercel
+- Supabase
+- Next.js
+- Docker
+- UGC 社区能力
 
-- 已过期：`overdue`
-- 1 天内过期：`critical`
-- 3 天内过期：`warning`
-- 7 天内过期：`soon`
-- 正常：`normal`
+AI / OCR / 菜谱生成 / 天气 / 第三方 API key 只能放在云函数侧，不能放到小程序前端。
 
 ## 当前数据结构
 
-当前核心数据结构由 `services/itemService.js` 清洗后写入 CloudBase 的 `items` 集合。
-
-### 1. 食品数据
+核心数据由 `services/itemService.js` 清洗后写入 CloudBase `items` 集合。
 
 ```ts
 type FridgeItem = {
   _id: string;
   _openid: string;
   name: string;
-  category: "蔬菜" | "水果" | "肉蛋" | "乳制品" | "饮料" | "速冻" | "调料" | "主食" | "其他";
+  category:
+    | "蔬菜"
+    | "水果"
+    | "肉类"
+    | "水产"
+    | "蛋"
+    | "乳制品"
+    | "豆制品"
+    | "主食"
+    | "饮料"
+    | "速冻"
+    | "调料"
+    | "其他";
   quantity: number;
   unit: string;
   productionDate?: string;
@@ -127,150 +150,68 @@ type FridgeItem = {
   expireDate: string;
   storageLocation: "冷藏" | "冷冻" | "门架" | "果蔬抽屉" | "变温";
   note?: string;
-  source: "manual" | "photo" | "barcode" | "package" | "receipt";
-  barcode?: string;
+  source: "manual" | "photo" | "package" | "receipt";
   imageFileId?: string;
   parseConfidence?: number;
   parseRawText?: string;
-  parseStatus?: "mock" | "pending" | "success" | "failed" | "manual_confirmed";
+  parseStatus?: string;
   createdAt: number;
   updatedAt: number;
 };
 ```
 
-字段说明：
+兼容说明：
 
-- `_id`：CloudBase 文档 ID
-- `_openid`：微信云开发自动绑定的当前用户标识
-- `name`：食品名称
-- `category`：品类
-- `quantity`：数量
-- `unit`：单位
-- `productionDate`：生产日期，可选
-- `shelfLifeDays`：保质期天数，可选
-- `expireDate`：过期日期，格式为 `YYYY-MM-DD`
-- `storageLocation`：存放位置
-- `note`：备注
-- `source`：来源，手动 / 拍食品 / 条码 / 包装说明 / 小票；`barcode` 仅为历史兼容字段，新入口不再产生
-- `createdAt`：创建时间戳
-- `updatedAt`：更新时间戳
+- 历史 `category: "肉蛋"` 会在图片映射里兼容。
+- 历史 `storageLocation: "保鲜"` 会归一到 `果蔬抽屉`。
+- `barcode` 字段在 `itemService` 中仍兼容，但 v1.0 不再产生新条码数据。
 
-### 2. service 层
-
-- `services/itemService.js`：食品增删改查、搜索、清理
-- `services/parseService.js`：拍食品 / 包装 / 小票解析、解析结果标准化、过期日期计算、推荐分区
-- `services/reminderService.js`：日历事件和提醒能力预留
-- `services/recipeService.js`：AI 菜谱推荐、库存匹配、临期去化建议、气候养生盲盒推荐
-- `services/recipeRecordService.js`：菜谱收藏记录读写、菜谱 key 构建和收藏状态同步
-
-页面不要直接堆复杂数据库逻辑，新增业务逻辑优先放到 service 层。
-
-## 当前项目状态
-
-截至当前，项目状态如下：
-
-- 小程序项目可以在微信开发者工具中导入并运行
-- CloudBase 环境已配置：`cloud1-d3g4v0ms8ee56bd94`
-- AppID 已配置：`wx328e2b87665508e7`
-- 主要云函数已部署成功
-- `npm run lint` 可通过
-- `npm run build` 可通过
-- `node --check pages/index/index.js` 可通过
-- `node --check pages/item-form/item-form.js` 可通过
-- `node --check pages/quick-add/quick-add.js` 可通过
-- `node --check pages/parse-confirm/parse-confirm.js` 可通过
-- `node --check pages/batch-parse-confirm/batch-parse-confirm.js` 可通过
-- `node --check pages/calendar/calendar.js` 可通过
-- `node --check pages/recipes/recipes.js` 可通过
-- `node --check services/parseService.js` 可通过
-- `node --check services/recipeService.js` 可通过
-- `node --check cloudfunctions/generateRecipes/index.js` 可通过
-- 微信开发者工具自动化测试通过 15 项断言
-- 品类 / 存放分区快捷选择相关检查通过
-- 自动化测试数据已清理
-
-当前主要文件职责：
+## 当前文件职责
 
 - `app.js`：CloudBase 初始化
-- `app.json`：页面和底部 Tab 配置
+- `app.json`：页面、分包、底部 Tab 配置
 - `app.wxss`：全局样式
-- `pages/index/*`：首页库存列表、统计、搜索、筛选、删除、空状态
-- `pages/item-form/*`：添加 / 编辑食品表单
-- `pages/quick-add/*`：独立智能录入入口
-- `pages/parse-confirm/*`：单个识别结果确认页
-- `pages/batch-parse-confirm/*`：小票批量识别结果确认页
-- `pages/calendar/*`：到期日历页、临期去化卡片推荐
-- `pages/recipes/*`：AI 菜谱体验页
-- `pages/profile/*`：我的页
-- `services/*`：业务逻辑
-- `utils/*`：常量、日期、状态工具
-- `cloudfunctions/*`：云函数
+- `custom-tab-bar/*`：自定义底部 TabBar
+- `pages/index/*`：首页库存、分区、搜索、详情、删除、清空
+- `pages/calendar/*`：到期日历、本地开饭雷达、统计清单
+- `pages/recipes/*`：菜谱占位页和隐私说明入口
+- `pkg-add/item-form/*`：添加 / 编辑食品表单
+- `services/itemService.js`：食品增删改查、分页读取、轻缓存
+- `services/reminderService.js`：日历事件和提醒能力预留
+- `services/parseService.js`：识别能力历史 / 后续预留，当前不开放拍照入口
+- `utils/constants.js`：品类、分区、来源标签
+- `utils/date.js`：日期工具
+- `utils/status.js`：过期状态
+- `utils/visualAssets.js`：食材图片归桶
+- `styles/tokens.wxss`：视觉 token
+- `styles/tdesign-theme.wxss`：TDesign 主题
+- `cloudfunctions/*`：云函数，当前部分为后续能力预留
 
-## 后续待开发功能
+## 后续优先建议
 
-后续开发保持“小步迭代”，优先做直接提升可用性的功能。
+下一步先做上线后稳定性，不要急着恢复 AI 或拍照识别：
 
-优先建议：
+- 真机确认 5 个分区、添加 / 编辑、删除、搜索、清空流程
+- 真机确认常见食材图片归桶是否正确
+- 更新 README 截图，让截图和 v1.0 UI 一致
+- 检查微信后台隐私协议、类目、服务内容与当前 v1.0 功能一致
+- 评估订阅消息到期提醒，但先不要直接开启真实推送
+- 继续控制主包体积，不要无控制新增 PNG
 
-- 真机预览检查实际触控体验
-- 我的页增加更清晰的数据统计
-- 真机预览拍食品、拍包装、小票批量确认的完整体验
-- 真机预览日历页临期去化和 AI 菜谱页弹窗体验
-- 优化首页筛选区的移动端布局和触控面积
-- 增加食品详情或卡片展开能力，便于查看备注、来源、生产日期
+## 结束会话收尾流程
 
-第二阶段再考虑：
+如果用户说「收尾」或「更新项目状态」，更新：
 
-- 拍食品图片上传到 CloudBase 云存储已完成；后续继续完善图片压缩、云存储清理
-- 真实 OCR / AI 图片识别
-- 条形码扫描模块如需恢复，再重新评估真实商品库或第三方接口
-- 订阅消息授权与定时提醒
-- 继续完善真实 AI 菜谱推荐、腾讯实时天气兜底和真实联网搜索
+- `PROJECT_CONTEXT.md`
+- `TODO.md`
+- `BUG_NOTES.md`，如本轮涉及报错或失败尝试
+- `DECISIONS.md`，如本轮做了技术选择或产品决策
 
-暂不建议优先引入：
+更新内容包括：
 
-- 登录页
-- 获取用户头像、昵称、手机号
-- 独立后端服务器
-- Vercel
-- Supabase
-- Next.js
-- Docker
-- 支付
-- 复杂权限体系
-- 过早的大规模状态管理重构
-
-## 开发约定
-
-- 每次新增功能前先阅读 `AGENTS.md`、`PROJECT_CONTEXT.md`、`TODO.md`
-- 不要随意重构整个项目
-- 每次只改和当前任务相关的文件
-- 优先保证项目能正常运行
-- 每次改代码前先说明准备改哪些文件、为什么改
-- 优先做最小可运行版本
-- 不要未经确认引入复杂技术
-- 禁止脚本批量删除文件或目录
-- 旧 React/Vite 文件暂时保留，不要随意批量删除
-- 如果后续要删除旧文件，必须一个一个处理，并先确认
-
-补充约定：
-
-- 优先延续现有小程序原生实现方式，不轻易替换技术方案
-- 新功能优先在现有页面和 service 层基础上增量开发
-- 页面不要直接堆复杂数据库逻辑
-- 解析、提醒、菜谱推荐继续走 service 层
-- 第一阶段 AI / OCR / 条形码解析继续保持 mock
-- AI 菜谱和腾讯实时天气真实接入继续优先走云函数，不能把 API key 放小程序前端
-- 对数据结构的修改要同步更新 `itemService` 清洗逻辑、页面渲染和文档
-- 如果修改影响已有功能，至少跑 `npm run lint`，必要时跑 `npm run build` 和相关 `node --check`
-- `miniprogram-automator` 当前只是临时测试工具，安装在 `/private/tmp/fridge-automator`，未写入项目依赖
-- 微信开发者工具 CLI 当前没有数据库索引管理命令；`items` 目标组合索引已在 CloudBase 控制台确认存在：`openid_expire_created`，字段为 `_openid` 升序、`expireDate` 升序、`createdAt` 降序
-
-## 维护说明
-
-以后每次版本迭代后，应同步更新本文件中的以下内容：
-
-- 当前已完成功能
-- 当前数据结构
-- 后续待开发功能
-- 任何新增的重要开发约定
+- 本轮完成了什么
+- 修改了哪些文件
+- 当前还没解决的问题
+- 已经尝试但失败的方案
+- 下一步建议
+- 重要注意事项

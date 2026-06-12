@@ -8,6 +8,7 @@ dist-ssr/
 .vite/
 miniprogram_npm/
 .codegraph/
+.claude/
 promo-video/out/
 fridge-radar-demo/out/
 hyperframes-fridge-intro/renders/
