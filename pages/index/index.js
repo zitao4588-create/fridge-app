@@ -291,50 +291,6 @@ Page({
     wx.switchTab({ url: '/pages/calendar/calendar' })
   },
 
-  handleRadarProcess() {
-    const targets = (this.data.homeRadar.actionItems || [])
-      .filter((item) => item && item._id)
-      .slice(0, 3)
-
-    if (!targets.length) return
-
-    const names = targets.map((item) => item.name).filter(Boolean).join('、')
-    const content = targets.length === 1
-      ? `确认「${names}」已经吃掉或清理？确认后会从库存移除。`
-      : `确认「${names}」这 ${targets.length} 样已经处理？确认后会从库存移除。`
-
-    wx.showModal({
-      title: '标记已处理',
-      content,
-      confirmText: '已处理',
-      confirmColor: '#087a49',
-      success: (res) => {
-        if (!res.confirm) return
-
-        wx.showLoading({ title: '处理中' })
-        Promise.all(
-          targets.map((item) =>
-            itemService
-              .deleteItem(item._id)
-              .then(() => ({ ok: true, name: item.name }))
-              .catch(() => ({ ok: false, name: item.name })),
-          ),
-        ).then((results) => {
-          const successCount = results.filter((item) => item.ok).length
-          const failedCount = results.length - successCount
-
-          wx.hideLoading()
-          this.showNotice(
-            failedCount > 0
-              ? `已处理 ${successCount} 样，${failedCount} 样失败`
-              : `已处理 ${successCount} 样食材`,
-          )
-          this.loadItems()
-        })
-      },
-    })
-  },
-
   handleZoneAdd(event) {
     const location = event.currentTarget.dataset.location
     wx.navigateTo({

@@ -644,16 +644,6 @@
   font-weight: 800;
 }
 
-.meal-radar-priority-done {
-  flex-shrink: 0;
-  padding: 5rpx 10rpx;
-  border-radius: 999rpx;
-  color: #ffffff;
-  background: var(--brand-mint-deep, #087a49);
-  font-size: 20rpx;
-  font-weight: 800;
-}
-
 .meal-radar-priority-empty {
   min-width: 0;
   color: var(--text-sub, #6d7e76);

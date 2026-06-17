@@ -113,7 +113,6 @@
       <view wx:if="{{radar.priorityItems.length > 0}}" class="meal-radar-priority-chips">
         <view class="meal-radar-priority-chip" wx:for="{{radar.priorityItems}}" wx:key="_id">
           <text class="meal-radar-priority-name">{{item.name}}</text>
-          <text class="meal-radar-priority-done" data-id="{{item._id}}" data-name="{{item.name}}" catchtap="handleProcessItem">已处理</text>
         </view>
       </view>
       <text wx:else class="meal-radar-priority-empty">{{radar.priorityEmptyText}}</text>

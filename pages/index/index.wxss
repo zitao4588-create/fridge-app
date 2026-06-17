@@ -73,23 +73,6 @@
   color: var(--text-light, #647264);
 }
 
-.hero-process {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  min-width: 104rpx;
-  min-height: 58rpx;
-  padding: 0 18rpx;
-  border-radius: 999rpx;
-  line-height: 58rpx;
-  text-align: center;
-  font-size: 23rpx;
-  font-weight: 800;
-  color: #ffffff;
-  background: var(--brand-mint-deep, #087a49);
-  box-shadow: 0 8rpx 18rpx rgba(8, 122, 73, 0.18);
-}
-
 .hero.high:active,
 .hero.medium:active,
 .hero.low:active {

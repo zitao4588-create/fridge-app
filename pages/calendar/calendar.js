@@ -268,31 +268,4 @@ Page({
     })
   },
 
-  handleProcessItem(event) {
-    const { id, name } = event.currentTarget.dataset
-    if (!id) return
-
-    wx.showModal({
-      title: '标记已处理',
-      content: `确认「${name}」已经吃掉或清理？确认后会从库存移除。`,
-      confirmText: '已处理',
-      confirmColor: '#087a49',
-      success: (res) => {
-        if (!res.confirm) return
-
-        wx.showLoading({ title: '处理中' })
-        itemService
-          .deleteItem(id)
-          .then(() => {
-            wx.hideLoading()
-            wx.showToast({ title: '已处理', icon: 'none' })
-            this.loadItems()
-          })
-          .catch(() => {
-            wx.hideLoading()
-            wx.showToast({ title: '处理失败', icon: 'none' })
-          })
-      },
-    })
-  },
 })
