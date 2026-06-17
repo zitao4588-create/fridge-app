@@ -56,7 +56,7 @@ function sortByExpireDate(items) {
 function buildStatusCopy(radar, timeContext) {
   if (radar.overdueCount > 0) {
     return {
-      statusText: `状态变红：${radar.overdueCount}样已过期`,
+      statusText: `已过期 ${radar.overdueCount} 样`,
       levelTitle: `${timeContext.shortText}先确认过期食材`,
       priorityTitle: '先处理风险',
       priorityEmptyText: '暂无过期风险。',
@@ -65,7 +65,7 @@ function buildStatusCopy(radar, timeContext) {
 
   if (radar.expiringCount > 0) {
     return {
-      statusText: `状态变黄：${radar.expiringCount}样3天内到期`,
+      statusText: `临期 ${radar.expiringCount} 样`,
       levelTitle: `${timeContext.shortText}优先安排临期食材`,
       priorityTitle: '今日优先用掉',
       priorityEmptyText: '暂无临期压力。',
@@ -74,7 +74,7 @@ function buildStatusCopy(radar, timeContext) {
 
   if (radar.usableCount > 0) {
     return {
-      statusText: '状态稳定：暂无临期压力',
+      statusText: '库存稳定',
       levelTitle: `${timeContext.shortText}库存状态稳定`,
       priorityTitle: '今日优先用掉',
       priorityEmptyText: '暂无临期压力，可以按心情安排一顿。',
@@ -82,7 +82,7 @@ function buildStatusCopy(radar, timeContext) {
   }
 
   return {
-    statusText: '状态空白：先建立第一批库存',
+    statusText: '还没有库存',
     levelTitle: '先放进几样常吃的',
     priorityTitle: '今日优先用掉',
     priorityEmptyText: '录入第一批食材后，小雷达会帮你排序。',
