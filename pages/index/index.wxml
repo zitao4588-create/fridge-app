@@ -5,7 +5,7 @@
     <view class="hero-copy">
       <view class="hero-text">
         <block wx:if="{{allItems.length > 0}}">
-          <text class="hero-kicker">开饭小雷达</text>
+          <text class="hero-kicker">{{homeRadar.kicker || '开饭小雷达'}}</text>
           <text class="hero-title">{{homeRadar.title}}</text>
           <text class="hero-desc hero-target">{{homeRadar.actionText}}</text>
         </block>
@@ -13,6 +13,9 @@
           <text class="hero-title">{{homeMood.title}}</text>
           <text class="hero-desc">{{homeMood.desc}}</text>
         </block>
+      </view>
+      <view wx:if="{{homeRadar.canProcess}}" class="hero-process" catchtap="handleRadarProcess" aria-role="button">
+        {{homeRadar.processText}}
       </view>
       <text wx:if="{{allItems.length > 0}}" class="hero-arrow" aria-hidden="true">›</text>
     </view>

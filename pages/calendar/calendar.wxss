@@ -425,6 +425,15 @@
   line-height: 1.15;
 }
 
+.meal-radar-subtitle {
+  display: block;
+  margin-top: 8rpx;
+  color: var(--text-sub, #5c6a62);
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .meal-radar-console {
   position: relative;
   z-index: 1;
@@ -615,12 +624,33 @@
   gap: 8rpx;
 }
 
-.meal-radar-priority-chips text {
-  padding: 8rpx 12rpx;
+.meal-radar-priority-chip {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 10rpx 8rpx 12rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.78);
+}
+
+.meal-radar-priority-name {
+  max-width: 156rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #8a520e;
   font-size: 22rpx;
+  font-weight: 800;
+}
+
+.meal-radar-priority-done {
+  flex-shrink: 0;
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  color: #ffffff;
+  background: var(--brand-mint-deep, #087a49);
+  font-size: 20rpx;
   font-weight: 800;
 }
 

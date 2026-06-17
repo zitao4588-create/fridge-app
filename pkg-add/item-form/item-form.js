@@ -30,6 +30,8 @@ const emptyErrors = {
 const SHARE_TITLE = '冰箱小雷达：记录食材，到期不忘'
 const SHARE_PATH = '/pages/index/index'
 const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
+const RECENT_FOODS_STORAGE_KEY = 'fridge_recent_foods_v1'
+const RECENT_FOOD_LIMIT = 8
 
 function decodeOptionValue(value) {
   try {
@@ -84,11 +86,14 @@ function buildLexiconState(form, options = {}) {
     return { form, lexiconHint: '', matched: false }
   }
 
+  const inputName = String(form.name || '').trim()
+  const shouldUseSuggestionName = /^[a-z0-9]+$/i.test(inputName)
   const productionDate = form.productionDate || options.today || getTodayString()
   const shelfLifeDays = String(suggestion.shelfLifeDays)
   const expireDate = parseService.calculateExpireDate(productionDate, shelfLifeDays)
   const nextForm = {
     ...form,
+    name: shouldUseSuggestionName ? suggestion.name : form.name,
     category: suggestion.category,
     productionDate,
     shelfLifeDays,
@@ -106,6 +111,104 @@ function buildLexiconState(form, options = {}) {
   }
 }
 
+function readRecentFoods() {
+  try {
+    const value = wx.getStorageSync(RECENT_FOODS_STORAGE_KEY)
+    return Array.isArray(value) ? value : []
+  } catch (error) {
+    return []
+  }
+}
+
+function writeRecentFoods(foods) {
+  try {
+    wx.setStorageSync(RECENT_FOODS_STORAGE_KEY, foods)
+  } catch (error) {
+    // 本地缓存失败不影响添加食品主流程。
+  }
+}
+
+function getRecentFoodKey(food) {
+  return [
+    String(food.name || '').trim(),
+    food.category || '',
+    normalizeStorageLocation(food.storageLocation),
+  ].join('|')
+}
+
+function getRecentFoodMeta(food) {
+  const shelfLifeText = food.shelfLifeDays ? `${food.shelfLifeDays}天` : '手动到期日'
+  return `${food.category || '其他'} · ${normalizeStorageLocation(food.storageLocation)} · ${shelfLifeText}`
+}
+
+function getRecentFoodList() {
+  return readRecentFoods()
+    .filter((food) => String(food && food.name ? food.name : '').trim())
+    .slice(0, RECENT_FOOD_LIMIT)
+    .map((food, index) => ({
+      ...food,
+      key: `${getRecentFoodKey(food)}-${index}`,
+      meta: getRecentFoodMeta(food),
+    }))
+}
+
+function normalizeRecentFood(form) {
+  const name = String(form.name || '').trim()
+  const shelfLifeDays = Number(form.shelfLifeDays)
+
+  if (!name) return null
+
+  return {
+    name,
+    category: form.category || '其他',
+    quantity: Number(form.quantity) || 1,
+    unit: form.unit || '份',
+    shelfLifeDays:
+      Number.isFinite(shelfLifeDays) && Number.isInteger(shelfLifeDays) && shelfLifeDays > 0
+        ? shelfLifeDays
+        : '',
+    storageLocation: normalizeStorageLocation(form.storageLocation),
+    note: String(form.note || '').trim(),
+    source: 'manual',
+    updatedAt: Date.now(),
+  }
+}
+
+function rememberRecentFood(form) {
+  const recentFood = normalizeRecentFood(form)
+
+  if (!recentFood) return
+
+  const recentKey = getRecentFoodKey(recentFood)
+  const nextFoods = [recentFood]
+    .concat(readRecentFoods().filter((food) => getRecentFoodKey(food) !== recentKey))
+    .slice(0, RECENT_FOOD_LIMIT)
+
+  writeRecentFoods(nextFoods)
+}
+
+function buildFormFromRecentFood(food, today) {
+  const productionDate = today || getTodayString()
+  const shelfLifeDays = food.shelfLifeDays ? String(food.shelfLifeDays) : ''
+  const expireDate = shelfLifeDays
+    ? parseService.calculateExpireDate(productionDate, shelfLifeDays)
+    : ''
+
+  return {
+    ...emptyForm,
+    name: food.name || '',
+    category: food.category || '其他',
+    quantity: food.quantity || 1,
+    unit: food.unit || '份',
+    productionDate,
+    shelfLifeDays,
+    expireDate,
+    storageLocation: normalizeStorageLocation(food.storageLocation),
+    note: food.note || '',
+    source: 'manual',
+  }
+}
+
 Page({
   data: {
     id: '',
@@ -120,6 +223,7 @@ Page({
     recommendedStorageLocation: '',
     showLocationRecommend: false,
     lexiconHint: '',
+    recentFoods: [],
     dateMode: 'production',
     datePickerVisible: false,
     datePickerTarget: 'production',
@@ -156,6 +260,7 @@ Page({
       smartRecommendEnabled,
       hasPresetStorageLocation: Boolean(storageLocation),
       lexiconHint: lexiconState.lexiconHint,
+      recentFoods: getRecentFoodList(),
       ...(lexiconState.matched ? { dateMode: 'production' } : {}),
       ...buildRecommendationState(form, smartRecommendEnabled, this.data.locationOptions),
     })
@@ -242,6 +347,29 @@ Page({
       ...(lexiconState.matched ? { dateMode: 'production' } : {}),
       ...buildRecommendationState(
         nextForm,
+        this.data.smartRecommendEnabled,
+        this.data.locationOptions,
+      ),
+    })
+  },
+
+  handleRecentTap(event) {
+    const recentFood = this.data.recentFoods[Number(event.currentTarget.dataset.index)]
+
+    if (!recentFood) return
+
+    const recentForm = buildFormFromRecentFood(recentFood, this.data.today)
+    const form = this.data.hasPresetStorageLocation
+      ? { ...recentForm, storageLocation: this.data.form.storageLocation }
+      : recentForm
+
+    this.setData({
+      form,
+      errors: { ...emptyErrors },
+      lexiconHint: `已按最近常加「${recentFood.name}」预填，可继续修改`,
+      dateMode: 'production',
+      ...buildRecommendationState(
+        form,
         this.data.smartRecommendEnabled,
         this.data.locationOptions,
       ),
@@ -403,6 +531,8 @@ Page({
       return
     }
 
+    const formToSave = { ...this.data.form }
+
     this.setData({ saving: true })
 
     reminderService
@@ -411,10 +541,14 @@ Page({
         wx.showLoading({ title: '保存中' })
 
         return this.data.isEdit
-          ? itemService.updateItem(this.data.id, this.data.form)
-          : itemService.createItem(this.data.form)
+          ? itemService.updateItem(this.data.id, formToSave)
+          : itemService.createItem(formToSave)
       })
       .then(() => {
+        if (!this.data.isEdit) {
+          rememberRecentFood(formToSave)
+        }
+
         wx.hideLoading()
         this.setData({ saving: false })
         wx.showToast({ title: '已保存', icon: 'success' })
