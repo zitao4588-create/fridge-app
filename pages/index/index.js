@@ -45,6 +45,7 @@ function buildStats(items) {
   }
 }
 
+// Hero 直接承载开饭雷达：空冰箱时吉祥物打招呼，有库存时由它显示雷达读数并可点进报告
 function buildMood(stats) {
   if (!stats || !stats.total) {
     return {
@@ -53,25 +54,8 @@ function buildMood(stats) {
       desc: '点分区右上角的 ＋ 号，把食材加进来吧～',
     }
   }
-  if (stats.overdue > 0) {
-    return {
-      mascot: '/images/mascot/fridge-happy.png',
-      title: `有 ${stats.overdue} 样已经过期啦`,
-      desc: '记得尽快处理，别影响其他食材～',
-    }
-  }
-  if (stats.expiring > 0) {
-    return {
-      mascot: '/images/mascot/fridge-happy.png',
-      title: `有 ${stats.expiring} 样快到期咯`,
-      desc: '趁新鲜赶紧安排吃掉吧！',
-    }
-  }
-  return {
-    mascot: '/images/mascot/fridge-happy.png',
-    title: '今天冰箱状态很好～',
-    desc: '继续保持，别让食材浪费啦！',
-  }
+
+  return { mascot: '/images/mascot/fridge-happy.png' }
 }
 
 const ZONE_ICONS = {
@@ -299,6 +283,13 @@ Page({
   },
 
   noop() {},
+
+  handleRadarTap() {
+    if (!this.data.allItems.length) return
+    const app = getApp()
+    if (app && app.globalData) app.globalData.scrollToRadar = true
+    wx.switchTab({ url: '/pages/calendar/calendar' })
+  },
 
   handleZoneAdd(event) {
     const location = event.currentTarget.dataset.location

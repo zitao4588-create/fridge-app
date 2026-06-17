@@ -80,7 +80,21 @@ Page({
 
   onShow() {
     this.setTabBar({ selected: 1, hidden: this.data.listPanelVisible })
-    this.loadItems()
+
+    const app = getApp()
+    const shouldScrollToRadar = Boolean(app && app.globalData && app.globalData.scrollToRadar)
+    if (app && app.globalData) app.globalData.scrollToRadar = false
+
+    this.loadItems().then(() => {
+      if (shouldScrollToRadar) this.scrollToRadar()
+    })
+  },
+
+  scrollToRadar() {
+    // 等 setData 渲染落定，再按选中日清单的最终高度滚到报告
+    setTimeout(() => {
+      wx.pageScrollTo({ selector: '.meal-radar-card', duration: 320 })
+    }, 150)
   },
 
   setTabBar(patch) {

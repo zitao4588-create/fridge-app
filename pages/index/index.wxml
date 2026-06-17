@@ -1,20 +1,21 @@
 <view class="page index-page">
-  <view class="hero">
+  <view class="hero {{allItems.length > 0 ? homeRadar.levelClass : ''}}" bindtap="handleRadarTap" aria-role="button" aria-label="查看开饭雷达">
     <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
     <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" aria-hidden="true" />
     <view class="hero-copy">
-      <text class="hero-title">{{homeMood.title}}</text>
-      <text class="hero-desc">{{homeMood.desc}}</text>
+      <view class="hero-text">
+        <block wx:if="{{allItems.length > 0}}">
+          <text class="hero-kicker">开饭小雷达</text>
+          <text class="hero-title">{{homeRadar.title}}</text>
+          <text class="hero-desc hero-target">{{homeRadar.actionText}}</text>
+        </block>
+        <block wx:else>
+          <text class="hero-title">{{homeMood.title}}</text>
+          <text class="hero-desc">{{homeMood.desc}}</text>
+        </block>
+      </view>
+      <text wx:if="{{allItems.length > 0}}" class="hero-arrow" aria-hidden="true">›</text>
     </view>
-  </view>
-
-  <view class="home-radar {{homeRadar.levelClass}}">
-    <view class="home-radar-head">
-      <text class="home-radar-kicker">开饭小雷达</text>
-      <text class="home-radar-state">{{homeRadar.levelTitle}}</text>
-    </view>
-    <text class="home-radar-title">{{homeRadar.title}}：{{homeRadar.actionText}}</text>
-    <text class="home-radar-empty">{{homeRadar.body}}</text>
   </view>
 
   <view wx:if="{{allItems.length === 0}}" class="starter-card">

@@ -34,10 +34,50 @@
 .hero-copy {
   position: relative;
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
   padding: 18rpx 22rpx;
   border-radius: 22rpx;
   background: rgba(255, 255, 255, 0.85);
   box-shadow: var(--shadow-1);
+}
+
+.hero-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-kicker {
+  display: block;
+  margin-bottom: 4rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 0.5rpx;
+  color: var(--brand-mint-deep, #087a49);
+}
+
+.hero.medium .hero-kicker {
+  color: var(--honey-deep, #b96a12);
+}
+
+.hero.low .hero-kicker {
+  color: var(--coral-deep, #c94238);
+}
+
+.hero-arrow {
+  flex-shrink: 0;
+  font-size: 40rpx;
+  font-weight: 300;
+  color: var(--text-light, #647264);
+}
+
+.hero.high:active,
+.hero.medium:active,
+.hero.low:active {
+  transform: scale(0.99);
+  transition: transform 0.08s ease;
 }
 
 .hero-copy::after {
@@ -65,78 +105,11 @@
   color: var(--text-sub, #6f7c74);
 }
 
-/* 首页开饭雷达：只给行动建议，不做报告感 */
-.home-radar {
-  margin-top: 22rpx;
-  padding: 22rpx 24rpx;
-  border-radius: 28rpx;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(250, 255, 251, 0.94) 100%);
-  border: 2rpx solid rgba(119, 183, 139, 0.28);
-  box-shadow: var(--shadow-1), var(--hi-inset);
-}
-
-.home-radar.medium {
-  border-color: rgba(219, 147, 58, 0.34);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 248, 233, 0.96) 100%);
-}
-
-.home-radar.low {
-  border-color: rgba(223, 93, 75, 0.28);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 242, 238, 0.96) 100%);
-}
-
-.home-radar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-}
-
-.home-radar-kicker {
-  font-size: 24rpx;
-  font-weight: 800;
-  color: var(--brand-mint-deep, #087a49);
-}
-
-.home-radar-state {
-  font-size: 22rpx;
-  color: var(--text-sub, #6f7c74);
-}
-
-.home-radar-title {
-  display: block;
-  margin-top: 10rpx;
-  font-size: 30rpx;
-  line-height: 1.35;
-  font-weight: 800;
-  color: var(--text-main, #253730);
-}
-
-.home-radar-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10rpx;
-  margin-top: 14rpx;
-}
-
-.home-radar-chips text {
-  padding: 8rpx 16rpx;
-  border-radius: 999rpx;
-  font-size: 23rpx;
-  font-weight: 700;
-  color: var(--honey-deep, #b96a12);
-  background: rgba(255, 239, 206, 0.9);
-}
-
-.home-radar-empty {
-  display: block;
-  margin-top: 10rpx;
-  font-size: 24rpx;
-  line-height: 1.45;
-  color: var(--text-sub, #6f7c74);
+/* 雷达目标食材：过长单行省略，完整清单在日历报告里看 */
+.hero-target {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 空冰箱样板快速添加 */
