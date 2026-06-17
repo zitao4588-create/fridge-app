@@ -34,10 +34,50 @@
 .hero-copy {
   position: relative;
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
   padding: 18rpx 22rpx;
   border-radius: 22rpx;
   background: rgba(255, 255, 255, 0.85);
   box-shadow: var(--shadow-1);
+}
+
+.hero-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-kicker {
+  display: block;
+  margin-bottom: 4rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 0.5rpx;
+  color: var(--brand-mint-deep, #087a49);
+}
+
+.hero.medium .hero-kicker {
+  color: var(--honey-deep, #b96a12);
+}
+
+.hero.low .hero-kicker {
+  color: var(--coral-deep, #c94238);
+}
+
+.hero-arrow {
+  flex-shrink: 0;
+  font-size: 40rpx;
+  font-weight: 300;
+  color: var(--text-light, #647264);
+}
+
+.hero.high:active,
+.hero.medium:active,
+.hero.low:active {
+  transform: scale(0.99);
+  transition: transform 0.08s ease;
 }
 
 .hero-copy::after {
@@ -62,6 +102,106 @@
   display: block;
   margin-top: 6rpx;
   font-size: 24rpx;
+  color: var(--text-sub, #6f7c74);
+}
+
+/* 雷达目标食材：过长单行省略，完整清单在日历报告里看 */
+.hero-target {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 空冰箱样板快速添加 */
+.starter-card {
+  margin-top: 22rpx;
+  padding: 24rpx;
+  border-radius: 30rpx;
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1), var(--hi-inset);
+}
+
+.starter-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.starter-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.starter-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  line-height: 1.45;
+  color: var(--text-sub, #6f7c74);
+}
+
+.starter-save {
+  flex-shrink: 0;
+  min-width: 116rpx;
+  min-height: 58rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  line-height: 58rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 800;
+  color: var(--text-light, #647264);
+  background: var(--cream-bg, #fff6e8);
+  border: 2rpx solid var(--cream-line, #eadbc4);
+}
+
+.starter-save.active {
+  color: var(--brand-mint-deep, #087a49);
+  background: var(--brand-mint-soft, #eaf8ee);
+  border-color: rgba(40, 185, 120, 0.28);
+}
+
+.starter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.starter-chip {
+  min-width: 0;
+  padding: 16rpx 12rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.76);
+  border: 2rpx solid rgba(234, 219, 196, 0.8);
+  box-shadow: var(--hi-inset);
+}
+
+.starter-chip.selected {
+  background: var(--brand-mint-soft, #eaf8ee);
+  border-color: rgba(40, 185, 120, 0.4);
+}
+
+.starter-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 25rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.starter-meta {
+  display: block;
+  margin-top: 5rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 20rpx;
   color: var(--text-sub, #6f7c74);
 }
 

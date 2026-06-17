@@ -81,6 +81,7 @@
         <image class="meal-radar-mascot" src="/images/mascot/fridge-chef.png" mode="aspectFit" aria-hidden="true" />
         <view class="meal-radar-title-block">
           <text class="meal-radar-title">开饭雷达检测报告</text>
+          <text class="meal-radar-subtitle">{{radar.statusText}} · {{radar.timeText}}</text>
         </view>
       </view>
     </view>
@@ -108,11 +109,13 @@
     </view>
 
     <view class="meal-radar-priority {{radar.priorityItems.length > 0 ? '' : 'empty'}}">
-      <text class="meal-radar-priority-label">今日优先用掉</text>
+      <text class="meal-radar-priority-label">{{radar.priorityTitle}}</text>
       <view wx:if="{{radar.priorityItems.length > 0}}" class="meal-radar-priority-chips">
-        <text wx:for="{{radar.priorityItems}}" wx:key="_id">{{item.name}}</text>
+        <view class="meal-radar-priority-chip" wx:for="{{radar.priorityItems}}" wx:key="_id">
+          <text class="meal-radar-priority-name">{{item.name}}</text>
+        </view>
       </view>
-      <text wx:else class="meal-radar-priority-empty">暂无临期压力，可以按心情安排一顿。</text>
+      <text wx:else class="meal-radar-priority-empty">{{radar.priorityEmptyText}}</text>
     </view>
   </view>
 </view>

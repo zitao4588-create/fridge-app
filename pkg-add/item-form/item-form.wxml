@@ -4,11 +4,35 @@
       <text class="field-label">食品名称</text>
       <t-input
         value="{{form.name}}"
-        placeholder="例如：牛奶、鸡蛋、菠菜"
+        placeholder="例如：牛奶、鸡蛋、菠菜，也可输 nn / jd"
         aria-label="食品名称"
         maxlength="30"
         bindchange="handleNameInput"
       />
+      <view wx:if="{{lexiconHint}}" class="lexicon-hint">
+        <text>{{lexiconHint}}，保存前可手动修改。</text>
+      </view>
+      <view wx:if="{{!isEdit && recentFoods.length > 0}}" class="recent-panel">
+        <view class="recent-head">
+          <text class="recent-title">最近常加</text>
+          <text class="recent-sub">点一下再加一次</text>
+        </view>
+        <scroll-view class="recent-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="recent-track">
+            <view
+              wx:for="{{recentFoods}}"
+              wx:key="key"
+              class="recent-chip"
+              data-index="{{index}}"
+              bindtap="handleRecentTap"
+              aria-role="button"
+            >
+              <text class="recent-name">{{item.name}}</text>
+              <text class="recent-meta">{{item.meta}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
       <text wx:if="{{errors.name}}" class="field-error" aria-role="alert">{{errors.name}}</text>
     </view>
 

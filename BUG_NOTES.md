@@ -1,6 +1,6 @@
 # BUG_NOTES.md
 
-最后更新：2026-06-12
+最后更新：2026-06-17
 
 ## 本轮涉及的问题与处理
 
@@ -2081,3 +2081,293 @@
 
 - 后续新会话应以 v1.0 稳定版为主线。
 - 不要在个人主体阶段误恢复 AI、深度合成、拍照识别或支付。
+
+## 2026-06-12 线上页面不可转发记录
+
+现象：
+
+- 用户真机截图显示右上角菜单里「当前页面不可转发」和「当前页面不可分享」为灰色。
+- 发生页面为「冰箱小雷达」首页。
+
+原因：
+
+- 当前页面没有实现微信小程序的 `onShareAppMessage`。
+- 微信小程序不会默认开放页面转发，必须在页面 JS 中声明分享回调。
+- 朋友圈分享还需要页面实现 `onShareTimeline`。
+
+本地处理：
+
+- `pages/index/index.js` 增加 `onShareAppMessage` 和 `onShareTimeline`。
+- `pages/calendar/calendar.js` 增加 `onShareAppMessage` 和 `onShareTimeline`。
+- `pages/recipes/recipes.js` 增加 `onShareAppMessage` 和 `onShareTimeline`。
+- `pkg-add/item-form/item-form.js` 增加 `onShareAppMessage`。
+- 分享路径统一回到首页，不携带库存数据。
+
+验证：
+
+- `node --check pages/index/index.js` 通过。
+- `node --check pages/calendar/calendar.js` 通过。
+- `node --check pages/recipes/recipes.js` 通过。
+- `node --check pkg-add/item-form/item-form.js` 通过。
+- `git diff --check` 通过。
+
+后续注意：
+
+- 当前修复尚未作为线上版本发布。
+- 用户决定不单独发布该小修，后续和其它改动一起作为新版本上传 / 提审 / 发布。
+
+## 2026-06-12 Codex 自动化创建参数记录
+
+现象：
+
+- 创建「冰箱项目每日进度监控」自动化时，第一次调用 Codex 自动化工具返回 `invalid arguments`。
+
+原因：
+
+- 初次使用了日频 `FREQ=DAILY` 的 RRULE 写法。
+- 当前 Codex 定时自动化工具更适合使用每周规则列出七天来表达“每天执行”。
+
+处理：
+
+- 改用 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU;BYHOUR=9;BYMINUTE=0;BYSECOND=0`。
+- 成功创建每日早上 9 点的只读项目监控自动化。
+
+后续注意：
+
+- 如果后续调整自动化时间，继续使用工具支持的周频七天写法。
+- 自动化任务保持只读，不应自动修改项目文件或提交代码。
+
+## 2026-06-15 微信官方文档读取限制记录
+
+现象：
+
+- 本轮整理 `docs/WECHAT_MINIPROGRAM_AUDIT.md` 时，尝试通过在线工具打开微信官方开发文档页面，正文未返回有效内容。
+- 后续用 `curl -I` 检查官方文档链接，确认页面 HTTP 状态为 200，但未在本轮完整抓取正文。
+
+处理：
+
+- 提审检查清单只写入稳定的工程检查项和官方链接。
+- 文档中明确提示：微信规则、后台入口和能力开通条件会变化，最终以微信公众平台后台和官方文档最新显示为准。
+
+后续注意：
+
+- 真正提审前，仍需在浏览器或微信公众平台后台人工核对服务类目、隐私保护指引、订阅消息模板和包体限制。
+
+## 2026-06-15 开发者工具模拟器首次启动失败记录
+
+现象：
+
+- 用微信开发者工具打开项目后，模拟器显示「模拟器启动失败」。
+- 报错指向 `pkg-add/item-form/item-form.json` 中的 `tdesign-miniprogram/input/input` 组件未找到。
+
+原因：
+
+- `pkg-add` 分包依赖未安装，且分包 npm 构建产物 `pkg-add/miniprogram_npm` 不存在。
+- 添加 / 编辑页依赖 TDesign 组件，缺少构建产物时模拟器无法加载该页面组件。
+
+处理：
+
+- 在 `pkg-add` 目录执行 `npm ci`，安装 `tdesign-miniprogram`。
+- 在项目根目录通过微信开发者工具 CLI 执行 `build-npm`。
+- 构建成功后，首页、添加页、日历页、菜谱页均可在模拟器中加载。
+
+后续注意：
+
+- `pkg-add/node_modules` 和 `pkg-add/miniprogram_npm` 都是本地生成目录，已被 `.gitignore` 忽略，不应提交。
+- 重新拉仓库、换机器或清理依赖后，需要重复执行 `npm ci` 和 `build-npm`。
+- 真实上传前仍需用微信开发者工具确认包体；本轮未执行预览上传。
+
+## 2026-06-15 sendExpiryReminders 定时触发器未随开发者工具部署自动创建
+
+现象：
+
+- 使用微信开发者工具 CLI 部署 `sendExpiryReminders` 成功后，云函数详情里 `Triggers` 仍为空数组。
+- 本地已有 `cloudfunctions/sendExpiryReminders/config.json`，但本次开发者工具 CLI 部署没有自动挂载定时触发器。
+
+处理：
+
+- 使用 CloudBase CLI 创建定时触发器：
+  - 函数：`sendExpiryReminders`
+  - 触发器名：`dailyExpiryReminder`
+  - cron：`0 0 9 * * * *`
+- 再次查询云函数详情后，`Triggers` 已包含 `dailyExpiryReminder`，类型为 `timer`，状态开启。
+
+验证：
+
+- 云函数状态：`Active`
+- 运行时：`Nodejs16.13`
+- 环境变量：当前为空
+- 手动调用结果：`TEMPLATE_NOT_CONFIGURED`，`sent: 0`，不会误发订阅消息。
+
+后续注意：
+
+- 如果后续删除后重建云函数，不要只依赖开发者工具 CLI 部署 `config.json`，需要再次确认云端 `Triggers`。
+- 配置 `EXPIRY_REMINDER_TEMPLATE_ID` 前，定时器每天 09:00 只会安全返回，不会发送提醒。
+
+## 2026-06-16 到期订阅提醒真机调试记录
+
+### 1. 保存后没有弹出订阅授权
+
+现象：
+
+- 前端已配置模板 ID 后，用户保存食材时没有看到 `wx.requestSubscribeMessage` 弹窗。
+
+原因：
+
+- 最初实现是先等待云数据库保存成功，再请求订阅授权。
+- 微信订阅授权对用户点击事件链路敏感，异步保存耗时后再请求，真机可能不再弹窗。
+
+处理：
+
+- 调整添加 / 编辑页保存顺序：
+  - 表单校验通过后先请求订阅授权。
+  - 用户允许或拒绝都不阻断后续保存。
+
+验证：
+
+- 真机预览中已弹出「冰箱小雷达 申请发送一次以下消息」授权弹窗。
+
+### 2. 命令行触发云函数返回 invalid wx openapi access_token
+
+现象：
+
+- 使用 CloudBase CLI 手动触发 `sendExpiryReminders`，返回失败记录：
+  - `subscribeMessage.send:fail invalid wx openapi access_token`
+
+原因：
+
+- 命令行直接触发不属于小程序端触发，不能作为微信云调用订阅消息发送的有效验证方式。
+
+处理：
+
+- 改为在真机预览中由小程序端触发云函数进行测试。
+- 为 `sendExpiryReminders/config.json` 增加开放接口权限：
+  - `subscribeMessage.send`
+
+后续注意：
+
+- 每天 09:00 定时触发器后续已在 2026-06-17 验证。
+- 定时触发出现同类 access token 错误后，已切换为服务端 access_token 方案。
+
+### 3. 订阅消息模板字段编号不匹配
+
+现象：
+
+- 小程序端触发云函数后，先后出现字段错误：
+  - `data.thing6.value is empty`
+  - `data.time16.value is empty`
+
+原因：
+
+- 微信订阅消息模板的字段 key 不是按页面展示顺序从 `thing1/date2/thing3` 开始。
+- 本模板「保质期到期提醒」的真实字段为：
+  - `thing6`：食物名称
+  - `time16`：过期日期
+  - `thing3`：备注
+
+处理：
+
+- 将 `sendExpiryReminders` 的消息体字段改为 `thing6/time16/thing3`。
+- 将过期日期格式化为 `YYYY年MM月DD日`。
+
+验证：
+
+- 真机预览保存测试食材后，已收到微信「服务通知」。
+- 测试结果：`sent: 1`、`failed: 0`、`skipped: 0`。
+
+### 4. 失败记录阻止后续重试
+
+现象：
+
+- 初始去重逻辑只按 `type/itemId/remindDate` 判断，失败记录也会阻止后续重试。
+
+处理：
+
+- 去重条件增加 `status: "sent"`。
+- 只有已发送成功的提醒才阻止同一天重复发送，失败记录允许下次重试。
+
+## 2026-06-17 到期订阅提醒定时触发器收口记录
+
+### 1. 09:00 定时触发器仍返回 invalid wx openapi access_token
+
+现象：
+
+- 2026-06-16 09:00 定时触发器自动执行过，但 `reminders` 中记录了 3 条失败。
+- 失败详情为：
+  - `subscribeMessage.send:fail invalid wx openapi access_token`
+- 小程序端真机触发可以发送成功，但定时器这种非小程序端触发不稳定。
+
+原因：
+
+- `cloud.openapi.subscribeMessage.send` 更适合小程序端触发链路。
+- 定时触发器不带小程序端上下文，继续使用云调用发送订阅消息会遇到 access token 问题。
+
+处理：
+
+- `sendExpiryReminders` 新增微信官方服务端接口发送路径。
+- 云函数通过 `WX_APPID` 和 `WX_APPSECRET` 获取官方 access_token。
+- 发送订阅消息时优先走 `/cgi-bin/message/subscribe/send`。
+- 未配置 `WX_APPSECRET` 时，保留原 `cloud.openapi.subscribeMessage.send` 回退路径。
+
+验证：
+
+- 使用单条 `itemId` 触发云函数，返回 `sent: 1`、`failed: 0`。
+- 用户 2026-06-17 09:00 真机收到自动定时服务通知。
+
+### 2. CloudBase CLI 配置环境变量时进入交互选择
+
+现象：
+
+- 使用 `tcb config update fn sendExpiryReminders --json` 配置环境变量时，CLI 仍提示选择：
+  - 覆盖更新
+  - 合并更新
+- 命令无法直接在非交互脚本里完成。
+
+处理：
+
+- 改为通过本地隐藏输入框获取 AppSecret。
+- 使用 `expect` 自动选择「Merge update」合并更新，避免覆盖云端其它变量。
+- AppSecret 只写入 CloudBase 云函数环境变量，不写入仓库文件。
+
+后续注意：
+
+- 不要把 `WX_APPSECRET` 写入根目录 `cloudbaserc.json`。
+- 不要在终端或聊天中打印 AppSecret。
+- 若后续轮换 AppSecret，继续走隐藏输入或微信后台 / CloudBase 控制台手动配置。
+
+### 3. 云函数运行时日期按 UTC 计算
+
+现象：
+
+- 2026-06-17 凌晨手动触发云函数时，返回的 `dateRange.today` 仍是 `2026-06-16`。
+
+原因：
+
+- 云函数运行环境默认按 UTC 计算日期。
+- 直接使用 `new Date().getFullYear()/getMonth()/getDate()` 会得到 UTC 日期，而不是北京时间日期。
+
+处理：
+
+- `getTodayString()` 改为按 UTC+8 计算北京时间日期。
+
+验证：
+
+- 重新部署后，用不存在的 `itemId` 调用云函数，返回：
+  - `today: 2026-06-17`
+  - `endDate: 2026-06-20`
+
+### 4. 临时配置文件可能残留 AppSecret
+
+现象：
+
+- 配置环境变量过程中，`/private/tmp/fridge-tcb-env.*` 下残留过临时 `cloudbaserc.json`。
+
+处理：
+
+- 没有读取文件内容。
+- 逐个将可能含密钥的临时文件清空为 0 字节。
+
+后续注意：
+
+- 涉及密钥的临时文件优先清空内容。
+- 清理目录或批量删除仍按项目规则处理，不能用脚本批量删除。

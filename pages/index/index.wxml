@@ -1,10 +1,45 @@
 <view class="page index-page">
-  <view class="hero">
+  <view class="hero {{allItems.length > 0 ? homeRadar.levelClass : ''}}" bindtap="handleRadarTap" aria-role="button" aria-label="查看开饭雷达">
     <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
     <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" aria-hidden="true" />
     <view class="hero-copy">
-      <text class="hero-title">{{homeMood.title}}</text>
-      <text class="hero-desc">{{homeMood.desc}}</text>
+      <view class="hero-text">
+        <block wx:if="{{allItems.length > 0}}">
+          <text class="hero-kicker">开饭小雷达</text>
+          <text class="hero-title">{{homeRadar.title}}</text>
+          <text class="hero-desc hero-target">{{homeRadar.actionText}}</text>
+        </block>
+        <block wx:else>
+          <text class="hero-title">{{homeMood.title}}</text>
+          <text class="hero-desc">{{homeMood.desc}}</text>
+        </block>
+      </view>
+      <text wx:if="{{allItems.length > 0}}" class="hero-arrow" aria-hidden="true">›</text>
+    </view>
+  </view>
+
+  <view wx:if="{{allItems.length === 0}}" class="starter-card">
+    <view class="starter-head">
+      <view>
+        <text class="starter-title">30 秒装满样板冰箱</text>
+        <text class="starter-sub">先选几样常吃的，系统会自动填好品类、保质期和分区。</text>
+      </view>
+      <view class="starter-save {{selectedStarterKeys.length > 0 ? 'active' : ''}}" bindtap="handleStarterSave" aria-role="button">
+        添加 {{selectedStarterKeys.length}}
+      </view>
+    </view>
+    <view class="starter-grid">
+      <view
+        wx:for="{{starterFoods}}"
+        wx:key="key"
+        class="starter-chip {{item.selected ? 'selected' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="handleStarterTap"
+        aria-role="button"
+      >
+        <text class="starter-name">{{item.name}}</text>
+        <text class="starter-meta">{{item.meta}}</text>
+      </view>
     </view>
   </view>
 

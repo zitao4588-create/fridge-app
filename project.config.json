@@ -31,6 +31,14 @@
         "type": "folder"
       },
       {
+        "value": ".claude",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
+      {
         "value": ".DS_Store",
         "type": "file"
       },
