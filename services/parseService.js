@@ -1,5 +1,6 @@
 const { addDays, getTodayString } = require('../utils/date')
 const { normalizeStorageLocation } = require('../utils/constants')
+const { getFoodSuggestion } = require('../utils/foodLexicon')
 
 const PARSE_CACHE_PREFIX = 'fridge_parse_payload'
 
@@ -12,6 +13,11 @@ function normalizeOptionalStorageLocation(location) {
 function getRecommendedStorageLocation(fields = {}) {
   const category = fields.category || ''
   const name = String(fields.name || '')
+  const suggestion = getFoodSuggestion(name)
+
+  if (suggestion && suggestion.storageLocation) {
+    return suggestion.storageLocation
+  }
 
   if (category === '蔬菜' || category === '水果') {
     return '果蔬抽屉'
@@ -43,11 +49,12 @@ function getRecommendedStorageLocation(fields = {}) {
   }
 
   if (
-    category === '肉蛋' &&
+    (category === '肉类' || category === '水产' || category === '肉蛋') &&
     (name.includes('牛肉') ||
       name.includes('鸡胸') ||
       name.includes('猪肉') ||
-      name.includes('虾'))
+      name.includes('虾') ||
+      name.includes('鱼'))
   ) {
     return '冷冻'
   }

@@ -3,21 +3,20 @@ const reminderService = require('../../services/reminderService')
 const {
   buildMonthDays,
   formatDate,
-  getDaysUntil,
   getMonthTitle,
   getTodayString,
 } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
+const { buildMealRadar, getItemBucket } = require('../../utils/mealRadar')
 
 const WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六']
 const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
+const SHARE_TITLE = '冰箱小雷达：看食材到期，减少浪费'
+const SHARE_PATH = '/pages/index/index'
+const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
 
 function bucketOf(expireDate) {
-  const days = getDaysUntil(expireDate)
-
-  if (days < 0) return 'overdue'
-  if (days <= 3) return 'expiring'
-  return 'normal'
+  return getItemBucket({ expireDate })
 }
 
 function decorate(item) {
@@ -39,51 +38,6 @@ function buildStats(items) {
     total: items.length,
     expiring: items.filter((item) => item.bucket === 'expiring').length,
     overdue: items.filter((item) => item.bucket === 'overdue').length,
-  }
-}
-
-// 开饭雷达评分（与历史算法一致，纯本地计算）
-function clampScore(value) {
-  return Math.max(0, Math.min(99, Math.round(value)))
-}
-
-function getMealRadarLevel(score) {
-  if (score >= 80) {
-    return { levelLabel: '高', levelTitle: '今天很适合开饭', levelClass: 'high' }
-  }
-  if (score >= 50) {
-    return { levelLabel: '中', levelTitle: '可以开饭，建议补 1-2 样', levelClass: 'medium' }
-  }
-  return { levelLabel: '低', levelTitle: '先处理风险或补货', levelClass: 'low' }
-}
-
-function buildRadar(items) {
-  const usable = items.filter((item) => item.bucket !== 'overdue')
-  const expiringItems = items.filter((item) => item.bucket === 'expiring')
-  const overdueCount = items.filter((item) => item.bucket === 'overdue').length
-  const usableCount = usable.length
-  const expiringCount = expiringItems.length
-  const categoryCount = new Set(
-    usable.map((item) => item.category).filter(Boolean),
-  ).size
-
-  const inventoryScore = Math.min(usableCount / 8, 1) * 45
-  const diversityScore = Math.min(categoryCount / 4, 1) * 25
-  const expiryValueScore = expiringCount > 0 ? Math.min(expiringCount * 5, 15) : 8
-  const overduePenalty = Math.min(overdueCount * 10, 30)
-  const score = clampScore(
-    inventoryScore + diversityScore + expiryValueScore - overduePenalty,
-  )
-
-  return {
-    score,
-    scoreText: `${score}%`,
-    ...getMealRadarLevel(score),
-    usableCount,
-    expiringCount,
-    overdueCount,
-    priorityItems: expiringItems.slice(0, 3),
-    explanation: `已扫描 ${usableCount} 个可用库存 · ${expiringCount} 个临期 · ${overdueCount} 个过期风险`,
   }
 }
 
@@ -140,6 +94,22 @@ Page({
     this.loadItems().finally(() => wx.stopPullDownRefresh())
   },
 
+  onShareAppMessage() {
+    return {
+      title: SHARE_TITLE,
+      path: SHARE_PATH,
+      imageUrl: SHARE_IMAGE,
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: SHARE_TITLE,
+      query: '',
+      imageUrl: SHARE_IMAGE,
+    }
+  },
+
   loadItems() {
     this.setData({ loading: true })
 
@@ -152,7 +122,7 @@ Page({
           allItems,
           events,
           stats: buildStats(allItems),
-          radar: buildRadar(allItems),
+          radar: buildMealRadar(allItems),
           loading: false,
         }
 

@@ -28,6 +28,17 @@
   color: var(--coral-deep, #c94238);
 }
 
+.lexicon-hint {
+  margin-top: 12rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 18rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--brand-mint-deep, #087a49);
+  background: var(--brand-mint-soft, #eaf8ee);
+  box-shadow: var(--hi-inset);
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;

@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-06-12
+最后更新：2026-06-17
 
 ## 当前项目目标
 
@@ -20,14 +20,158 @@
 
 用户可以手动管理冰箱库存，按 5 个分区查看食品状态，在日历中查看到期日，并通过本地算法查看「开饭雷达」可开饭指数。
 
+## v1.2 升级主线
+
+2026-06-14 已将原有高 / 中优先级待办并入 `TODO.md` 的「v1.2 版本升级清单」。
+
+v1.2 的定位不是 AI 商业化版本，而是个人主体阶段的迁移留存版和合规加固版本：
+
+- 收拢 v1.0 上线后稳定性问题
+- 发布页面转发能力修复
+- 补齐微信小程序官方文档审计和提审前检查清单
+- 小步灰度接入到期订阅提醒
+- 用本地词库降低手动录入成本
+- 将「开饭雷达」前移到首页，直接告诉用户先处理什么
+- 给空冰箱用户提供样板食材批量建库入口
+- 检查 CloudBase 集合权限、云函数边界和主包体积
+- 预研 AI 商业化、深度合成类目和虚拟支付，但不把这些能力做进 v1.2 前台功能
+
+v1.2 仍保持：
+
+- 不开放 AI 菜谱
+- 不开放拍照识别
+- 不开放条形码 / 小票识别
+- 不做会员 / 支付
+- 不做登录页
+- 不引入独立后端、Docker、Vercel、Supabase、Next.js
+
+### 2026-06-15 v1.2 本地完成项
+
+本轮按「冰箱小雷达-迁移与商业化规划」的 V1 / v1.2 总纲，完成了以下本地改造：
+
+- 新增本地食材词库 `utils/foodLexicon.js`，支持常见食材名称联想、品类、保质期、过期日和推荐分区自动补齐。
+- 添加 / 编辑页接入词库提示，用户输入常见食材名后可自动填好关键字段，保存前仍可手动修改。
+- 首页接入共享雷达工具 `utils/mealRadar.js`，把「今天先用掉什么」前移到首页。
+- 日历页复用同一套本地雷达算法，避免首页和日历各算一套。
+- 空冰箱状态新增「30 秒装满样板冰箱」，支持多选常见食材后批量创建。
+- `services/reminderService.js` 从占位改为订阅消息灰度逻辑，未配置模板 ID 时不弹授权、不阻断保存。
+- `cloudfunctions/sendExpiryReminders` 改为真实提醒骨架：每天 09:00 扫描临期食品、发送订阅消息、写入 `reminders` 防重复。
+- 新增 `docs/WECHAT_MINIPROGRAM_AUDIT.md`，覆盖转发、隐私、类目、包体、CloudBase、订阅消息、AI / 支付红线和真机回归。
+- `project.config.json` 已将 `docs` 和 `.claude` 加入上传忽略，避免文档截图和本地 worktree 挤占小程序包体。
+- 已执行 `npm ci` 安装 `pkg-add` 分包依赖，并通过微信开发者工具 `build-npm` 生成本地 TDesign 构建产物。
+- 微信开发者工具模拟器已确认首页、添加页、日历页、菜谱页可加载。
+- 已生成微信开发者工具预览二维码。预览包体结果：总包 664.1KB，主包 386.7KB，`pkg-add` 分包 277.4KB。
+- 用户已扫码完成真机预览重点项：右上角转发、添加页词库补齐、首页雷达、日历页、菜谱占位页，未反馈阻塞问题。
+- 已部署安全版 `sendExpiryReminders` 到 CloudBase，函数状态 `Active`，运行时 `Nodejs16.13`。
+- 已创建定时触发器 `dailyExpiryReminder`，cron 为 `0 0 9 * * * *`。
+- 已调用云端 `sendExpiryReminders` 验证：当前环境变量为空，返回 `TEMPLATE_NOT_CONFIGURED`，发送数 0，不会误发订阅消息。
+- 已检查核心集合权限：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs` 均为 `PRIVATE`。
+
+注意：
+
+- 这些改动仍是本地待发布状态，尚未上传体验版 / 提审 / 发布。
+- 隐私保护指引、服务类目仍需在微信后台人工确认。
+
+### 2026-06-16 v1.2 订阅提醒闭环实测
+
+本轮完成了到期订阅提醒从「安全骨架」到「小程序端真实发送成功」的打通：
+
+- 微信公众平台已添加订阅消息模板「保质期到期提醒」。
+- 前端 `services/reminderService.js` 已配置模板 ID，用于 `wx.requestSubscribeMessage` 拉起订阅授权。
+- 添加 / 编辑页保存时先请求订阅授权，再保存食材，避免异步保存后不再被微信识别为用户点击触发。
+- `cloudfunctions/sendExpiryReminders/config.json` 已声明开放接口权限：
+  - `subscribeMessage.send`
+- CloudBase 函数环境变量已配置：
+  - `EXPIRY_REMINDER_TEMPLATE_ID`
+  - `EXPIRY_REMIND_DAYS=3`
+- 订阅模板最终字段映射已按真实模板修正为：
+  - `thing6`：食物名称
+  - `time16`：过期日期
+  - `thing3`：备注
+- 云函数已用微信开发者工具 CLI 重新上传，定时触发器仍为每天 09:00。
+- 真机预览中，用户保存测试食材并授权订阅后，已收到微信「服务通知」：
+  - 测试结果：`sent: 1`、`failed: 0`、`skipped: 0`
+  - 服务通知字段显示正常：食物名称、过期日期、备注。
+- 临时诊断弹窗和保存后立即测试发送逻辑已从前端清理，当前干净预览包体为：
+  - 总包 663.9KB
+  - 主包 386.6KB
+  - `pkg-add` 分包 277.4KB
+
+注意：
+
+- 命令行直接调用 `sendExpiryReminders` 不能作为订阅消息发送验证依据，曾返回 `invalid wx openapi access_token`。
+- 该问题已在 2026-06-17 通过服务端 access_token 方案处理，09:00 定时器已自动发送成功。
+
+### 2026-06-17 v1.2 订阅提醒定时器验证完成
+
+本轮完成了到期订阅提醒的非小程序端定时触发验证，临期提醒闭环可视为已打通：
+
+- 2026-06-17 09:00 北京时间，`dailyExpiryReminder` 定时触发器已自动执行。
+- 用户真机已收到微信「服务通知」，测试食材「虾」「鱿鱼」等按到期日期推送成功。
+- `sendExpiryReminders` 已从单纯 `cloud.openapi.subscribeMessage.send` 改为优先使用微信官方服务端接口发送订阅消息。
+- 云函数环境变量已新增：
+  - `WX_APPID`
+  - `WX_APPSECRET`
+- `WX_APPSECRET` 只配置在 CloudBase 云函数环境变量中，没有写入仓库文件。
+- 云函数保留回退逻辑：未配置 `WX_APPSECRET` 时仍回退到 `cloud.openapi.subscribeMessage.send`。
+- 已修正云函数运行时日期按 UTC 计算的问题，现在 `today/endDate` 按北京时间生成。
+- 已重新部署 `sendExpiryReminders`，并用不存在的 `itemId` 验证日期范围，返回：
+  - `today: 2026-06-17`
+  - `endDate: 2026-06-20`
+- 已用单条 `itemId` 验证服务端接口路径，结果 `sent: 1`、`failed: 0`。
+- 已清空本地临时配置文件内容，避免 AppSecret 残留在 `/private/tmp`。
+
+注意：
+
+- 当前提醒是一件食材一条服务通知；若用户临期食材很多，可能形成刷屏感。
+- 后续商业化或会员版本可改为「每日早晨临期汇总一条」。
+- 如后续轮换 AppSecret，需要只在 CloudBase 环境变量中更新，不要写入 `cloudbaserc.json` 或任何前端文件。
+
+### 2026-06-17 v1.2 P0 收口
+
+本轮完成 P0 收口文档同步：
+
+- 用户已确认 v1.2 真机完整验证完成。
+- 真机已覆盖首页 5 分区、添加、编辑、删除、搜索、清空流程。
+- 真机已确认常见食材缩略图归桶正确。
+- 真机已验证订阅提醒同意、拒绝、关闭主开关等结果分支均不阻断保存。
+- `docs/WECHAT_MINIPROGRAM_AUDIT.md` 已同步真实订阅模板字段 `thing6/time16/thing3`，并更新真机回归状态。
+
+P0 收口后仍未完成：
+
+- 微信公众平台隐私保护指引、服务内容和服务类目仍需后台人工确认。
+- README 截图仍需替换为当前 v1.2 UI。
+- 当前改动仍未上传体验版 / 提审 / 发布。
+- 当前本地工作区仍有未提交改动，发布前需要整理 Git 暂存和提交范围。
+
 ## 当前 Git 状态说明
 
 2026-06-12 已将 Claude Code 产出的上线分支 `worktree-prelaunch-fixes` 快进合并到根目录 `main`。
 
 - 合并前备份分支：`backup/main-before-v1-sync-20260612`
 - 合并后 `main` 当前包含 v1.0 上线版代码
-- `main` 当前领先 `origin/main`，尚需用户确认后再 push
+- 当前 `main` 与 `origin/main` 指向同一提交
+- 本地仍有 v1.2 待发布改动未提交，发布前需要先整理暂存、提交，再 push
 - `.claude/` 是本地 Claude Code worktree 目录，不应提交
+
+## 项目监控自动化
+
+2026-06-12 已在 Codex 中创建每日项目监控自动化：
+
+- 自动化名称：`冰箱项目每日进度监控`
+- 检查时间：每天早上 9:00
+- 监控项目：
+  - `/Users/qzt/Developer/projects/fridge-app`
+  - `/Users/qzt/Developer/projects/fridge-radar-promo`
+- 检查重点：
+  - 项目进度文档
+  - TODO 待办
+  - 当前 Git 分支
+  - 未提交改动
+  - 未推送或落后远端的提交
+  - 是否出现 AI、支付、登录、Docker、独立后端等高风险方向迹象
+
+该自动化只做只读检查和中文日报输出，不自动修改文件、不提交代码、不删除文件。
 
 ## 当前技术栈
 
@@ -241,12 +385,15 @@ type FridgeItem = {
 - `pages/recipes/*`：菜谱占位页、隐私指引入口
 - `pkg-add/item-form/*`：添加 / 编辑食品
 - `services/itemService.js`：食品增删改查、分页读取、轻缓存
-- `services/reminderService.js`：日历事件和提醒能力预留
+- `services/reminderService.js`：日历事件和订阅消息灰度授权
 - `services/parseService.js`：识别能力历史 / 后续预留，当前不开放拍照入口
 - `utils/constants.js`：品类、分区、来源标签
+- `utils/foodLexicon.js`：本地食材词库、自动补齐和样板食材
+- `utils/mealRadar.js`：首页 / 日历共用的本地开饭雷达算法
 - `utils/visualAssets.js`：食材图片归桶
 - `styles/tokens.wxss`：视觉 token
 - `styles/tdesign-theme.wxss`：TDesign 主题
+- `docs/WECHAT_MINIPROGRAM_AUDIT.md`：v1.2 提审前检查清单
 
 ## 当前验证状态
 
@@ -258,6 +405,31 @@ Claude Code 上线分支记录过以下验证：
 - TDesign 分包约 276KB
 - 前端无 AI / 拍照识别用户入口
 - `services/parseService.js` 中相机 / 相册入口当前直接拒绝，避免隐私声明不一致
+
+## 待随下一版本发布的本地改动
+
+### 2026-06-12 页面转发能力修复
+
+用户真机反馈右上角菜单中「当前页面不可转发 / 当前页面不可分享」为灰色。
+
+原因：
+
+- 当前页面 JS 没有声明微信小程序分享生命周期函数。
+- 微信小程序页面只有实现 `onShareAppMessage` 后，菜单里的转发才会可用。
+- 朋友圈分享还需要主包页面实现 `onShareTimeline`。
+
+已在本地修改：
+
+- `pages/index/index.js`：新增转发给朋友和分享到朋友圈
+- `pages/calendar/calendar.js`：新增转发给朋友和分享到朋友圈
+- `pages/recipes/recipes.js`：新增转发给朋友和分享到朋友圈
+- `pkg-add/item-form/item-form.js`：新增转发给朋友
+
+发布策略：
+
+- 不为这个小修单独上传线上版本。
+- 作为下一次新版本的一部分，和后续改动一起上传 / 提审 / 发布。
+- 分享路径统一回到首页，不携带用户库存数据，避免把个人冰箱信息转发出去。
 
 本次 2026-06-12 合并后仍需在根目录复跑：
 
@@ -271,6 +443,33 @@ Claude Code 上线分支记录过以下验证：
 - `node --check pages/calendar/calendar.js`
 - `node --check pages/recipes/recipes.js`
 - `node --check pkg-add/item-form/item-form.js`
+
+### 2026-06-15 v1.2 迁移留存版本地改动
+
+本地已完成：
+
+- 本地词库联想录入。
+- 首页「开饭雷达」决策提示。
+- 空冰箱样板食材批量建库。
+- 订阅消息授权灰度入口。
+- `sendExpiryReminders` 定时提醒云函数骨架。
+- 微信小程序提审检查清单。
+
+发布前仍需：
+
+- 微信开发者工具真机完整验证已完成，包括删除、搜索、清空、缩略图归桶、样板冰箱和订阅授权分支。
+- 本地若重新拉仓库或清理依赖，需要先在 `pkg-add` 执行 `npm ci`，再用微信开发者工具执行 `build-npm`，否则添加页会找不到 TDesign 组件。
+- 微信公众平台订阅消息模板申请和字段确认已完成，当前字段为 `thing6/time16/thing3`。
+- CloudBase 环境变量已配置：
+  - `EXPIRY_REMINDER_TEMPLATE_ID`
+  - `EXPIRY_REMIND_DAYS`
+  - `WX_APPID`
+  - `WX_APPSECRET`
+- `sendExpiryReminders` 云函数和定时触发器已部署；2026-06-17 09:00 已确认自动定时提醒送达。
+- CloudBase 数据库核心集合权限已确认均为 `PRIVATE`。
+- 检查隐私保护指引和服务类目。
+- 确认主包体积仍小于 1.9MB。本轮预览主包为 386.7KB。
+- 当前已把 `docs` 和 `.claude` 加入上传忽略，但最终包体仍需用微信开发者工具上传前确认。
 
 ## 重要限制
 
@@ -291,11 +490,11 @@ v1.0 个人主体阶段不要恢复：
 
 ## 下一步建议
 
-优先做上线后稳定性：
+优先按 v1.2 收口清单推进：
 
-- 真机检查首页 5 分区、添加 / 编辑、删除、搜索、清空
-- 真机确认常见食材缩略图归桶正确
-- 更新 README 截图，替换早期 UI 截图
-- 检查微信后台隐私协议、服务类目、服务内容是否和 v1.0 功能一致
-- 评估到期提醒订阅消息方案，但不要直接开启真实推送
-- 确认后将当前 `main` push 到 `origin/main`
+- 在微信开发者工具中打开根目录，确认首页、日历、菜谱、添加 / 编辑页加载正常。
+- 真机完整验证已确认：页面转发、词库补齐、首页雷达、日历页、菜谱页、删除、搜索、清空、缩略图归桶、样板食材批量建库和订阅授权分支。
+- 按 `docs/WECHAT_MINIPROGRAM_AUDIT.md` 检查微信后台隐私协议、服务类目、包体和提审材料。
+- 订阅提醒闭环已跑通，下一步重点观察真实用户是否觉得逐条提醒过多。
+- 更新 README 截图，替换早期 UI 截图。
+- 确认无误后将当前 `main` push 到 `origin/main`。

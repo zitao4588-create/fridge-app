@@ -1,11 +1,13 @@
 const itemService = require('../../services/itemService')
 const parseService = require('../../services/parseService')
+const reminderService = require('../../services/reminderService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
   STORAGE_LOCATION_OPTIONS,
 } = require('../../utils/constants')
 const { getTodayString } = require('../../utils/date')
+const { getFoodSuggestion } = require('../../utils/foodLexicon')
 
 const emptyForm = {
   name: '',
@@ -25,6 +27,9 @@ const emptyErrors = {
   shelfLifeDays: '',
   expireDate: '',
 }
+const SHARE_TITLE = '冰箱小雷达：记录食材，到期不忘'
+const SHARE_PATH = '/pages/index/index'
+const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
 
 function decodeOptionValue(value) {
   try {
@@ -72,6 +77,35 @@ function buildRecommendationState(form, smartRecommendEnabled, locationOptions) 
   }
 }
 
+function buildLexiconState(form, options = {}) {
+  const suggestion = getFoodSuggestion(form.name)
+
+  if (!suggestion) {
+    return { form, lexiconHint: '', matched: false }
+  }
+
+  const productionDate = form.productionDate || options.today || getTodayString()
+  const shelfLifeDays = String(suggestion.shelfLifeDays)
+  const expireDate = parseService.calculateExpireDate(productionDate, shelfLifeDays)
+  const nextForm = {
+    ...form,
+    category: suggestion.category,
+    productionDate,
+    shelfLifeDays,
+    expireDate: expireDate || form.expireDate,
+  }
+
+  if (!options.keepStorageLocation) {
+    nextForm.storageLocation = suggestion.storageLocation
+  }
+
+  return {
+    form: nextForm,
+    lexiconHint: `已按「${suggestion.name}」预填品类、${suggestion.shelfLifeDays}天保质期和${suggestion.storageLocation}`,
+    matched: true,
+  }
+}
+
 Page({
   data: {
     id: '',
@@ -82,8 +116,10 @@ Page({
     categoryOptions: CATEGORY_OPTIONS,
     locationOptions: STORAGE_LOCATION_OPTIONS,
     smartRecommendEnabled: false,
+    hasPresetStorageLocation: false,
     recommendedStorageLocation: '',
     showLocationRecommend: false,
+    lexiconHint: '',
     dateMode: 'production',
     datePickerVisible: false,
     datePickerTarget: 'production',
@@ -102,15 +138,35 @@ Page({
     const storageLocation = getDefaultStorageLocation(options)
     const name = decodeOptionValue(options.name)
     const category = getDefaultCategory(options)
-    const form = {
+    let form = {
       ...this.data.form,
       ...(storageLocation ? { storageLocation } : {}),
       ...(name ? { name } : {}),
       ...(category ? { category } : {}),
     }
+    const smartRecommendEnabled = options.smartRecommend === '1'
+    const lexiconState = buildLexiconState(form, {
+      today: this.data.today,
+      keepStorageLocation: Boolean(storageLocation),
+    })
 
-    this.setData({ form, smartRecommendEnabled: options.smartRecommend === '1' })
-    this.applyRecommendation(form)
+    form = lexiconState.form
+    this.setData({
+      form,
+      smartRecommendEnabled,
+      hasPresetStorageLocation: Boolean(storageLocation),
+      lexiconHint: lexiconState.lexiconHint,
+      ...(lexiconState.matched ? { dateMode: 'production' } : {}),
+      ...buildRecommendationState(form, smartRecommendEnabled, this.data.locationOptions),
+    })
+  },
+
+  onShareAppMessage() {
+    return {
+      title: SHARE_TITLE,
+      path: SHARE_PATH,
+      imageUrl: SHARE_IMAGE,
+    }
   },
 
   applyRecommendation(form = this.data.form) {
@@ -167,7 +223,29 @@ Page({
   },
 
   handleNameInput(event) {
-    this.updateFormField('name', event.detail.value)
+    const errors = this.data.errors.name
+      ? { ...this.data.errors, name: '' }
+      : this.data.errors
+    const form = { ...this.data.form, name: event.detail.value }
+    const lexiconState = this.data.isEdit
+      ? { form, lexiconHint: '', matched: false }
+      : buildLexiconState(form, {
+          today: this.data.today,
+          keepStorageLocation: this.data.hasPresetStorageLocation,
+        })
+    const nextForm = lexiconState.form
+
+    this.setData({
+      form: nextForm,
+      errors,
+      lexiconHint: lexiconState.lexiconHint,
+      ...(lexiconState.matched ? { dateMode: 'production' } : {}),
+      ...buildRecommendationState(
+        nextForm,
+        this.data.smartRecommendEnabled,
+        this.data.locationOptions,
+      ),
+    })
   },
 
   handleNoteInput(event) {
@@ -326,13 +404,16 @@ Page({
     }
 
     this.setData({ saving: true })
-    wx.showLoading({ title: '保存中' })
 
-    const task = this.data.isEdit
-      ? itemService.updateItem(this.data.id, this.data.form)
-      : itemService.createItem(this.data.form)
+    reminderService
+      .requestSubscribeMessage()
+      .then(() => {
+        wx.showLoading({ title: '保存中' })
 
-    task
+        return this.data.isEdit
+          ? itemService.updateItem(this.data.id, this.data.form)
+          : itemService.createItem(this.data.form)
+      })
       .then(() => {
         wx.hideLoading()
         this.setData({ saving: false })

@@ -1,21 +1,23 @@
 const itemService = require('../../services/itemService')
 const { CATEGORY_OPTIONS, HOME_ZONE_DEFINITIONS } = require('../../utils/constants')
-const { formatDate, getDaysUntil } = require('../../utils/date')
+const { addDays, formatDate, getTodayString } = require('../../utils/date')
+const { getStarterFoodEntries } = require('../../utils/foodLexicon')
+const { buildHomeRadar, getItemBucket } = require('../../utils/mealRadar')
 const { getExpiryStatus } = require('../../utils/status')
 const { getIngredientVisual } = require('../../utils/visualAssets')
 
 const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
+const SHARE_TITLE = '冰箱小雷达：记录食材，到期不忘'
+const SHARE_PATH = '/pages/index/index'
+const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
+const STARTER_FOOD_LIMIT = 36
 
 function getZoneDefinition(key) {
   return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
 }
 
 function bucketOf(expireDate) {
-  const days = getDaysUntil(expireDate)
-
-  if (days < 0) return 'overdue'
-  if (days <= 3) return 'expiring'
-  return 'normal'
+  return getItemBucket({ expireDate })
 }
 
 function decorateItem(item) {
@@ -143,12 +145,55 @@ function filterByContext(items, context) {
   return pool
 }
 
+function getStarterKey(entry, index) {
+  return `${entry.name}-${index}`
+}
+
+function buildStarterFoods(selectedKeys = []) {
+  const selectedMap = selectedKeys.reduce((map, key) => {
+    map[key] = true
+    return map
+  }, {})
+
+  return getStarterFoodEntries(STARTER_FOOD_LIMIT).map((entry, index) => {
+    const key = getStarterKey(entry, index)
+
+    return {
+      ...entry,
+      key,
+      selected: Boolean(selectedMap[key]),
+      meta: `${entry.category} · ${entry.storageLocation} · ${entry.shelfLifeDays}天`,
+    }
+  })
+}
+
+function buildStarterPayload(entry) {
+  const productionDate = getTodayString()
+
+  return {
+    name: entry.name,
+    category: entry.category,
+    quantity: 1,
+    unit: '份',
+    productionDate,
+    shelfLifeDays: entry.shelfLifeDays,
+    expireDate: addDays(productionDate, entry.shelfLifeDays),
+    storageLocation: entry.storageLocation,
+    note: '样板冰箱快速添加，可按实际情况修改',
+    source: 'manual',
+  }
+}
+
 Page({
   data: {
     loading: false,
     homeMood: buildMood(null),
+    homeRadar: buildHomeRadar([]),
     allItems: [],
     homeZones: [],
+    starterFoods: buildStarterFoods([]),
+    selectedStarterKeys: [],
+    starterSaving: false,
     noticeMessage: '',
     searchKeyword: '',
 
@@ -185,6 +230,22 @@ Page({
     this.loadItems().finally(() => wx.stopPullDownRefresh())
   },
 
+  onShareAppMessage() {
+    return {
+      title: SHARE_TITLE,
+      path: SHARE_PATH,
+      imageUrl: SHARE_IMAGE,
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: SHARE_TITLE,
+      query: '',
+      imageUrl: SHARE_IMAGE,
+    }
+  },
+
   loadItems() {
     this.setData({ loading: true })
 
@@ -195,7 +256,9 @@ Page({
         const patch = {
           allItems,
           homeMood: buildMood(buildStats(allItems)),
+          homeRadar: buildHomeRadar(allItems),
           homeZones: buildHomeZones(allItems),
+          starterFoods: buildStarterFoods(this.data.selectedStarterKeys),
           loading: false,
         }
 
@@ -240,12 +303,61 @@ Page({
   handleZoneAdd(event) {
     const location = event.currentTarget.dataset.location
     wx.navigateTo({
-      url: `${ITEM_FORM_URL}?storageLocation=${encodeURIComponent(location)}`,
+      url: `${ITEM_FORM_URL}?storageLocation=${encodeURIComponent(location)}&smartRecommend=1`,
     })
   },
 
   handleSearchInput(event) {
     this.setData({ searchKeyword: event.detail.value })
+  },
+
+  handleStarterTap(event) {
+    const key = event.currentTarget.dataset.key
+    const selectedStarterKeys = this.data.selectedStarterKeys.includes(key)
+      ? this.data.selectedStarterKeys.filter((item) => item !== key)
+      : this.data.selectedStarterKeys.concat(key)
+
+    this.setData({
+      selectedStarterKeys,
+      starterFoods: buildStarterFoods(selectedStarterKeys),
+    })
+  },
+
+  handleStarterSave() {
+    const selectedFoods = this.data.starterFoods.filter((item) => item.selected)
+
+    if (selectedFoods.length === 0) {
+      wx.showToast({ title: '先选几样常吃的', icon: 'none' })
+      return
+    }
+
+    this.setData({ starterSaving: true })
+    wx.showLoading({ title: '添加中' })
+
+    Promise.all(
+      selectedFoods.map((food) =>
+        itemService
+          .createItem(buildStarterPayload(food))
+          .then(() => ({ ok: true, name: food.name }))
+          .catch(() => ({ ok: false, name: food.name })),
+      ),
+    ).then((results) => {
+      const successCount = results.filter((item) => item.ok).length
+      const failedCount = results.length - successCount
+
+      wx.hideLoading()
+      this.setData({
+        starterSaving: false,
+        selectedStarterKeys: [],
+        starterFoods: buildStarterFoods([]),
+      })
+      this.showNotice(
+        failedCount > 0
+          ? `已添加 ${successCount} 样，${failedCount} 样失败`
+          : `已添加 ${successCount} 样到样板冰箱`,
+      )
+      this.loadItems()
+    })
   },
 
   handleSearchConfirm() {

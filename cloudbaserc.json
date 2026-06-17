@@ -1,3 +1,16 @@
 {
-  "envId": "{{env.ENV_ID}}"
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "cloud1-d3g4v0ms8ee56bd94",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "sendExpiryReminders",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "envVariables": {
+        "EXPIRY_REMINDER_TEMPLATE_ID": "rxGJi_mQR7J7n0PiEq0MfZkn0-DEP7O9wXbtCDqzWQ4",
+        "EXPIRY_REMIND_DAYS": "3"
+      }
+    }
+  ]
 }

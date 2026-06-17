@@ -5,6 +5,22 @@ Page({
     }
   },
 
+  onShareAppMessage() {
+    return {
+      title: '冰箱小雷达：把冰箱食材安排得明明白白',
+      path: '/pages/index/index',
+      imageUrl: '/images/mascot/fridge-chef.png',
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '冰箱小雷达：把冰箱食材安排得明明白白',
+      query: '',
+      imageUrl: '/images/mascot/fridge-chef.png',
+    }
+  },
+
   handleOpenPrivacy() {
     if (wx.openPrivacyContract) {
       wx.openPrivacyContract({

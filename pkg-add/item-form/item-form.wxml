@@ -9,6 +9,9 @@
         maxlength="30"
         bindchange="handleNameInput"
       />
+      <view wx:if="{{lexiconHint}}" class="lexicon-hint">
+        <text>{{lexiconHint}}，保存前可手动修改。</text>
+      </view>
       <text wx:if="{{errors.name}}" class="field-error" aria-role="alert">{{errors.name}}</text>
     </view>
 

@@ -8,6 +8,40 @@
     </view>
   </view>
 
+  <view class="home-radar {{homeRadar.levelClass}}">
+    <view class="home-radar-head">
+      <text class="home-radar-kicker">开饭小雷达</text>
+      <text class="home-radar-state">{{homeRadar.levelTitle}}</text>
+    </view>
+    <text class="home-radar-title">{{homeRadar.title}}：{{homeRadar.actionText}}</text>
+    <text class="home-radar-empty">{{homeRadar.body}}</text>
+  </view>
+
+  <view wx:if="{{allItems.length === 0}}" class="starter-card">
+    <view class="starter-head">
+      <view>
+        <text class="starter-title">30 秒装满样板冰箱</text>
+        <text class="starter-sub">先选几样常吃的，系统会自动填好品类、保质期和分区。</text>
+      </view>
+      <view class="starter-save {{selectedStarterKeys.length > 0 ? 'active' : ''}}" bindtap="handleStarterSave" aria-role="button">
+        添加 {{selectedStarterKeys.length}}
+      </view>
+    </view>
+    <view class="starter-grid">
+      <view
+        wx:for="{{starterFoods}}"
+        wx:key="key"
+        class="starter-chip {{item.selected ? 'selected' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="handleStarterTap"
+        aria-role="button"
+      >
+        <text class="starter-name">{{item.name}}</text>
+        <text class="starter-meta">{{item.meta}}</text>
+      </view>
+    </view>
+  </view>
+
   <view class="search-bar">
     <text class="search-ic" bindtap="handleSearchConfirm" aria-role="button" aria-label="搜索">🔍</text>
     <input
