@@ -39,6 +39,22 @@
         "type": "folder"
       },
       {
+        "value": ".workbuddy",
+        "type": "folder"
+      },
+      {
+        "value": "site",
+        "type": "folder"
+      },
+      {
+        "value": "geo",
+        "type": "folder"
+      },
+      {
+        "value": "diag-output",
+        "type": "folder"
+      },
+      {
         "value": ".DS_Store",
         "type": "file"
       },

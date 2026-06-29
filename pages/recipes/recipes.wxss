@@ -127,12 +127,29 @@
   color: var(--text-sub, #6f7c74);
 }
 
+.settings-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
 .settings-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 56rpx;
-  margin-top: 18rpx;
+  justify-content: center;
+  min-height: 64rpx;
+  padding: 0 18rpx;
+  border-radius: 18rpx;
   font-size: 26rpx;
   font-weight: 700;
   color: var(--brand-mint-deep, #087a49);
+  background: rgba(255, 255, 255, 0.72);
+  border: 2rpx solid rgba(40, 185, 120, 0.16);
+}
+
+.settings-link.primary {
+  color: #ffffff;
+  background: var(--brand-mint, #28b978);
+  border-color: transparent;
 }

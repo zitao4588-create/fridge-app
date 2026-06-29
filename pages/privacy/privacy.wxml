@@ -1,0 +1,35 @@
+<view class="page privacy-page">
+  <view class="privacy-hero">
+    <text class="privacy-title">隐私与数据说明</text>
+    <text class="privacy-desc">冰箱小雷达是冰箱食材库存管理小程序。它只保存你主动录入的食材信息，用于库存、临期提醒和开饭雷达本地计算。</text>
+  </view>
+
+  <view class="privacy-card">
+    <text class="card-title">会收集什么</text>
+    <text class="card-text">当前微信用户的 openid，用于区分不同用户的数据；你主动录入的食材名称、品类、数量、分区、生产日期、保质期、过期日期和备注；订阅提醒授权结果和提醒发送记录。</text>
+  </view>
+
+  <view class="privacy-card">
+    <text class="card-title">不会默认做什么</text>
+    <text class="card-text">不读取通讯录；不默认读取相册；不开放拍照识别入口；不把食材清单默认上传给第三方 AI；不出售用户数据；不做支付会员或社区内容。</text>
+  </view>
+
+  <view class="privacy-card">
+    <text class="card-title">数据存在哪里</text>
+    <text class="card-text">食材数据保存在微信云开发 CloudBase 云数据库中，并按当前微信用户 openid 隔离。小程序前端不保存第三方服务商 API key。</text>
+  </view>
+
+  <view class="privacy-card">
+    <text class="card-title">你可以怎么处理数据</text>
+    <text class="card-text">你可以在小程序里查看、编辑、删除单条食材，也可以通过首页底部的二次确认入口清空全部食材记录。清空后记录无法恢复。</text>
+  </view>
+
+  <view class="privacy-card">
+    <text class="card-title">公开隐私政策</text>
+    <text class="card-text">公开版隐私政策计划部署在 https://fridge.playgamelab.cn/privacy/，用于让用户、搜索引擎和 AI 系统理解冰箱小雷达的数据边界。</text>
+    <view class="privacy-actions">
+      <view class="privacy-btn primary" bindtap="handleOpenWechatPrivacy" aria-role="button">查看微信隐私保护指引</view>
+      <view class="privacy-btn" bindtap="handleCopyPublicPath" aria-role="button">复制公开隐私页链接</view>
+    </view>
+  </view>
+</view>

@@ -11,7 +11,7 @@ const { buildMealRadar, getItemBucket } = require('../../utils/mealRadar')
 
 const WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六']
 const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
-const SHARE_TITLE = '冰箱小雷达：看食材到期，减少浪费'
+const SHARE_TITLE = '冰箱小雷达｜微信里的冰箱食材库存管理小程序'
 const SHARE_PATH = '/pages/index/index'
 const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
 

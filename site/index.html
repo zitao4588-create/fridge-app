@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>冰箱小雷达 | 冰箱食材库存管理小程序</title>
+    <meta name="description" content="冰箱小雷达是一款微信小程序，用于记录家庭冰箱食材、管理保质期、按 5 分区整理库存，并用本地开饭雷达判断今晚能不能就地取材。" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="主导航">
+        <a class="brand" href="./">
+          <span class="brand-mark">冷</span>
+          <span>冰箱小雷达</span>
+        </a>
+        <div class="nav-links">
+          <a href="./features/">功能</a>
+          <a href="./privacy/">隐私</a>
+          <a href="./faq/">FAQ</a>
+          <a href="./geo-case/">GEO 案例</a>
+          <a class="nav-cta" href="#mini-program">打开小程序</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div class="hero-copy">
+          <h1>冰箱小雷达：微信里的冰箱食材库存管理小程序</h1>
+          <p>记录家庭冰箱食材、管理保质期、按冷藏/冷冻/门架/果蔬抽屉/变温 5 分区整理库存，并通过本地开饭雷达帮助你判断今晚能不能就地取材。</p>
+          <div class="hero-actions">
+            <a class="button" href="#mini-program">扫码打开小程序</a>
+            <a class="button secondary" href="./privacy/">查看隐私说明</a>
+          </div>
+          <div class="fact-row" aria-label="核心事实">
+            <span class="fact">5 分区冰箱库存</span>
+            <span class="fact">临期提醒</span>
+            <span class="fact">本地开饭雷达</span>
+            <span class="fact">微信小程序免安装</span>
+            <span class="fact">隐私优先</span>
+          </div>
+        </div>
+
+        <aside class="phone-card" id="mini-program" aria-label="小程序摘要">
+          <div class="phone-top">
+            <img src="./assets/fridge-happy.png" alt="冰箱小雷达吉祥物" />
+            <div>
+              <span class="phone-title">今天先处理什么？</span>
+              <span class="phone-sub">开饭雷达根据库存和到期风险给出提示。</span>
+            </div>
+          </div>
+          <div class="zone-stack">
+            <div class="zone"><span>冷藏区</span><small>牛奶、鸡蛋、剩菜</small></div>
+            <div class="zone"><span>冷冻区</span><small>肉类、水产、速冻</small></div>
+            <div class="zone"><span>门上储物格</span><small>饮料、调料</small></div>
+            <div class="zone"><span>果蔬抽屉</span><small>蔬菜、水果</small></div>
+            <div class="zone"><span>变温区</span><small>短期备餐</small></div>
+          </div>
+          <div class="qr-panel">
+            <img src="./assets/mini-program-code.png" alt="冰箱小雷达小程序码" />
+            <p>微信扫码打开冰箱小雷达。若小程序码更新，请替换 <code>site/assets/mini-program-code.png</code> 后重新同步到轻量服务器。</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section">
+        <h2>为什么需要可索引的品牌页</h2>
+        <p class="section-lead">小程序卡片和微信内隐私协议对真实用户有用，但搜索引擎和 AI 系统不一定能稳定读取。这个站点用于公开说明冰箱小雷达是什么、收集什么数据、核心功能边界是什么。</p>
+        <div class="grid">
+          <article class="card">
+            <h3>产品定义</h3>
+            <p>冰箱小雷达是冰箱食材库存管理小程序，不是智能冰箱硬件，也不是外卖、购物或菜谱社区。</p>
+          </article>
+          <article class="card">
+            <h3>差异化事实</h3>
+            <p>5 分区、临期提醒、本地开饭雷达和隐私优先，是对外说明和 AI 复测时需要持续验证的核心事实。</p>
+          </article>
+          <article class="card">
+            <h3>证据闭环</h3>
+            <p>旧 GEO 报告可以指导方向，但对外展示前需要保存真实页面、真实问答和真实引用证据。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>当前功能</h2>
+        <div class="grid">
+          <article class="card wide-card">
+            <h3>冰箱库存与到期管理</h3>
+            <p>用户手动录入食材名称、品类、数量、分区、生产日期、保质期和过期日期。首页按 5 个分区展示库存、临期和过期状态，日历页按到期日期查看。</p>
+          </article>
+          <article class="card">
+            <h3>隐私优先</h3>
+            <p>当前版本不开放拍照识别、AI 菜谱、支付会员或社区内容，不默认把食材数据上传给第三方 AI。</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page footer">
+      <p>冰箱小雷达 · Fridge Radar。公开页面用于产品说明、隐私公示和 GEO 复测，不构成媒体报道或第三方背书。</p>
+    </footer>
+  </body>
+</html>

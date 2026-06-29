@@ -7,7 +7,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '冰箱小雷达：把冰箱食材安排得明明白白',
+      title: '冰箱小雷达｜微信里的冰箱食材库存管理小程序',
       path: '/pages/index/index',
       imageUrl: '/images/mascot/fridge-chef.png',
     }
@@ -15,10 +15,22 @@ Page({
 
   onShareTimeline() {
     return {
-      title: '冰箱小雷达：把冰箱食材安排得明明白白',
+      title: '冰箱小雷达｜微信里的冰箱食材库存管理小程序',
       query: '',
       imageUrl: '/images/mascot/fridge-chef.png',
     }
+  },
+
+  handleOpenPrivacyPage() {
+    wx.navigateTo({ url: '/pages/privacy/privacy' })
+  },
+
+  handleOpenFeatures() {
+    wx.navigateTo({ url: '/pages/features/features' })
+  },
+
+  handleOpenAbout() {
+    wx.navigateTo({ url: '/pages/about/about' })
   },
 
   handleOpenPrivacy() {

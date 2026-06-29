@@ -1,6 +1,6 @@
 # BUG_NOTES.md
 
-最后更新：2026-06-17
+最后更新：2026-06-30
 
 ## 本轮涉及的问题与处理
 
@@ -2371,3 +2371,68 @@
 
 - 涉及密钥的临时文件优先清空内容。
 - 清理目录或批量删除仍按项目规则处理，不能用脚本批量删除。
+
+## 2026-06-30 GEO 自证案例本地改造记录
+
+### 1. `project.config.json` 首次补丁上下文不匹配
+
+现象：
+
+- 本轮准备把 `site`、`geo`、`diag-output`、`.workbuddy` 加入小程序上传忽略时，首次 `apply_patch` 失败。
+- 失败原因为补丁期望在 `.workbuddy` 条目附近插入，但当时文件里还没有 `.workbuddy` 忽略项。
+
+处理：
+
+- 重新按 `docs` 忽略项之后的真实位置精确插入。
+- 最终 `project.config.json` 已成功加入：
+  - `.workbuddy`
+  - `site`
+  - `geo`
+  - `diag-output`
+
+后续注意：
+
+- 修改 JSON 配置前应先读当前文件真实结构，不按计划中的目标状态假设已有条目。
+- 这次失败没有改坏文件，也没有影响小程序代码。
+
+### 2. 微信开发者工具 CLI 首次打开需重新登录（已处理）
+
+说明：
+
+- 已完成 JS 语法检查、JSON 检查、静态站本地 HTTP 检查和 sitemap XML 检查。
+- 首次执行 `wechatwebdevtools cli open` 返回 `需要重新登录 (code 10)`。
+- 随后使用 `wechatwebdevtools cli login` 生成二维码并完成扫码登录。
+- 登录后 `cli open` 成功，`cli preview` 成功生成真机预览二维码。
+- 首次预览包大小：TOTAL 696.3 KB，main 415.5 KB，`/pkg-add/` 280.8 KB。
+- 撤回首页 GEO / AI 说明区后已重新生成预览：TOTAL 693.6 KB，main 412.8 KB，`/pkg-add/` 280.8 KB；二维码为 `/private/tmp/fridge-preview-no-home-geo.png`。
+
+后续注意：
+
+- 真机扫码结果仍需人工确认：
+  - 首页已撤回 GEO 说明区，主流程不被说明内容挤压。
+  - 「查看快过期食材」在空库存和有库存状态下都正常。
+  - 菜谱页 4 个说明入口均能打开。
+  - 新增非 Tab 页面返回路径正常。
+
+### 3. `fridge.playgamelab.cn` 公共 DNS 未生效，公网 HTTPS 暂未验通（已解决）
+
+现象：
+
+- 轻量服务器已完成 `/var/www/fridge-radar-site` 静态文件同步。
+- Caddy 已加入 `fridge.playgamelab.cn` 站点块，配置验证通过，reload 后服务仍为 `active`。
+- 服务器内通过 `Host: fridge.playgamelab.cn` 请求 HTTP，Caddy 返回 308 跳转 HTTPS。
+- 但公共 DNS 查询 `fridge.playgamelab.cn` 暂无 A 记录，公网访问 HTTPS 未能进入站点。
+- 后续提供新的 `SecretKey (1).csv` 后，确认 `tccli` 官方把密钥写在 `~/.tccli/default.credential`，不是 `default.configure`。
+- 修正配置写入位置后，DNSPod API 成功创建 `fridge.playgamelab.cn` A 记录。
+
+处理：
+
+- 没有继续伪造线上成功状态。
+- 已把中间阻塞状态记录到 `PROJECT_CONTEXT.md` 和 `TODO.md`。
+- DNS 生效后手动 reload Caddy，Let’s Encrypt HTTP-01 校验通过，证书签发成功。
+- 线上已验证 `/`、`/privacy/`、`/features/`、`/faq/`、`/geo-case/`、`/llms.txt`、`/sitemap.xml` 均返回 HTTPS 200。
+
+后续注意：
+
+- 后续使用 `tccli` 时，密钥应位于 `~/.tccli/default.credential`。
+- `Downloads` 里的 `SecretKey*.csv` 是敏感文件，后续应手动转移到安全位置或删除。

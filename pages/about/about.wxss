@@ -1,0 +1,90 @@
+.about-page {
+  padding: 32rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
+}
+
+.about-hero,
+.info-card,
+.action-list {
+  border-radius: 30rpx;
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1), var(--hi-inset);
+}
+
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 44rpx 30rpx 36rpx;
+  text-align: center;
+}
+
+.about-mascot {
+  width: 148rpx;
+  height: 148rpx;
+  filter: drop-shadow(0 8rpx 14rpx rgba(40, 120, 80, 0.18));
+}
+
+.about-title {
+  margin-top: 20rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.about-subtitle {
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--brand-mint-deep, #087a49);
+}
+
+.about-desc {
+  margin-top: 18rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--text-sub, #6f7c74);
+}
+
+.info-card {
+  margin-top: 24rpx;
+  padding: 28rpx 24rpx;
+}
+
+.card-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.card-text,
+.fact-item {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--text-sub, #6f7c74);
+}
+
+.fact-list {
+  margin-top: 4rpx;
+}
+
+.action-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12rpx;
+  margin-top: 24rpx;
+  padding: 18rpx;
+}
+
+.action-item {
+  min-height: 68rpx;
+  border-radius: 18rpx;
+  line-height: 68rpx;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--brand-mint, #28b978);
+}

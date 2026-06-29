@@ -1,6 +1,6 @@
 # TODO.md
 
-最后更新：2026-06-17
+最后更新：2026-06-30
 
 ## 当前主线
 
@@ -140,6 +140,53 @@ v1.2 目标：
 - [x] 撤回首页和日历「开饭雷达」已处理批量删除入口，避免误删库存。
 - [x] 首页雷达保留跳转日历报告能力，日历报告保留优先项提示。
 
+### 2026-06-30 GEO 自证案例本地基建完成
+
+- [x] 新增 `site/` 静态品牌站产物。
+- [x] 新增品牌首页 `/`。
+- [x] 新增公开隐私政策页 `/privacy/`。
+- [x] 新增功能说明页 `/features/`。
+- [x] 新增常见问题页 `/faq/`。
+- [x] 新增 GEO 自证案例页 `/geo-case/`。
+- [x] 新增 `robots.txt`、`sitemap.xml`、`llms.txt`。
+- [x] 新增 `site/cos-upload-manifest.csv`，保留 COS 备选上传清单。
+- [x] 新增 `site/server-deploy-plan.md`，明确优先使用 `fridge.playgamelab.cn` + 轻量服务器 + Caddy 静态站。
+- [x] 新增 `geo/brand-brief.yaml`。
+- [x] 新增 `geo/prompt-universe.csv`。
+- [x] 新增 `geo/evidence/` 和 `geo/reports/` 目录说明。
+- [x] 新增 3 篇内容草稿到 `docs/content-drafts/`。
+- [x] 新增小程序非 Tab 页面：`about`、`privacy`、`features`。
+- [x] 撤回首页 GEO / AI 说明区，首页保持库存主流程；GEO 信息保留在品牌站、非 Tab 页面和菜谱页入口。
+- [x] 菜谱页隐私卡片新增小程序隐私说明、微信隐私指引、功能说明、关于页入口。
+- [x] 首页、日历、菜谱分享标题统一为“冰箱小雷达｜微信里的冰箱食材库存管理小程序”。
+- [x] `project.config.json` 忽略 `site`、`geo`、`diag-output`、`.workbuddy`，避免进入小程序上传包。
+- [x] 通过关键 `node --check`。
+- [x] 通过 JSON 配置检查。
+- [x] 本地静态站 5 个页面均返回 HTTP 200。
+- [x] `site/sitemap.xml` 通过 XML 检查。
+
+### GEO / 品牌站上线待办
+
+- [x] 确认品牌站目标子域名：`fridge.playgamelab.cn`。
+- [ ] 上线前在腾讯云 / 备案后台复核 `playgamelab.cn` 的备案和接入状态。
+- [x] 将 `site/sitemap.xml` 和 `site/robots.txt` 替换为 `https://fridge.playgamelab.cn`。
+- [x] 将 `pages/privacy/privacy.js` 的 `PUBLIC_PRIVACY_URL` 填为 `https://fridge.playgamelab.cn/privacy/`。
+- [x] 将 `site/` 上传到轻量服务器静态目录 `/var/www/fridge-radar-site`。
+- [x] 配置 Caddy 站点块，root 指向轻量服务器静态目录。
+- [x] 运行 `caddy validate` 并 reload Caddy，确认服务为 `active`。
+- [x] 服务器内确认 `Host: fridge.playgamelab.cn` 已由 Caddy 接管并返回 HTTP 到 HTTPS 跳转。
+- [x] 在腾讯云 DNS 中新增 `fridge.playgamelab.cn` A 记录，指向轻量服务器公网 IP。
+- [x] DNS 生效后通过 Caddy 自动签发并验证 HTTPS 证书。
+- [x] 确认线上 80/443 可访问，HTTP 自动跳转 HTTPS。
+- [x] 上线后打开 `/`、`/privacy/`、`/features/`、`/faq/`、`/geo-case/`、`/llms.txt`、`/sitemap.xml`，均返回 HTTPS 200。
+- [ ] 将公开隐私政策 URL 同步到小程序后台/简介或后续发布文案中。当前已打开微信公众平台并把 `https://fridge.playgamelab.cn/privacy/` 复制到剪贴板，待人工保存确认。
+- [x] 使用微信开发者工具 CLI 登录、打开项目并生成预览二维码。
+- [x] 首页 GEO / AI 说明区撤回后重新生成预览包：TOTAL 693.6 KB，main 412.8 KB，`/pkg-add/` 280.8 KB。
+- [x] 用预览二维码真机回归：首页主流程、隐私页、功能说明页、关于页、菜谱页说明入口、添加 / 日历 / 菜谱主流程。
+- [x] 明确发布策略：本轮小程序侧改动不单独上传 / 提审，和下一阶段新增功能版本一起发布。
+- [ ] 用 `geo/prompt-universe.csv` 重新采样，并把原始回答保存到 `geo/evidence/`。
+- [ ] 根据真实证据重新生成可审计 GEO 报告，不复用旧报告的虚拟/模拟来源当成结果。
+
 ### A. 已有待办并入 v1.2
 
 - [ ] 下一次上传新版本时，包含「页面转发能力修复」
@@ -213,6 +260,10 @@ v1.2 目标：
 - [x] 不引入独立后端、Docker、Vercel、Supabase、Next.js
 
 ## 后续版本建议
+
+> 📋 **v1.2 发布后优化交接（给 codex）**：详见 [`docs/handoff-post-v1.2-optimization.md`](docs/handoff-post-v1.2-optimization.md)。
+> 覆盖「可维护性 / 性能健壮性 / 体验留存 / UI 无障碍 / 收尾」五类，含 A 类（可直接开工）与 B 类（先出方案再做）。
+> 不含 AI / 支付；`parseService.js` 死代码下沉与预留云函数云端下线属另一大项，**不在该交接范围**。
 
 v1.2 完成后再考虑：
 

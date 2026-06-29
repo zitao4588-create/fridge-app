@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-最后更新：2026-06-17
+最后更新：2026-06-30
 
 ## 当前项目目标
 
@@ -167,6 +167,92 @@ P0 收口后仍未完成：
 
 - 本轮新增体验增强尚未重新上传体验版，需随下一次上传后做真机回归。
 - 当前仍不恢复 AI、拍照识别、扫码、小票识别、登录、支付、会员或 UGC。
+
+### 2026-06-30 GEO 自证案例基建与上线收口
+
+本轮按「冰箱小雷达 GEO 自证案例改造计划」完成第一版基建和线上首发：
+
+- 新增 `site/` 静态品牌站产物，用于后续部署为公开可索引页面：
+  - `/`：品牌首页
+  - `/privacy/`：公开隐私政策
+  - `/features/`：功能说明
+  - `/faq/`：常见问题
+  - `/geo-case/`：GEO 自证案例页
+  - `robots.txt`、`sitemap.xml`、`llms.txt`
+- 新增 `site/server-deploy-plan.md`，部署方案从原先 COS 优先调整为：
+  - 优先使用 `fridge.playgamelab.cn` + 轻量应用服务器 + Caddy 静态站。
+  - COS 仅保留为后续镜像/CDN/备选静态托管方案。
+- 新增 `geo/` 复测与证据目录：
+  - `brand-brief.yaml`
+  - `prompt-universe.csv`
+  - `evidence/`
+  - `reports/`
+- 新增 3 篇内容池草稿到 `docs/content-drafts/`：
+  - 5 分区设计
+  - 开饭雷达本地算法
+  - 个人主体小程序隐私说明
+- 小程序新增非 Tab 页面：
+  - `pages/about/`
+  - `pages/privacy/`
+  - `pages/features/`
+- 首页不再放 GEO / AI 说明卡，保持原有库存主流程；AI 可理解事实主要放在品牌站、非 Tab 页面和菜谱页说明入口。
+- 菜谱页「隐私与数据」卡片升级为明确入口：
+  - 小程序内隐私说明
+  - 微信隐私保护指引
+  - 功能说明
+  - 关于冰箱小雷达
+- 首页、日历、菜谱分享标题统一为：
+  - `冰箱小雷达｜微信里的冰箱食材库存管理小程序`
+- `project.config.json` 已将 `site`、`geo`、`diag-output`、`.workbuddy` 加入上传忽略，避免进入小程序上传包。
+
+验证结果：
+
+- 已通过 `node --check`：
+  - `app.js`
+  - `pages/index/index.js`
+  - `pages/calendar/calendar.js`
+  - `pages/recipes/recipes.js`
+  - `pages/about/about.js`
+  - `pages/privacy/privacy.js`
+  - `pages/features/features.js`
+  - `pkg-add/item-form/item-form.js`
+- 已通过 `jq empty`：
+  - `app.json`
+  - `project.config.json`
+  - 新增页面 JSON
+- 已用本地静态服务器检查：
+  - `/`
+  - `/privacy/`
+  - `/features/`
+  - `/faq/`
+  - `/geo-case/`
+  - 均返回 HTTP 200。
+- 已通过 `xmllint --noout site/sitemap.xml`。
+
+未完成 / 注意事项：
+
+- 微信开发者工具 CLI 已登录并打开项目；撤回首页 GEO / AI 说明区后已重新生成真机预览二维码：
+  - 二维码：`/private/tmp/fridge-preview-no-home-geo.png`
+  - TOTAL：693.6 KB / 710262 bytes
+  - main：412.8 KB / 422693 bytes
+  - `/pkg-add/`：280.8 KB / 287569 bytes
+- 用户已完成真机扫码回归，确认本轮首页主流程和新增说明入口可用。
+- 本轮小程序侧改动暂不单独上传 / 提审；后续随下一阶段新增功能版本一起发布。
+- 微信公众平台后台已打开，公开隐私页 URL 已复制到剪贴板；后台保存结果仍待人工确认。
+- `site/` 已同步到轻量服务器 `/var/www/fridge-radar-site`。
+- 服务器 Caddy 已加入 `fridge.playgamelab.cn` 静态站点块，`caddy validate` 通过，`systemctl reload caddy` 后服务仍为 `active`。
+- 已通过腾讯云 DNSPod API 创建 `fridge.playgamelab.cn` A 记录，指向轻量服务器公网 IP。
+- Caddy 已完成 Let’s Encrypt 正式证书签发。
+- 线上已验证 HTTPS 200：
+  - `/`
+  - `/privacy/`
+  - `/features/`
+  - `/faq/`
+  - `/geo-case/`
+  - `/llms.txt`
+  - `/sitemap.xml`
+- 旧 GEO 报告仍只能作为方向参考；对外公开优化结果前必须重新采样并保存 `geo/evidence/` 证据。
+- `Downloads` 里的 `SecretKey*.csv` 是敏感文件，后续需要用户手动转移到安全位置或删除；本轮未做删除操作。
 
 ## 当前 Git 状态说明
 
@@ -539,11 +625,13 @@ v1.0 个人主体阶段不要恢复：
 
 ## 下一步建议
 
-优先按 v1.2 收口清单推进：
+优先按 v1.2 发布和 GEO 基建两条线小步推进：
 
-- 在微信开发者工具中打开根目录，确认首页、日历、菜谱、添加 / 编辑页加载正常。
+- 微信开发者工具 CLI 预览已重新生成，首页 GEO 说明区已撤回；最新预览包 TOTAL 693.6 KB，真机验证已完成，本轮小程序侧改动随下一阶段新增功能版本一起发布。
 - 真机完整验证已确认：页面转发、词库补齐、首页雷达、日历页、菜谱页、删除、搜索、清空、缩略图归桶、样板食材批量建库和订阅授权分支。
 - 按 `docs/WECHAT_MINIPROGRAM_AUDIT.md` 检查微信后台隐私协议、服务类目、包体和提审材料。
 - 订阅提醒已改为每日汇总一条，下一步重点观察汇总文案是否足够清楚。
 - 更新 README 截图，替换早期 UI 截图。
 - 当前功能分支已推送；发布前需要合并到目标发布分支。
+- `fridge.playgamelab.cn` 品牌站和公开隐私页已上线；公开隐私页 URL 已复制到剪贴板并打开微信公众平台，后台保存结果待人工确认。
+- 上线后用 `geo/prompt-universe.csv` 做复测，把原始回答保存到 `geo/evidence/`。

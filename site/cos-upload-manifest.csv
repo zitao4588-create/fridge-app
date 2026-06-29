@@ -1,0 +1,13 @@
+local_path,cos_key,content_type,notes
+site/index.html,index.html,text/html,品牌首页
+site/privacy/index.html,privacy/index.html,text/html,公开隐私政策
+site/features/index.html,features/index.html,text/html,功能说明
+site/faq/index.html,faq/index.html,text/html,常见问题
+site/geo-case/index.html,geo-case/index.html,text/html,GEO 自证案例
+site/styles.css,styles.css,text/css,全站样式
+site/robots.txt,robots.txt,text/plain,爬虫规则
+site/sitemap.xml,sitemap.xml,application/xml,站点地图
+site/llms.txt,llms.txt,text/plain,AI 摘要入口
+site/assets/fridge-happy.png,assets/fridge-happy.png,image/png,吉祥物
+site/assets/fridge-chef.png,assets/fridge-chef.png,image/png,菜谱占位吉祥物
+site/assets/mini-program-code.png,assets/mini-program-code.png,image/png,小程序码

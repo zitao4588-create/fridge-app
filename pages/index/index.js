@@ -7,7 +7,7 @@ const { getExpiryStatus } = require('../../utils/status')
 const { getIngredientVisual } = require('../../utils/visualAssets')
 
 const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
-const SHARE_TITLE = '冰箱小雷达：记录食材，到期不忘'
+const SHARE_TITLE = '冰箱小雷达｜微信里的冰箱食材库存管理小程序'
 const SHARE_PATH = '/pages/index/index'
 const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
 const STARTER_FOOD_LIMIT = 36

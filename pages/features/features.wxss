@@ -1,0 +1,70 @@
+.features-page {
+  padding: 32rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
+}
+
+.features-hero,
+.feature-card,
+.features-footer {
+  border-radius: 30rpx;
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1), var(--hi-inset);
+}
+
+.features-hero {
+  padding: 34rpx 28rpx;
+  background: var(--grad-hero);
+}
+
+.features-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.features-desc {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--text-sub, #6f7c74);
+}
+
+.feature-card {
+  margin-top: 22rpx;
+  padding: 28rpx 24rpx;
+}
+
+.feature-name {
+  display: block;
+  font-size: 31rpx;
+  font-weight: 800;
+  color: var(--brand-mint-deep, #087a49);
+}
+
+.feature-label {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.feature-text {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--text-sub, #6f7c74);
+}
+
+.features-footer {
+  min-height: 70rpx;
+  margin-top: 24rpx;
+  line-height: 70rpx;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--brand-mint, #28b978);
+}

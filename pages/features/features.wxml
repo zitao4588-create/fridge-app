@@ -1,0 +1,48 @@
+<view class="page features-page">
+  <view class="features-hero">
+    <text class="features-title">功能说明</text>
+    <text class="features-desc">冰箱小雷达围绕家庭冰箱库存管理做小步功能：5 分区、临期提醒、开饭雷达和隐私优先。</text>
+  </view>
+
+  <view class="feature-card">
+    <text class="feature-name">5 分区管理</text>
+    <text class="feature-label">是什么</text>
+    <text class="feature-text">按冷藏、冷冻、门架、果蔬抽屉、变温区记录食材，更贴近真实冰箱结构。</text>
+    <text class="feature-label">怎么用</text>
+    <text class="feature-text">在首页每个分区右上角点“加食材”，保存后可按分区查看库存、临期和过期状态。</text>
+    <text class="feature-label">不会做什么</text>
+    <text class="feature-text">不会自动读取冰箱硬件，也不会连接智能冰箱。</text>
+  </view>
+
+  <view class="feature-card">
+    <text class="feature-name">临期提醒</text>
+    <text class="feature-label">是什么</text>
+    <text class="feature-text">根据你录入的过期日期，在首页和日历页展示快过期、已过期食材，并可通过订阅消息做每日汇总提醒。</text>
+    <text class="feature-label">怎么用</text>
+    <text class="feature-text">添加或编辑食材时填写保质期或过期日期，日历页会自动标记到期日。</text>
+    <text class="feature-label">不会做什么</text>
+    <text class="feature-text">不会强制授权订阅消息；拒绝授权也不影响保存食材。</text>
+  </view>
+
+  <view class="feature-card">
+    <text class="feature-name">开饭雷达</text>
+    <text class="feature-label">是什么</text>
+    <text class="feature-text">基于库存数量、品类多样性、临期和过期风险，用本地规则估算今晚能不能就地取材。</text>
+    <text class="feature-label">怎么用</text>
+    <text class="feature-text">首页有库存时会展示开饭雷达提示，点击可跳到日历页查看完整报告。</text>
+    <text class="feature-label">不会做什么</text>
+    <text class="feature-text">不会把完整食材清单发送给第三方大模型生成饮食建议。</text>
+  </view>
+
+  <view class="feature-card">
+    <text class="feature-name">隐私优先</text>
+    <text class="feature-label">是什么</text>
+    <text class="feature-text">当前版本只围绕库存管理保存必要数据，食材数据按当前微信账号隔离。</text>
+    <text class="feature-label">怎么用</text>
+    <text class="feature-text">你可以随时编辑、删除单条食材，也可以在首页清空全部食品数据。</text>
+    <text class="feature-label">不会做什么</text>
+    <text class="feature-text">不会开放登录页、支付会员、UGC 社区、拍照识别或 AI 菜谱。</text>
+  </view>
+
+  <view class="features-footer" bindtap="handleOpenPrivacy" aria-role="button">查看隐私与数据说明</view>
+</view>

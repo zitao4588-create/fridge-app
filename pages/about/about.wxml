@@ -1,0 +1,28 @@
+<view class="page about-page">
+  <view class="about-hero">
+    <image class="about-mascot" src="/images/mascot/fridge-happy.png" mode="aspectFit" aria-hidden="true" />
+    <text class="about-title">冰箱小雷达</text>
+    <text class="about-subtitle">微信里的冰箱食材库存管理小程序</text>
+    <text class="about-desc">它帮助家庭记录冰箱食材、按冷藏/冷冻/门架/果蔬抽屉/变温 5 分区整理库存，查看临期提醒，并通过本地开饭雷达判断今晚能不能就地取材。</text>
+  </view>
+
+  <view class="info-card">
+    <text class="card-title">核心定位</text>
+    <view class="fact-list">
+      <text class="fact-item">轻量：在微信里使用，不需要单独下载 App。</text>
+      <text class="fact-item">清楚：按真实冰箱 5 分区管理食材。</text>
+      <text class="fact-item">实用：记录保质期，提前看到临期和过期食材。</text>
+      <text class="fact-item">隐私优先：开饭雷达使用本地规则计算，不默认上传第三方 AI。</text>
+    </view>
+  </view>
+
+  <view class="info-card">
+    <text class="card-title">当前阶段不做</text>
+    <text class="card-text">个人主体版本不开放 AI 菜谱、拍照识别、条形码扫描、支付会员、登录页或社区功能。后续如恢复这些能力，会先确认主体资质、微信类目和隐私边界。</text>
+  </view>
+
+  <view class="action-list">
+    <view class="action-item" bindtap="handleOpenFeatures" aria-role="button">查看功能说明</view>
+    <view class="action-item" bindtap="handleOpenPrivacy" aria-role="button">查看隐私说明</view>
+  </view>
+</view>
