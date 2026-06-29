@@ -184,8 +184,13 @@ v1.2 目标：
 - [x] 首页 GEO / AI 说明区撤回后重新生成预览包：TOTAL 693.6 KB，main 412.8 KB，`/pkg-add/` 280.8 KB。
 - [x] 用预览二维码真机回归：首页主流程、隐私页、功能说明页、关于页、菜谱页说明入口、添加 / 日历 / 菜谱主流程。
 - [x] 明确发布策略：本轮小程序侧改动不单独上传 / 提审，和下一阶段新增功能版本一起发布。
-- [ ] 用 `geo/prompt-universe.csv` 重新采样，并把原始回答保存到 `geo/evidence/`。
-- [ ] 根据真实证据重新生成可审计 GEO 报告，不复用旧报告的虚拟/模拟来源当成结果。
+- [x] 完成 GEO 复测 01 页面/搜索基线：保存页面 HTML、headers、SHA256、事实覆盖和搜索基线。
+- [x] 调用 Claude Code 对 `site/` 静态站做轻量可信化 UI 优化。
+- [x] 完成静态站 UI 复核：5 个页面 HTTP 200、桌面/移动无横向溢出、Playwright console 0 error / 0 warning、核心事实仍全部命中。
+- [ ] 将本地优化后的 `site/` 重新同步到轻量服务器 `/var/www/fridge-radar-site`，让线上站点使用新版 UI。
+- [ ] 等搜索索引吸收后，复跑 `search-baseline.json` 中的品牌、域名和 prompt 查询。
+- [ ] 用真实 AI 平台逐条跑 `geo/prompt-universe.csv`，把原始回答保存到 `geo/evidence/answers/`。
+- [ ] 根据真实证据重新生成可审计 GEO 报告；当前复测 01 不生成新 AIVO 分数，不复用旧报告的虚拟/模拟来源当成结果。
 
 ### A. 已有待办并入 v1.2
 

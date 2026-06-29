@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>隐私政策 | 冰箱小雷达</title>
     <meta name="description" content="冰箱小雷达公开隐私说明：openid、食材数据、CloudBase 存储、订阅提醒、用户删除权利，以及不会默认上传第三方 AI 的边界。" />
-    <link rel="icon" href="/assets/fridge-happy.png" />
     <link rel="stylesheet" href="../styles.css" />
   </head>
   <body>
@@ -22,54 +21,48 @@
     </header>
     <main class="page">
       <section class="section page-title">
-        <p class="kicker">公开隐私说明</p>
         <h1>隐私政策</h1>
         <p>冰箱小雷达只围绕冰箱食材库存管理保存必要数据。当前个人主体稳定版不默认上传第三方 AI，不开放拍照识别、AI 菜谱、支付会员或社区功能。</p>
-        <div class="policy-meta">
-          <span><strong>适用产品：</strong>冰箱小雷达微信小程序</span>
-          <span><strong>当前状态：</strong>公开说明页已上线</span>
-          <span><strong>数据存储：</strong>微信云开发 CloudBase</span>
-        </div>
       </section>
-      <section class="section policy">
-        <div class="policy-section" id="collect">
-          <h2><span class="num">1.</span>收集什么</h2>
+      <section class="section grid">
+        <article class="card">
+          <h3>收集什么</h3>
           <ul>
             <li>当前微信用户 openid，用于数据隔离。</li>
             <li>用户主动录入的食材名称、品类、数量、分区、生产日期、保质期、过期日期和备注。</li>
             <li>订阅提醒授权结果和提醒发送记录，用于避免重复提醒。</li>
           </ul>
-        </div>
-        <div class="policy-section" id="not-collect">
-          <h2><span class="num">2.</span>不收集什么</h2>
+        </article>
+        <article class="card">
+          <h3>不收集什么</h3>
           <ul>
             <li>不主动读取通讯录。</li>
             <li>不默认读取相册。</li>
             <li>不默认把食材清单发送给第三方 AI。</li>
             <li>不出售用户数据。</li>
           </ul>
-        </div>
-        <div class="policy-section" id="usage">
-          <h2><span class="num">3.</span>数据用途</h2>
+        </article>
+        <article class="card">
+          <h3>数据用途</h3>
           <ul>
             <li>展示冰箱库存和分区。</li>
             <li>计算临期、过期和到期日历。</li>
             <li>通过本地规则计算开饭雷达。</li>
             <li>发送用户授权后的到期提醒。</li>
           </ul>
-        </div>
-        <div class="policy-section" id="storage">
-          <h2><span class="num">4.</span>数据存储</h2>
+        </article>
+        <article class="card">
+          <h3>数据存储</h3>
           <p>食材数据存储在微信云开发 CloudBase 云数据库中，按当前微信用户 openid 隔离。小程序前端不保存第三方服务商 API key。</p>
-        </div>
-        <div class="policy-section" id="rights">
-          <h2><span class="num">5.</span>用户权利</h2>
+        </article>
+        <article class="card">
+          <h3>用户权利</h3>
           <p>用户可以在小程序中查看、编辑、删除单条食材，也可以通过首页底部的二次确认入口清空全部食材记录。</p>
-        </div>
-        <div class="policy-section" id="contact">
-          <h2><span class="num">6.</span>联系方式</h2>
+        </article>
+        <article class="card">
+          <h3>联系方式</h3>
           <p>如需处理隐私相关问题，请通过微信小程序后台配置的开发者联系方式或公开品牌页后续补充的联系邮箱联系开发者。</p>
-        </div>
+        </article>
       </section>
     </main>
     <footer class="page footer">

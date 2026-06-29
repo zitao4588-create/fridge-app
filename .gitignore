@@ -26,6 +26,7 @@ preview-info.json
 preview-info-*.json
 preview-qrcode.png
 preview-qrcode-*.png
+.playwright-cli/
 
 # Logs
 logs/

@@ -254,6 +254,59 @@ P0 收口后仍未完成：
 - 旧 GEO 报告仍只能作为方向参考；对外公开优化结果前必须重新采样并保存 `geo/evidence/` 证据。
 - `Downloads` 里的 `SecretKey*.csv` 是敏感文件，后续需要用户手动转移到安全位置或删除；本轮未做删除操作。
 
+### 2026-06-30 GEO 复测 01
+
+已启动第一轮复测基线，Run ID：`2026-06-30-geo-retest-01`。
+
+- 已保存线上页面 HTML、HTTP headers 和 SHA256 manifest：
+  - `geo/evidence/pages/2026-06-30-geo-retest-01/`
+- 已生成页面事实覆盖文件：
+  - `geo/evidence/pages/2026-06-30-geo-retest-01/fact-coverage.json`
+- 已保存搜索查询基线：
+  - `geo/evidence/queries/2026-06-30-geo-retest-01/search-baseline.json`
+- 已生成复测报告：
+  - `geo/reports/2026-06-30-geo-retest-01.md`
+
+当前结论：
+
+- 源站可抓取，公开页面和 `llms.txt` 能直接读到产品定义、5 分区、临期提醒、开饭雷达和隐私优先 5 个目标事实。
+- 搜索工具暂未返回 `fridge.playgamelab.cn` 官方页面，说明刚上线后尚未观察到搜索索引吸收。
+- 本轮尚未采集真实 AI 平台原始回答，因此不生成新的 AIVO 分数，也不对外宣称优化成效。
+
+### 2026-06-30 静态品牌站 UI 轻量可信化
+
+本轮按用户要求调用 Claude Code 优化 `site/` 静态站 UI，并由 Codex 复核收尾：
+
+- Claude Code 认证过期后已重新登录。
+- 用户指定的 `opus4.8` 模型名在 Claude Code 中不可用，最终使用 `--model opus --effort max` 完成。
+- 修改范围限定在：
+  - `site/index.html`
+  - `site/privacy/index.html`
+  - `site/features/index.html`
+  - `site/faq/index.html`
+  - `site/geo-case/index.html`
+  - `site/styles.css`
+- UI 方向是“可信官方说明站”，不是营销官网：
+  - 保留 URL、title、meta description、H1 和核心正文事实。
+  - 不引入 JS、框架、外部字体或外部资源。
+  - 首页二维码入口更清楚，隐私页改为正式政策文档形态，FAQ 改为可引用问答库。
+- Codex 复核时修正了两个问题：
+  - 隐私页状态从“上线前公开说明”改为“公开说明页已上线”。
+  - 5 个 HTML 页面补充 favicon 链接，避免浏览器请求 `/favicon.ico` 返回 404。
+
+复核结果：
+
+- 本地静态站 5 个页面均返回 HTTP 200。
+- 桌面 1280px 和移动 390px 均无横向溢出。
+- Playwright console 为 0 error / 0 warning。
+- 页面仍能直接读到产品定义、5 分区、临期提醒、开饭雷达和隐私优先 5 个目标事实。
+- `git diff --check` 通过，敏感密钥形态扫描无命中。
+
+注意：
+
+- 本轮只更新本地 `site/` 文件，尚未重新同步到轻量服务器线上目录。
+- Playwright 生成的 `.playwright-cli/` 已加入 `.gitignore`，作为本地复核缓存不提交。
+
 ## 当前 Git 状态说明
 
 2026-06-12 已将 Claude Code 产出的上线分支 `worktree-prelaunch-fixes` 快进合并到根目录 `main`。
@@ -261,9 +314,8 @@ P0 收口后仍未完成：
 - 合并前备份分支：`backup/main-before-v1-sync-20260612`
 - 合并后 `main` 当前包含 v1.0 上线版代码
 - 2026-06-17 v1.2 收口改动已推送到 `origin/feat/home-radar-merge`
-- 当前本地 `feat/home-radar-merge` 与远端 `origin/feat/home-radar-merge` 同步，工作区干净
-- 最新提交：
-  - `2120fce`：日历报告状态副标题一并中性化
+- 2026-06-30 已提交 `e408fc1`：`feat: add fridge GEO self-evidence site`
+- 2026-06-30 本轮继续新增 GEO 复测 01 证据和静态品牌站 UI 轻量可信化改动，纳入本次收尾提交。
   - `069c8d2`：移除「已处理」批量删除功能，首页 kicker 还原中性
   - `2a142aa`：Polish v1.2 retention experience
 - 正式发布前需要确认功能分支已合并到目标发布分支，再上传体验版 / 提审
@@ -634,4 +686,5 @@ v1.0 个人主体阶段不要恢复：
 - 更新 README 截图，替换早期 UI 截图。
 - 当前功能分支已推送；发布前需要合并到目标发布分支。
 - `fridge.playgamelab.cn` 品牌站和公开隐私页已上线；公开隐私页 URL 已复制到剪贴板并打开微信公众平台，后台保存结果待人工确认。
-- 上线后用 `geo/prompt-universe.csv` 做复测，把原始回答保存到 `geo/evidence/`。
+- GEO 复测 01 已完成页面 / 搜索基线；等搜索索引吸收后再复跑搜索基线，并用真实 AI 平台逐条采集 `geo/prompt-universe.csv` 原始回答。
+- 静态站 UI 已完成本地可信化复核；如要让线上同步新版 UI，需要再次将 `site/` 同步到轻量服务器 `/var/www/fridge-radar-site`。

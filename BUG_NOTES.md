@@ -2408,9 +2408,8 @@
 
 后续注意：
 
-- 真机扫码结果仍需人工确认：
+- 真机扫码结果已由用户确认完成。
   - 首页已撤回 GEO 说明区，主流程不被说明内容挤压。
-  - 「查看快过期食材」在空库存和有库存状态下都正常。
   - 菜谱页 4 个说明入口均能打开。
   - 新增非 Tab 页面返回路径正常。
 
@@ -2436,3 +2435,60 @@
 
 - 后续使用 `tccli` 时，密钥应位于 `~/.tccli/default.credential`。
 - `Downloads` 里的 `SecretKey*.csv` 是敏感文件，后续应手动转移到安全位置或删除。
+
+### 4. GEO 复测页面抓取首次循环误用 zsh 特殊变量 `path`
+
+现象：
+
+- 第一次抓取线上页面证据时，循环变量命名为 `path`。
+- zsh 中 `path` 是和 `PATH` 关联的特殊变量，导致当前 shell 的命令查找路径被覆盖。
+- 后续循环内出现 `command not found: curl`，没有生成页面证据文件。
+
+处理：
+
+- 确认系统实际存在 `/usr/bin/curl`。
+- 将循环变量改为 `slug`，并显式调用 `/usr/bin/curl`。
+- 第二次抓取成功保存页面 HTML 和 headers。
+
+后续注意：
+
+- zsh 脚本里不要使用 `path` 作为普通循环变量名。
+- 抓取证据时如要写入文件，先确认目标文件实际生成并记录文件大小。
+
+### 5. Claude Code UI 优化前遇到认证和模型名问题
+
+现象：
+
+- 首次调用 Claude Code 优化 `site/` UI 时返回 `401 Invalid authentication credentials`。
+- 重新登录后，用户指定的 `opus4.8` 模型名返回“模型不存在或无权限”。
+
+处理：
+
+- 通过 `claude auth login --claudeai` 重新登录 Claude Code。
+- 使用 Claude Code 可识别的 `--model opus --effort max` 继续执行 UI 优化。
+- 修改范围限制在 `site/` 的 5 个 HTML 页面和 `site/styles.css`。
+
+后续注意：
+
+- Claude Code CLI 帮助中可用的是 `opus` 这类别名，不能假设 `opus4.8` 一定是有效模型 ID。
+- 如后续再次出现 401，应优先重新登录，而不是调整项目代码。
+
+### 6. Playwright 复核需要隔离 npm / 浏览器缓存并补 favicon
+
+现象：
+
+- Playwright wrapper 首次运行时，npm cache 中存在 root-owned 文件，导致 `EPERM`。
+- 改用 `/private/tmp/fridge-playwright-cache` 后，Playwright 仍需要写入 `~/Library/Caches/ms-playwright/daemon`，需按权限规则授权。
+- 首次打开本地站点时，浏览器请求 `/favicon.ico` 返回 404，console 出现 1 个 error。
+
+处理：
+
+- 使用临时 npm cache 运行 Playwright，避免修改全局 npm cache。
+- 按权限规则授权 Playwright 写入自身用户缓存目录。
+- 为 5 个 HTML 页面补充 favicon 链接，使用现有 `/assets/fridge-happy.png`，未新增图片资源。
+- 重新打开干净浏览器会话后，Playwright console 为 0 error / 0 warning。
+
+后续注意：
+
+- `.playwright-cli/` 是本地复核缓存，已加入 `.gitignore`，不作为项目交付物提交。
+- 如果要保留正式截图，优先输出到 `/private/tmp` 或专门的报告目录，不混入小程序上传包。

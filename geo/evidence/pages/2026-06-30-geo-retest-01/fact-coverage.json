@@ -1,0 +1,88 @@
+{
+  "run_id": "2026-06-30-geo-retest-01",
+  "source_files": [
+    "index.html",
+    "privacy.html",
+    "features.html",
+    "faq.html",
+    "geo-case.html",
+    "llms.txt"
+  ],
+  "coverage": [
+    {
+      "id": "product_definition",
+      "terms": [
+        "冰箱食材库存管理小程序",
+        "微信里的冰箱食材库存管理小程序"
+      ],
+      "matched": [
+        "冰箱食材库存管理小程序",
+        "微信里的冰箱食材库存管理小程序"
+      ],
+      "missing": [],
+      "pass": true
+    },
+    {
+      "id": "five_zones",
+      "terms": [
+        "冷藏",
+        "冷冻",
+        "门架",
+        "果蔬抽屉",
+        "变温"
+      ],
+      "matched": [
+        "冷藏",
+        "冷冻",
+        "门架",
+        "果蔬抽屉",
+        "变温"
+      ],
+      "missing": [],
+      "pass": true
+    },
+    {
+      "id": "expiry_reminder",
+      "terms": [
+        "临期提醒",
+        "每日汇总提醒"
+      ],
+      "matched": [
+        "临期提醒",
+        "每日汇总提醒"
+      ],
+      "missing": [],
+      "pass": true
+    },
+    {
+      "id": "meal_radar",
+      "terms": [
+        "开饭雷达",
+        "就地取材"
+      ],
+      "matched": [
+        "开饭雷达",
+        "就地取材"
+      ],
+      "missing": [],
+      "pass": true
+    },
+    {
+      "id": "privacy_first",
+      "terms": [
+        "隐私优先",
+        "不默认把食材数据上传给第三方 AI",
+        "CloudBase",
+        "openid"
+      ],
+      "matched": [
+        "隐私优先",
+        "不默认把食材数据上传给第三方 AI",
+        "CloudBase",
+        "openid"
+      ],
+      "missing": [],
+      "pass": true
+    }
+  ]
+}

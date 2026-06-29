@@ -1,0 +1,87 @@
+{
+  "run_id": "2026-06-30-geo-retest-01",
+  "collected_at": "2026-06-30T06:20:38+08:00",
+  "tool": "OpenAI web.search_query",
+  "purpose": "Check whether the newly launched public brand site and brand facts are already visible in web search.",
+  "domain": "fridge.playgamelab.cn",
+  "exact_brand_and_domain_queries": [
+    {
+      "query": "site:fridge.playgamelab.cn 冰箱小雷达",
+      "official_site_found": false,
+      "notes": "No official fridge.playgamelab.cn result returned by the search tool."
+    },
+    {
+      "query": "\"fridge.playgamelab.cn\"",
+      "official_site_found": false,
+      "notes": "No exact-domain result returned by the search tool."
+    },
+    {
+      "query": "\"冰箱小雷达\" \"fridge.playgamelab.cn\"",
+      "official_site_found": false,
+      "notes": "No exact brand plus domain result returned by the search tool."
+    },
+    {
+      "query": "\"冰箱小雷达\" \"冰箱食材库存管理小程序\"",
+      "official_site_found": false,
+      "notes": "No official site result returned by the search tool."
+    }
+  ],
+  "prompt_universe_search_batches": [
+    {
+      "prompt_ids": ["P001", "P002", "P003", "P004"],
+      "queries": [
+        "冰箱小雷达是什么",
+        "冰箱小雷达 安全吗",
+        "微信小程序管理冰箱食材哪个好",
+        "开饭雷达是什么"
+      ],
+      "official_site_found": false,
+      "notes": "Returned results did not surface the official fridge.playgamelab.cn pages."
+    },
+    {
+      "prompt_ids": ["P005", "P006", "P007", "P008"],
+      "queries": [
+        "冰箱库存管理小程序哪个好用？",
+        "微信小程序管理冰箱食材哪个好？",
+        "不用下载 App 怎么记录冰箱食材保质期？",
+        "隐私安全的冰箱库存小程序有哪些？"
+      ],
+      "official_site_found": false,
+      "notes": "Returned results did not surface the official fridge.playgamelab.cn pages."
+    },
+    {
+      "prompt_ids": ["P009", "P010", "P011", "P012"],
+      "queries": [
+        "冰箱里的食材快过期了怎么提醒？",
+        "怎么知道今晚冰箱里的菜够不够做饭？",
+        "开饭雷达是什么？",
+        "冰箱食材管理为什么要按分区？"
+      ],
+      "official_site_found": false,
+      "notes": "Returned results did not surface the official fridge.playgamelab.cn pages."
+    },
+    {
+      "prompt_ids": ["P013", "P014", "P015", "P016"],
+      "queries": [
+        "冰箱小雷达和鲜钟记有什么区别？",
+        "冰箱小雷达和冰箱清单有什么区别？",
+        "适合家庭主厨的冰箱管理工具有哪些？",
+        "适合上班族的食材管理小程序有哪些？"
+      ],
+      "official_site_found": false,
+      "notes": "Returned results did not surface the official fridge.playgamelab.cn pages."
+    },
+    {
+      "prompt_ids": ["P017", "P018", "P019", "P020"],
+      "queries": [
+        "个人主体小程序记录食材数据需要注意什么？",
+        "冰箱小雷达有没有 AI 菜谱？",
+        "冰箱小雷达支持拍照识别吗？",
+        "我如何给自己的小程序做 GEO 优化？"
+      ],
+      "official_site_found": false,
+      "notes": "Returned results did not surface the official fridge.playgamelab.cn pages."
+    }
+  ],
+  "interpretation": "The site is live and crawlable, but this first search baseline does not yet show public search index absorption. This is expected immediately after launch and should be repeated after crawler discovery and indexing."
+}

@@ -1,0 +1,13 @@
+HTTP/1.1 200 Connection established
+
+HTTP/2 200 
+accept-ranges: bytes
+alt-svc: h3=":443"; ma=2592000
+content-type: text/html; charset=utf-8
+etag: "djlpemeagmww2kj"
+last-modified: Mon, 29 Jun 2026 17:19:53 GMT
+server: Caddy
+vary: Accept-Encoding
+content-length: 3331
+date: Mon, 29 Jun 2026 22:20:38 GMT
+
