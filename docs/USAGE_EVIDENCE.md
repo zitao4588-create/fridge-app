@@ -90,16 +90,18 @@ Open roadmap issues:
 Current product screenshots are stored in:
 
 - `docs/screenshots/home-fridge.png`
+- `docs/screenshots/item-form-v2.png`
 - `docs/screenshots/calendar-overview.png`
-- `docs/screenshots/cookability-report.png`
-- `docs/screenshots/ai-recipes.png`
+- `docs/screenshots/family-sharing-v2.png`
 
 They show:
 
-- fridge inventory home screen
-- expiry calendar
-- cookability report
-- AI recipe suggestions
+- the v2.0 six-zone inventory home screen
+- optional quantity tracking and the ambient-storage zone
+- the expiry calendar and local cookability report
+- private, invite-only family inventory sharing
+
+The current screenshots were regenerated from the 2026-07-13 v2.0 development build. Legacy AI recipe and earlier cookability screenshots remain in the repository as historical evidence, but are no longer presented as current product functionality.
 
 ## Maintainer Evidence
 

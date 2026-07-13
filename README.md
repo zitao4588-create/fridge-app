@@ -12,16 +12,24 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
   <tr>
     <td align="center">
       <img src="docs/screenshots/home-fridge.png" width="220" alt="Fridge inventory home screen" />
-      <br /><sub>分区货架（首页）</sub>
+      <br /><sub>6 分区库存首页</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/item-form-v2.png" width="220" alt="Add food form with optional quantity" />
+      <br /><sub>可选数量与常温分区</sub>
     </td>
     <td align="center">
       <img src="docs/screenshots/calendar-overview.png" width="220" alt="Expiry calendar overview" />
       <br /><sub>到期日历 + 开饭雷达</sub>
     </td>
+    <td align="center">
+      <img src="docs/screenshots/family-sharing-v2.png" width="220" alt="Private family inventory sharing" />
+      <br /><sub>私有家庭共享</sub>
+    </td>
   </tr>
 </table>
 
-> 截图为早期 UI，最新版已做轻奢黏土风格与无障碍重构，细节略有差异，后续会更新截图。
+> 截图来自 2026-07-13 的 v2.0 开发版本，不包含用户账号、邀请口令或库存备注等敏感信息。
 
 ## 功能（v2.0 发布候选）
 
