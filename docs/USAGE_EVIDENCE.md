@@ -89,9 +89,9 @@ Open roadmap issues:
 
 Current product screenshots are stored in:
 
-- `docs/screenshots/home-fridge.png`
+- `docs/screenshots/home-fridge-v2.png`
 - `docs/screenshots/item-form-v2.png`
-- `docs/screenshots/calendar-overview.png`
+- `docs/screenshots/calendar-overview-v2.png`
 - `docs/screenshots/family-sharing-v2.png`
 
 They show:

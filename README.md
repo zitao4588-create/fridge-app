@@ -11,7 +11,7 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 <table>
   <tr>
     <td align="center">
-      <img src="docs/screenshots/home-fridge.png" width="220" alt="Fridge inventory home screen" />
+      <img src="docs/screenshots/home-fridge-v2.png" width="220" alt="Fridge inventory home screen" />
       <br /><sub>6 分区库存首页</sub>
     </td>
     <td align="center">
@@ -19,7 +19,7 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
       <br /><sub>可选数量与常温分区</sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/calendar-overview.png" width="220" alt="Expiry calendar overview" />
+      <img src="docs/screenshots/calendar-overview-v2.png" width="220" alt="Expiry calendar overview" />
       <br /><sub>到期日历 + 开饭雷达</sub>
     </td>
     <td align="center">
