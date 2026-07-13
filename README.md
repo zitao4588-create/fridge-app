@@ -1,8 +1,8 @@
 # 冰箱小雷达 · Fridge Radar（微信小程序）
 
-冰箱小雷达是一个**家庭冰箱库存管理**微信小程序：记录食材、按 5 大分区存放、跟踪保质期、提醒临期与过期，并在日历页用本地算法给出「开饭雷达」可开饭指数。
+冰箱小雷达是一个**家庭冰箱库存管理**微信小程序：记录食材、按 6 个分区存放、跟踪保质期、提醒临期与过期，并支持家庭成员共同维护私有库存。
 
-> 当前版本（v1.0）是**纯本地、不含 AI 的稳定版**，面向**个人主体**优先上线：不含 AI / 深度合成、不含拍照识别、无登录、无支付、无 UGC。拍照识别、AI 菜谱、会员支付等为后续迭代方向，详见下文 **Roadmap**（这些能力需要企业主体）。
+> 当前开发版本为 **v2.0 家庭库存闭环版（M4 发布候选）**：数量由用户选择是否记录，食材可拖到餐盘“用掉”，并提供邀请制家庭共享。继续保持无登录页、无支付、无 AI、无公开 UGC，适配个人主体工具类小程序边界。
 
 English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 React/Vite H5 脚手架已彻底移除，仓库即纯小程序工程。
 
@@ -23,15 +23,17 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 
 > 截图为早期 UI，最新版已做轻奢黏土风格与无障碍重构，细节略有差异，后续会更新截图。
 
-## 功能（当前 v1.0）
+## 功能（v2.0 发布候选）
 
 底部三个 Tab：**冰箱（首页）· 日历 · 菜谱**。
 
 **首页**
-- 5 个固定分区：冷藏区、冷冻区、门上储物格、果蔬抽屉、变温区，每区有独立色彩身份。
+- 6 个固定分区：冷藏区、冷冻区、门上储物格、果蔬抽屉、变温区、常温储物。
 - 每个分区显示「库存 · 临期 · 过期」内联统计 + 横向食材卡片，右上角「＋ 加食材」直达添加。
 - 吉祥物文案按库存状态（空 / 临期 / 过期 / 正常）动态显示。
 - 搜索食材；点食材卡片查看详情（到期日、状态、备注），可编辑 / 删除。
+- 可选择是否记录数量；记录时只显示 `×N`，不填写或展示单位。
+- 长按食材卡片拖到餐盘完成“用掉”：有数量默认减 1，未记录数量或减到 0 时移出库存，并支持一次撤销。
 - 食材缩略图按**品类 / 食材族群共用写实图**；**拍照录入接口已预留**（用户照片优先于系统图）。
 - 底部「清空全部食品数据」（带二次确认）。
 
@@ -44,22 +46,25 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 - 占位页「菜谱搭配，敬请期待」（家常菜谱搭配方向，当前不提供任何生成功能）。
 - 「隐私与数据」说明 + 查看隐私保护指引入口。
 
+**家庭共享**
+- 一个用户只加入一个家庭；创建者通过微信分享一次性邀请成员。
+- 创建者可撤回邀请、移除成员；成员可共同查看和编辑家庭库存并主动退出。
+- 不获取头像、昵称或手机号，不提供公开动态、评论、聊天或陌生人发现。
+- 家庭数据只能通过 `familyInventory` 云函数访问，服务端从微信上下文读取 OPENID 并校验角色。
+
 **工程**
 - UI：TDesign 小程序组件 + 自定义「轻奢黏土」主题；已完成 WCAG 2.1 AA 无障碍整改（对比度、触控目标、`aria` 角色 / 标签、减少动效）。
 - 体积：主包约 1.7MB；TDesign 通过**分包独立 npm**（`pkg-add`）放入分包，保证主包 < 2MB。
 
 ## Roadmap · 迭代方向
 
-> **关键约束**：以下能力涉及 **AI / 深度合成** 或 **微信支付**，**个人主体小程序不可上线**（2026-05 的 AI 菜谱版本即因「深度合成技术、个人主体尚未开放服务类目」被驳回，建议企业主体）。因此从 v2 起，需先**升级 / 新注册「企业主体」小程序**再分阶段接入。
+> v2.0 仍按个人主体工具类边界设计。AI、深度合成、拍照识别和支付不进入本版本。
 
 | 阶段 | 方向 | 主体要求 | 备注 |
 |---|---|---|---|
-| v1.x | 本地体验打磨、到期提醒（订阅消息）、食材图库扩充 | 个人主体可做 | 不触碰 AI / 支付 |
-| v2.0 | **拍照识别**：拍食品 / 包装自动录入 | 需企业主体 | 云函数 `parseFoodImage` 已预留；前端入口待接回；取图已是「用户照片 > 系统图」 |
-| v2.x | **AI 菜谱**：按库存 / 临期生成或推荐菜谱 | 需企业主体 | 菜谱图已按「做法 / 食材族群共用」治理铺好路（见 `NEXT_VERSION_GUIDE.md`） |
-| v3.0 | **会员 / 支付**：会员权益与微信支付 | 需企业主体 + 微信支付 | 微信支付不对个人主体开放 |
-
-设计上已为上述迭代留好接口：`utils/visualAssets.js` 的 `getIngredientVisual` 第一优先级即 `source==='photo' && imageFileId`，未来拍照录入只需给 item 写入照片即可，无需改取图逻辑；AI / OCR 能力均放在云函数侧，前端不保存或暴露任何服务商 API key。
+| v1.2 | 到期提醒、本地词库、样板冰箱和稳定性收口 | 已完成 | 个人主体稳定基线 |
+| v2.0 | **家庭库存闭环**：可选数量、餐盘消耗、常温分区、私有家庭共享 | 提审准备 | 正式家庭云函数和集合权限已配置 |
+| 后续候选 | 健康余额、AI、识别、会员与支付 | 暂不排期 | 需要重新验证需求和主体资质 |
 
 ## 技术栈
 
@@ -71,8 +76,8 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 
 - AppID：`wx328e2b87665508e7`
 - CloudBase 环境 ID：`cloud1-d3g4v0ms8ee56bd94`
-- 云数据库集合：`items`、`reminders`、`parseLogs`、`fridgeZoneConfigs` 等
-- 云函数（含为后续迭代预留、当前前端已收起的能力）：`getOpenId`、`parseFoodImage`、`generateRecipes`、`sendExpiryReminders` 等
+- 云数据库集合：`items`、`reminders`；v2.0 新增 `families`、`familyMembers`、`familyInvites`、`inventoryEvents`
+- 当前云函数：`getOpenId`、`sendExpiryReminders`；v2.0 新增 `familyInventory`。AI / 识别云函数仍为历史预留，不开放前端入口
 
 > 以上 AppID 与环境 ID 是项目配置标识，不是可复用密钥。Fork 时请替换为自己的 AppID 与 CloudBase 环境。
 
@@ -84,8 +89,8 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 ├── custom-tab-bar/                   # 自定义底部 TabBar（冰箱/日历/菜谱）
 ├── pages/                            # index 首页、calendar 日历、recipes 菜谱
 ├── pkg-add/                          # 分包：添加/编辑表单 + TDesign 独立 npm
-├── services/                         # itemService / parseService / reminderService
-├── utils/                            # constants / date / status / visualAssets
+├── services/                         # itemService / familyService / reminderService
+├── utils/                            # constants / inventory / date / status / visualAssets
 ├── styles/                           # tokens、tdesign-theme 等共享样式
 ├── images/                           # 本地视觉素材（食材写实图、吉祥物、tabbar）
 ├── cloudfunctions/                   # CloudBase 云函数
@@ -107,6 +112,7 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 ```bash
 node --check app.js
 node --check services/itemService.js
+node --check services/familyService.js
 node --check services/parseService.js
 node --check services/reminderService.js
 node --check utils/visualAssets.js
@@ -114,7 +120,11 @@ node --check utils/constants.js
 node --check pages/index/index.js
 node --check pages/calendar/calendar.js
 node --check pages/recipes/recipes.js
+node --check pages/family/family.js
 node --check pkg-add/item-form/item-form.js
+node --check cloudfunctions/familyInventory/index.js
+node tests/inventory-domain.test.js
+node tests/family-domain.test.js
 ```
 
 ## 当前不做
@@ -122,6 +132,7 @@ node --check pkg-add/item-form/item-form.js
 - 不做 Vercel / Supabase / Next.js / 独立后端 / Docker / 登录页。
 - 不接真实条形码商品库；条形码入口已移除。
 - 个人主体阶段不接 AI / 深度合成与微信支付（见 Roadmap）。
+- v2.0 不做健康余额、公开社区、多家庭或复杂角色体系。
 - AI、OCR、菜谱生成等能力一律留在云函数侧，前端不保存或暴露服务商 API key。
 
 ## 文档
@@ -130,6 +141,7 @@ node --check pkg-add/item-form/item-form.js
 - [docs/handoff-index.md](docs/handoff-index.md)：UI 交付规格（全页面）
 - [docs/a11y-checklist.md](docs/a11y-checklist.md)：无障碍整改清单（WCAG 2.1 AA）
 - [docs/CLOUDBASE_SETUP.md](docs/CLOUDBASE_SETUP.md)：CloudBase 环境配置
+- [docs/CLOUDBASE_V2_SECURITY.md](docs/CLOUDBASE_V2_SECURITY.md)：家庭共享安全规则、上线顺序和回滚边界
 - [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG.md](CHANGELOG.md)
 
 ## Contributing

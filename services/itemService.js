@@ -1,5 +1,7 @@
 const { getTodayString, addDays } = require('../utils/date')
 const { normalizeStorageLocation } = require('../utils/constants')
+const { getConsumptionType, normalizeQuantityState } = require('../utils/inventory')
+const familyService = require('./familyService')
 
 const COLLECTION_NAME = 'items'
 const PAGE_SIZE = 20
@@ -9,10 +11,12 @@ const ITEMS_CACHE_TTL = 10 * 1000
 
 let itemsCache = null
 let itemsCacheAt = 0
+let itemsCacheScope = ''
 
 function invalidateItemsCache() {
   itemsCache = null
   itemsCacheAt = 0
+  itemsCacheScope = ''
 }
 
 function getDb() {
@@ -23,8 +27,26 @@ function getDb() {
   return wx.cloud.database()
 }
 
+function isFamilyMode() {
+  return Boolean(familyService.readCachedFamilyState())
+}
+
+function getInventoryScope() {
+  const state = familyService.readCachedFamilyState()
+  return state && state.family ? `family:${state.family.id}` : 'personal'
+}
+
+function callFamilyInventory(action, payload) {
+  return familyService.callFamilyFunction(action, payload).catch((error) => {
+    if (error.code === 'NOT_IN_FAMILY' || error.code === 'FAMILY_UNAVAILABLE') {
+      familyService.writeCachedFamilyState(null)
+    }
+    throw error
+  })
+}
+
 function cleanItemPayload(payload) {
-  const quantity = Number(payload.quantity)
+  const quantityState = normalizeQuantityState(payload)
   const shelfLifeDays =
     payload.shelfLifeDays === '' || payload.shelfLifeDays === undefined
       ? undefined
@@ -33,8 +55,10 @@ function cleanItemPayload(payload) {
   return {
     name: String(payload.name || '').trim(),
     category: payload.category || '其他',
-    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
-    unit: String(payload.unit || '').trim() || '份',
+    quantityTracked: quantityState.quantityTracked,
+    quantity: quantityState.quantity,
+    // 保留旧字段以兼容历史代码；v2.0 不再让用户填写或展示单位。
+    unit: '',
     productionDate: payload.productionDate || '',
     shelfLifeDays:
       Number.isFinite(shelfLifeDays) && shelfLifeDays > 0
@@ -56,10 +80,14 @@ function cleanItemPayload(payload) {
 }
 
 function decorateItems(items) {
-  return items.map((item) => ({
-    ...item,
-    storageLocation: normalizeStorageLocation(item.storageLocation),
-  })).sort((left, right) => {
+  return items.map((item) => {
+    const quantityState = normalizeQuantityState(item)
+    return {
+      ...item,
+      ...quantityState,
+      storageLocation: normalizeStorageLocation(item.storageLocation),
+    }
+  }).sort((left, right) => {
     if (left.expireDate !== right.expireDate) {
       return left.expireDate.localeCompare(right.expireDate)
     }
@@ -72,12 +100,20 @@ function createItem(payload) {
   const now = Date.now()
   const data = {
     ...cleanItemPayload(payload),
+    accessMode: 'personal',
     createdAt: now,
     updatedAt: now,
   }
 
   if (!data.name || !data.expireDate) {
     return Promise.reject(new Error('食品名称和过期日期不能为空'))
+  }
+
+  if (isFamilyMode()) {
+    return callFamilyInventory('createItem', { item: data }).then((res) => {
+      invalidateItemsCache()
+      return res
+    })
   }
 
   return getDb()
@@ -101,6 +137,13 @@ function updateItem(id, payload) {
     return Promise.reject(new Error('食品名称和过期日期不能为空'))
   }
 
+  if (isFamilyMode()) {
+    return callFamilyInventory('updateItem', { itemId: id, item: data }).then((res) => {
+      invalidateItemsCache()
+      return res
+    })
+  }
+
   return getDb()
     .collection(COLLECTION_NAME)
     .doc(id)
@@ -114,6 +157,13 @@ function updateItem(id, payload) {
 }
 
 function deleteItem(id) {
+  if (isFamilyMode()) {
+    return callFamilyInventory('deleteItem', { itemId: id }).then((res) => {
+      invalidateItemsCache()
+      return res
+    })
+  }
+
   return getDb()
     .collection(COLLECTION_NAME)
     .doc(id)
@@ -124,12 +174,104 @@ function deleteItem(id) {
     })
 }
 
+function consumeItem(id) {
+  if (isFamilyMode()) {
+    return callFamilyInventory('consumeItem', { itemId: id }).then((res) => {
+      invalidateItemsCache()
+      return res
+    })
+  }
+
+  return getItemById(id).then((item) => {
+    if (!item) {
+      throw new Error('食材不存在或已被移出库存')
+    }
+
+    const quantity = normalizeQuantityState(item).quantity
+    const shouldDecrease = getConsumptionType(item) === 'decrease'
+
+    if (shouldDecrease) {
+      return getDb()
+        .collection(COLLECTION_NAME)
+        .doc(id)
+        .update({
+          data: {
+            quantity: quantity - 1,
+            updatedAt: Date.now(),
+          },
+        })
+        .then(() => {
+          invalidateItemsCache()
+          return { type: 'decrease', item }
+        })
+    }
+
+    return deleteItem(id).then(() => ({ type: 'remove', item }))
+  })
+}
+
+function undoConsume(consumption) {
+  if (consumption && consumption.undoToken) {
+    return callFamilyInventory('undoConsume', {
+      undoToken: consumption.undoToken,
+    }).then((res) => {
+      invalidateItemsCache()
+      return res
+    })
+  }
+
+  const item = consumption && consumption.item
+
+  if (!item || !item._id) {
+    return Promise.reject(new Error('没有可撤销的库存操作'))
+  }
+
+  if (consumption.type === 'decrease') {
+    return getDb()
+      .collection(COLLECTION_NAME)
+      .doc(item._id)
+      .update({
+        data: {
+          quantity: item.quantity,
+          updatedAt: Date.now(),
+        },
+      })
+      .then((res) => {
+        invalidateItemsCache()
+        return res
+      })
+  }
+
+  const restored = { ...item }
+  delete restored._id
+  delete restored._openid
+  restored.updatedAt = Date.now()
+
+  return getDb()
+    .collection(COLLECTION_NAME)
+    .doc(item._id)
+    .set({ data: restored })
+    .then((res) => {
+      invalidateItemsCache()
+      return res
+    })
+}
+
 function getItemById(id) {
+  if (isFamilyMode()) {
+    return callFamilyInventory('getItem', { itemId: id })
+  }
+
   return getDb()
     .collection(COLLECTION_NAME)
     .doc(id)
     .get()
-    .then((res) => res.data)
+    .then((res) => {
+      if (res.data && (res.data.familyId || res.data.accessMode === 'family')) {
+        throw new Error('没有访问该家庭食材的权限')
+      }
+      return res.data
+    })
 }
 
 function fetchItemsPage(offset, collected) {
@@ -152,17 +294,46 @@ function fetchItemsPage(offset, collected) {
 
 function getItems(options = {}) {
   const forceRefresh = options.forceRefresh === true
-  const isFresh = itemsCache && Date.now() - itemsCacheAt < ITEMS_CACHE_TTL
+  const inventoryScope = getInventoryScope()
+  const isFresh =
+    itemsCache &&
+    itemsCacheScope === inventoryScope &&
+    Date.now() - itemsCacheAt < ITEMS_CACHE_TTL
 
   if (!forceRefresh && isFresh) {
     return Promise.resolve(itemsCache)
   }
 
+  if (isFamilyMode()) {
+    return callFamilyInventory('listItems')
+      .then(decorateItems)
+      .catch((error) => {
+        if (error.code !== 'NOT_IN_FAMILY' && error.code !== 'FAMILY_UNAVAILABLE') {
+          throw error
+        }
+        return fetchItemsPage(0, [])
+          .then((items) =>
+            items.filter((item) => !item.familyId && item.accessMode !== 'family'),
+          )
+          .then(decorateItems)
+      })
+      .then((items) => {
+        itemsCache = items
+        itemsCacheAt = Date.now()
+        itemsCacheScope = getInventoryScope()
+        return items
+      })
+  }
+
   return fetchItemsPage(0, [])
+    .then((items) =>
+      items.filter((item) => !item.familyId && item.accessMode !== 'family'),
+    )
     .then(decorateItems)
     .then((items) => {
       itemsCache = items
       itemsCacheAt = Date.now()
+      itemsCacheScope = inventoryScope
       return items
     })
 }
@@ -197,6 +368,13 @@ function searchItems(keyword, filters) {
 }
 
 function clearItems() {
+  if (isFamilyMode()) {
+    return callFamilyInventory('clearItems').then((res) => {
+      invalidateItemsCache()
+      return res
+    })
+  }
+
   return getItems({ forceRefresh: true })
     .then((items) => {
       return items.reduce((task, item) => {
@@ -211,11 +389,14 @@ function clearItems() {
 
 module.exports = {
   clearItems,
+  consumeItem,
   createItem,
   deleteItem,
   getExpiringItems,
   getItemById,
   getItems,
+  invalidateItemsCache,
   searchItems,
+  undoConsume,
   updateItem,
 }

@@ -1315,6 +1315,20 @@ async function writeParseLog(db, wxContext, mode, response) {
 }
 
 exports.main = async (event = {}) => {
+  if (!isEnabled(process.env.FRIDGE_ENABLE_IMAGE_PARSE_FUNCTION)) {
+    return {
+      ok: false,
+      code: 'FEATURE_DISABLED',
+      type: normalizeMode(event),
+      fields: {},
+      result: [],
+      confidence: 0,
+      rawText: '',
+      providerStatus: 'disabled',
+      fallbackReason: '图片识别能力当前未开放。',
+    }
+  }
+
   const mode = normalizeMode(event)
   const wxContext = cloud.getWXContext()
   const db = cloud.database()

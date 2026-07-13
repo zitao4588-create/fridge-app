@@ -1,3 +1,5 @@
+<page-meta page-style="overflow: {{draggingFoodVisible ? 'hidden' : 'visible'}};" />
+
 <view class="page index-page">
   <view class="hero {{allItems.length > 0 ? homeRadar.levelClass : ''}}" bindtap="handleRadarTap" aria-role="button" aria-label="查看开饭雷达">
     <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
@@ -16,6 +18,15 @@
       </view>
       <text wx:if="{{allItems.length > 0}}" class="hero-arrow" aria-hidden="true">›</text>
     </view>
+  </view>
+
+  <view class="family-entry" bindtap="handleFamilyTap" aria-role="button">
+    <view class="family-entry-icon">家</view>
+    <view class="family-entry-copy">
+      <text class="family-entry-title">家庭库存</text>
+      <text class="family-entry-sub">管理成员与共享冰箱</text>
+    </view>
+    <text class="family-entry-arrow" aria-hidden="true">›</text>
   </view>
 
   <view wx:if="{{allItems.length === 0}}" class="starter-card">
@@ -78,9 +89,28 @@
         <text class="sum-item danger"><text class="sum-num">{{zone.overdue}}</text> 过期</text>
       </view>
 
-      <scroll-view wx:if="{{zone.items.length > 0}}" class="food-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <scroll-view
+        wx:if="{{zone.items.length > 0}}"
+        class="food-scroll"
+        scroll-x="{{!draggingFoodVisible}}"
+        enhanced
+        show-scrollbar="{{false}}"
+      >
         <view class="food-track">
-          <view class="food-chip" wx:for="{{zone.items}}" wx:for-item="food" wx:key="_id" data-id="{{food._id}}" catchtap="handleFoodTap" aria-role="button">
+          <view
+            class="food-chip"
+            wx:for="{{zone.items}}"
+            wx:for-item="food"
+            wx:key="_id"
+            data-id="{{food._id}}"
+            catchtap="handleFoodTap"
+            bindlongpress="handleFoodLongPress"
+            catchtouchmove="{{draggingFoodVisible ? 'handleFoodTouchMove' : ''}}"
+            bindtouchend="handleFoodTouchEnd"
+            bindtouchcancel="handleFoodTouchEnd"
+            aria-role="button"
+          >
+            <text wx:if="{{food.quantityText}}" class="food-quantity">{{food.quantityText}}</text>
             <image class="food-img" src="{{food.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" aria-hidden="true" />
             <text class="food-name">{{food.name}}</text>
             <text class="food-tag {{food.bucket}}">{{food.statusLabel}}</text>
@@ -97,7 +127,31 @@
     <view class="danger-clear" bindtap="handleClearAll" aria-role="button">清空全部食品数据</view>
   </view>
 
-  <view wx:if="{{noticeMessage}}" class="notice">{{noticeMessage}}</view>
+  <view wx:if="{{noticeMessage}}" class="notice">
+    <text>{{noticeMessage}}</text>
+    <view wx:if="{{undoConsumeVisible}}" class="notice-undo" catchtap="handleUndoConsume" aria-role="button">撤销</view>
+  </view>
+</view>
+
+<view
+  class="consume-layer {{draggingFoodVisible ? 'visible' : ''}}"
+  catchtouchmove="handleFoodTouchMove"
+  catchtouchend="handleFoodTouchEnd"
+  catchtouchcancel="handleFoodTouchEnd"
+  aria-hidden="{{!draggingFoodVisible}}"
+>
+  <view class="consume-tray {{dragOverTray ? 'active' : ''}}">
+    <text class="consume-tray-icon">🍽️</text>
+    <text class="consume-tray-label">用掉</text>
+  </view>
+  <view
+    wx:if="{{draggingFoodVisible}}"
+    class="dragging-food"
+    style="left: {{dragX}}px; top: {{dragY}}px;"
+  >
+    <image class="dragging-food-img" src="{{draggingFood.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" />
+    <text class="dragging-food-name">{{draggingFood.name}}</text>
+  </view>
 </view>
 
 <!-- 通用列表面板：分区清单 / 搜索结果 -->
@@ -139,6 +193,7 @@
     <text class="detail-name">{{selectedFood.name}}</text>
     <view class="detail-meta">
       <text>到期：{{selectedFood.expireDateText}}</text>
+      <text wx:if="{{selectedFood.quantityText}}">数量：{{selectedFood.quantityText}}</text>
       <text class="tag-inline {{selectedFood.bucket}}">{{selectedFood.statusHint}}</text>
     </view>
     <view wx:if="{{selectedFood.note}}" class="detail-note">

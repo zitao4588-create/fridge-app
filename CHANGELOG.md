@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.0] - 2026-07-13
+
+- 新增可选数量和纯数字展示，历史默认数量按未记录处理。
+- 新增常温储物分区和餐盘式库存消耗、撤销。
+- 新增邀请制私有家庭共享、成员管理和服务端权限校验。
+- 新增 CloudBase v2 安全配置、领域测试和发布候选报告。
+- 正式家庭集合已设为 `ADMINONLY`，`familyInventory` 已切换到无前缀正式集合，`items` 保持 `PRIVATE`。
+- 健康余额、AI、识别、支付、会员和公开 UGC 不进入本版本。
+
 All notable changes to this project should be documented in this file.
 
 This project uses simple release notes rather than a strict versioning process while the mini program is still in MVP development.

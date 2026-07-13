@@ -1,0 +1,71 @@
+<view class="page family-page">
+  <view class="family-head">
+    <text class="family-kicker">私有家庭库存</text>
+    <text class="family-title">{{state ? state.family.name : '和家人一起管冰箱'}}</text>
+    <text class="family-sub">仅受邀成员可查看和修改，不公开展示家庭内容。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="family-status">正在读取家庭状态…</view>
+  <view wx:if="{{pageError}}" class="family-error">{{pageError}}</view>
+
+  <view wx:if="{{invitePreview && !state}}" class="invite-panel">
+    <text class="panel-label">家庭邀请</text>
+    <text class="panel-title">{{invitePreview.familyName}}</text>
+    <text class="panel-meta">邀请有效至 {{invitePreview.expiresText}}</text>
+    <view class="primary-action {{operating ? 'disabled' : ''}}" bindtap="handleJoinFamily" aria-role="button">确认加入</view>
+  </view>
+
+  <view wx:elif="{{!loading && !state && !serviceUnavailable}}" class="create-panel">
+    <text class="panel-label">创建家庭</text>
+    <input
+      class="family-input"
+      value="{{familyName}}"
+      maxlength="20"
+      placeholder="输入家庭名称"
+      bindinput="handleFamilyNameInput"
+      aria-label="家庭名称"
+    />
+    <view class="primary-action {{operating ? 'disabled' : ''}}" bindtap="handleCreateFamily" aria-role="button">创建家庭库存</view>
+  </view>
+
+  <view wx:if="{{state && state.migrationPending}}" class="migration-panel">
+    <text class="panel-title">正在整理原有库存</text>
+    <text class="panel-meta">迁移没有完成前，家庭成员不会看到不完整的数据。</text>
+    <view class="secondary-action" bindtap="handleRetryMigration" aria-role="button">继续迁移</view>
+  </view>
+
+  <block wx:if="{{state && !state.migrationPending}}">
+    <view class="member-section">
+      <view class="section-head">
+        <text class="section-title">家庭成员</text>
+        <text class="section-count">{{state.family.memberCount}}</text>
+      </view>
+      <view class="member-row" wx:for="{{state.members}}" wx:key="id">
+        <view class="member-avatar">{{item.role === 'owner' ? '主' : '成'}}</view>
+        <view class="member-copy">
+          <text class="member-name">{{item.label}}</text>
+          <text class="member-role">{{item.role === 'owner' ? '创建者' : '可编辑成员'}}</text>
+        </view>
+        <view
+          wx:if="{{state.membership.role === 'owner' && item.role !== 'owner'}}"
+          class="remove-member"
+          data-id="{{item.id}}"
+          bindtap="handleRemoveMember"
+          aria-role="button"
+        >移除</view>
+      </view>
+    </view>
+
+    <view wx:if="{{state.membership.role === 'owner'}}" class="invite-actions">
+      <button class="share-action" open-type="share">邀请家庭成员</button>
+      <view wx:if="{{inviteCode}}" class="invite-live">
+        <text>本次邀请有效至 {{inviteExpiresText}}</text>
+        <view class="revoke-action" bindtap="handleRevokeInvite" aria-role="button">撤回</view>
+      </view>
+    </view>
+
+    <view class="leave-action" bindtap="handleLeaveFamily" aria-role="button">
+      {{state.membership.role === 'owner' ? '解散家庭' : '退出家庭'}}
+    </view>
+  </block>
+</view>

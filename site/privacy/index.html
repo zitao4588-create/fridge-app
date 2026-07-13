@@ -24,7 +24,7 @@
       <section class="section page-title">
         <p class="kicker">公开隐私说明</p>
         <h1>隐私政策</h1>
-        <p>冰箱小雷达只围绕冰箱食材库存管理保存必要数据。当前个人主体稳定版不默认上传第三方 AI，不开放拍照识别、AI 菜谱、支付会员或社区功能。</p>
+        <p>冰箱小雷达只围绕家庭库存管理保存必要数据。v2.0 不默认上传第三方 AI，不开放拍照识别、AI 菜谱、支付会员或社区功能。</p>
         <div class="policy-meta">
           <span><strong>适用产品：</strong>冰箱小雷达微信小程序</span>
           <span><strong>当前状态：</strong>公开说明页已上线</span>
@@ -35,8 +35,9 @@
         <div class="policy-section" id="collect">
           <h2><span class="num">1.</span>收集什么</h2>
           <ul>
-            <li>当前微信用户 openid，用于数据隔离。</li>
-            <li>用户主动录入的食材名称、品类、数量、分区、生产日期、保质期、过期日期和备注。</li>
+            <li>当前微信用户 openid，用于服务端确认数据访问权限。</li>
+            <li>用户主动录入的食材名称、品类、可选数量、分区、生产日期、保质期、过期日期和备注。</li>
+            <li>家庭成员关系、邀请状态和库存操作记录。</li>
             <li>订阅提醒授权结果和提醒发送记录，用于避免重复提醒。</li>
           </ul>
         </div>
@@ -56,15 +57,16 @@
             <li>计算临期、过期和到期日历。</li>
             <li>通过本地规则计算开饭雷达。</li>
             <li>发送用户授权后的到期提醒。</li>
+            <li>让受邀家庭成员共同查看和修改同一个私有家庭库存。</li>
           </ul>
         </div>
         <div class="policy-section" id="storage">
           <h2><span class="num">4.</span>数据存储</h2>
-          <p>食材数据存储在微信云开发 CloudBase 云数据库中，按当前微信用户 openid 隔离。小程序前端不保存第三方服务商 API key。</p>
+          <p>食材数据存储在微信云开发 CloudBase 云数据库中。个人库存按当前微信用户隔离；家庭库存仅向受邀家庭成员开放，并由云函数校验成员身份。成员端不会显示其他成员的 openid。</p>
         </div>
         <div class="policy-section" id="rights">
           <h2><span class="num">5.</span>用户权利</h2>
-          <p>用户可以在小程序中查看、编辑、删除单条食材，也可以通过首页底部的二次确认入口清空全部食材记录。</p>
+          <p>用户可以查看、编辑、消耗或删除食材。家庭创建者可以撤回邀请和移除成员，成员可以退出家庭；清空库存和解散家庭需要二次确认。</p>
         </div>
         <div class="policy-section" id="contact">
           <h2><span class="num">6.</span>联系方式</h2>

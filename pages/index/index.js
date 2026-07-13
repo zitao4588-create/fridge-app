@@ -1,4 +1,5 @@
 const itemService = require('../../services/itemService')
+const familyService = require('../../services/familyService')
 const { CATEGORY_OPTIONS, HOME_ZONE_DEFINITIONS } = require('../../utils/constants')
 const { addDays, formatDate, getTodayString } = require('../../utils/date')
 const { getStarterFoodEntries } = require('../../utils/foodLexicon')
@@ -26,7 +27,8 @@ function decorateItem(item) {
 
   return {
     ...item,
-    amountText: `${item.quantity || 1}${item.unit || '份'}`,
+    quantityText:
+      item.quantityTracked === true ? `×${Number(item.quantity) || 1}` : '',
     expireDateText: formatDate(item.expireDate),
     statusLabel: status.label,
     statusHint: status.hint,
@@ -64,6 +66,7 @@ const ZONE_ICONS = {
   door: '🥤',
   produce: '🥬',
   temp: '🌡️',
+  ambient: '🍞',
 }
 
 function getZoneItems(items, zone) {
@@ -157,8 +160,9 @@ function buildStarterPayload(entry) {
   return {
     name: entry.name,
     category: entry.category,
+    quantityTracked: false,
     quantity: 1,
-    unit: '份',
+    unit: '',
     productionDate,
     shelfLifeDays: entry.shelfLifeDays,
     expireDate: addDays(productionDate, entry.shelfLifeDays),
@@ -189,6 +193,14 @@ Page({
 
     foodDetailVisible: false,
     selectedFood: null,
+
+    draggingFood: null,
+    draggingFoodVisible: false,
+    dragOverTray: false,
+    dragX: 0,
+    dragY: 0,
+    undoConsumeVisible: false,
+    consuming: false,
   },
 
   onShow() {
@@ -196,7 +208,12 @@ Page({
       selected: 0,
       hidden: this.data.listPanelVisible || this.data.foodDetailVisible,
     })
-    this.loadItems()
+    const familyState = familyService.readCachedFamilyState()
+    const refreshTask = familyState
+      ? familyService.refreshFamilyState().catch(() => familyState)
+      : Promise.resolve(null)
+
+    refreshTask.then(() => this.loadItems())
   },
 
   setTabBar(patch) {
@@ -211,7 +228,14 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.loadItems().finally(() => wx.stopPullDownRefresh())
+    const familyState = familyService.readCachedFamilyState()
+    const refreshTask = familyState
+      ? familyService.refreshFamilyState().catch(() => familyState)
+      : Promise.resolve(null)
+
+    refreshTask
+      .then(() => this.loadItems())
+      .finally(() => wx.stopPullDownRefresh())
   },
 
   onShareAppMessage() {
@@ -291,6 +315,10 @@ Page({
     wx.switchTab({ url: '/pages/calendar/calendar' })
   },
 
+  handleFamilyTap() {
+    wx.navigateTo({ url: '/pages/family/family' })
+  },
+
   handleZoneAdd(event) {
     const location = event.currentTarget.dataset.location
     wx.navigateTo({
@@ -367,11 +395,131 @@ Page({
   },
 
   handleFoodTap(event) {
+    if (this.suppressFoodTap) {
+      this.suppressFoodTap = false
+      return
+    }
+
     const food = this.data.allItems.find((item) => item._id === event.currentTarget.dataset.id)
     if (food) {
       this.setData({ selectedFood: food, foodDetailVisible: true })
       this.setTabBar({ hidden: true })
     }
+  },
+
+  handleFoodLongPress(event) {
+    const food = this.data.allItems.find(
+      (item) => item._id === event.currentTarget.dataset.id,
+    )
+    const point = event.touches && event.touches[0]
+
+    if (!food || !point || this.data.consuming) return
+
+    this.suppressFoodTap = true
+    wx.createSelectorQuery()
+      .select('.consume-tray')
+      .boundingClientRect((rect) => {
+        this.consumeTrayRect = rect || null
+      })
+      .exec()
+
+    this.setData({
+      draggingFood: food,
+      draggingFoodVisible: true,
+      dragOverTray: false,
+      dragX: point.clientX,
+      dragY: point.clientY,
+    })
+  },
+
+  handleFoodTouchMove(event) {
+    if (!this.data.draggingFoodVisible) return
+    const point = event.touches && event.touches[0]
+    if (!point) return
+
+    const rect = this.consumeTrayRect
+    const dragOverTray = Boolean(
+      rect &&
+        point.clientX >= rect.left &&
+        point.clientX <= rect.right &&
+        point.clientY >= rect.top &&
+        point.clientY <= rect.bottom,
+    )
+
+    this.setData({
+      dragX: point.clientX,
+      dragY: point.clientY,
+      dragOverTray,
+    })
+  },
+
+  handleFoodTouchEnd(event) {
+    if (!this.data.draggingFoodVisible) return
+    const point = event.changedTouches && event.changedTouches[0]
+    const food = this.data.draggingFood
+    const rect = this.consumeTrayRect
+    const droppedInTray = Boolean(
+      point &&
+        rect &&
+        point.clientX >= rect.left &&
+        point.clientX <= rect.right &&
+        point.clientY >= rect.top &&
+        point.clientY <= rect.bottom,
+    )
+
+    this.consumeTrayRect = null
+    this.setData({
+      draggingFood: null,
+      draggingFoodVisible: false,
+      dragOverTray: false,
+    })
+
+    if (droppedInTray && food) {
+      this.consumeFood(food)
+    }
+  },
+
+  consumeFood(food) {
+    if (!food || this.data.consuming) return
+
+    this.setData({ consuming: true, undoConsumeVisible: false })
+    itemService
+      .consumeItem(food._id)
+      .then((consumption) => {
+        this.lastConsumption = consumption
+        const message =
+          consumption.type === 'decrease'
+            ? `已用掉「${food.name}」1，剩余 ${Number(food.quantity) - 1}`
+            : `已将「${food.name}」移出库存`
+
+        this.showNotice(message, { undoConsume: true })
+        return this.loadItems()
+      })
+      .catch(() => {
+        wx.showToast({ title: '库存更新失败', icon: 'none' })
+      })
+      .finally(() => {
+        this.setData({ consuming: false })
+      })
+  },
+
+  handleUndoConsume() {
+    if (!this.lastConsumption || this.data.consuming) return
+
+    this.setData({ consuming: true, undoConsumeVisible: false })
+    itemService
+      .undoConsume(this.lastConsumption)
+      .then(() => {
+        this.lastConsumption = null
+        this.showNotice('已撤销本次库存变更')
+        return this.loadItems()
+      })
+      .catch(() => {
+        wx.showToast({ title: '撤销失败，请检查当前库存', icon: 'none' })
+      })
+      .finally(() => {
+        this.setData({ consuming: false })
+      })
   },
 
   handleCloseFoodDetail() {
@@ -445,9 +593,13 @@ Page({
     })
   },
 
-  showNotice(message) {
+  showNotice(message, options = {}) {
     if (this.noticeTimer) clearTimeout(this.noticeTimer)
-    this.setData({ noticeMessage: message })
-    this.noticeTimer = setTimeout(() => this.setData({ noticeMessage: '' }), 2400)
+    const undoConsumeVisible = options.undoConsume === true
+    this.setData({ noticeMessage: message, undoConsumeVisible })
+    this.noticeTimer = setTimeout(() => {
+      this.lastConsumption = null
+      this.setData({ noticeMessage: '', undoConsumeVisible: false })
+    }, undoConsumeVisible ? 5000 : 2400)
   },
 })

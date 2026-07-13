@@ -68,6 +68,32 @@
       </view>
     </view>
 
+    <view class="field quantity-field">
+      <view class="quantity-switch-row">
+        <view class="quantity-copy">
+          <text class="field-label quantity-label">记录数量</text>
+          <text class="field-help">关闭时只记录冰箱里有没有这项食材</text>
+        </view>
+        <switch
+          checked="{{form.quantityTracked}}"
+          color="#28b978"
+          bindchange="handleQuantityTrackedChange"
+          aria-label="是否记录数量"
+        />
+      </view>
+      <view wx:if="{{form.quantityTracked}}" class="quantity-input">
+        <t-input
+          type="number"
+          value="{{form.quantity}}"
+          placeholder="请输入数量"
+          aria-label="食材数量"
+          bindchange="handleQuantityInput"
+        />
+        <text class="quantity-preview">首页显示为 ×{{form.quantity || 1}}</text>
+      </view>
+      <text wx:if="{{errors.quantity}}" class="field-error" aria-role="alert">{{errors.quantity}}</text>
+    </view>
+
     <view class="field">
       <text class="field-label">过期日期</text>
       <view class="seg">

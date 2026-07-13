@@ -12,8 +12,8 @@ const { getFoodSuggestion } = require('../../utils/foodLexicon')
 const emptyForm = {
   name: '',
   category: '其他',
+  quantityTracked: false,
   quantity: 1,
-  unit: '份',
   productionDate: '',
   shelfLifeDays: '',
   expireDate: '',
@@ -24,6 +24,7 @@ const emptyForm = {
 
 const emptyErrors = {
   name: '',
+  quantity: '',
   shelfLifeDays: '',
   expireDate: '',
 }
@@ -161,8 +162,8 @@ function normalizeRecentFood(form) {
   return {
     name,
     category: form.category || '其他',
-    quantity: Number(form.quantity) || 1,
-    unit: form.unit || '份',
+    quantityTracked: form.quantityTracked === true,
+    quantity: form.quantityTracked === true ? Number(form.quantity) || 1 : 1,
     shelfLifeDays:
       Number.isFinite(shelfLifeDays) && Number.isInteger(shelfLifeDays) && shelfLifeDays > 0
         ? shelfLifeDays
@@ -198,8 +199,8 @@ function buildFormFromRecentFood(food, today) {
     ...emptyForm,
     name: food.name || '',
     category: food.category || '其他',
+    quantityTracked: food.quantityTracked === true,
     quantity: food.quantity || 1,
-    unit: food.unit || '份',
     productionDate,
     shelfLifeDays,
     expireDate,
@@ -380,6 +381,24 @@ Page({
     this.updateFormField('note', event.detail.value)
   },
 
+  handleQuantityTrackedChange(event) {
+    const quantityTracked = event.detail.value === true
+    const form = {
+      ...this.data.form,
+      quantityTracked,
+      quantity: quantityTracked ? this.data.form.quantity || 1 : 1,
+    }
+
+    this.setData({
+      form,
+      errors: { ...this.data.errors, quantity: '' },
+    })
+  },
+
+  handleQuantityInput(event) {
+    this.updateFormField('quantity', event.detail.value)
+  },
+
   handleCategoryTap(event) {
     const category = this.data.categoryOptions[Number(event.currentTarget.dataset.index)]
     const form = { ...this.data.form, category }
@@ -514,6 +533,14 @@ Page({
       }
     }
 
+    if (form.quantityTracked === true) {
+      const quantity = Number(form.quantity)
+
+      if (!Number.isFinite(quantity) || !Number.isInteger(quantity) || quantity <= 0) {
+        errors.quantity = '数量需要是正整数'
+      }
+    }
+
     if (!form.expireDate) {
       errors.expireDate = '请选择过期日期'
     }
@@ -536,7 +563,7 @@ Page({
     this.setData({ saving: true })
 
     reminderService
-      .requestSubscribeMessage()
+      .requestAndRecordSubscribeMessage()
       .then(() => {
         wx.showLoading({ title: '保存中' })
 

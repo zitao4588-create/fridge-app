@@ -24,7 +24,6 @@ function decorate(item) {
 
   return {
     ...item,
-    amountText: `${item.quantity || 1}${item.unit || '份'}`,
     expireDateText: formatDate(item.expireDate),
     statusLabel: status.label,
     statusHint: status.hint,

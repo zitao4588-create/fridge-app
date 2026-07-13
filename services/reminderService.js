@@ -1,4 +1,5 @@
 const EXPIRY_REMINDER_TEMPLATE_ID = 'rxGJi_mQR7J7n0PiEq0MfZkn0-DEP7O9wXbtCDqzWQ4'
+const SUBSCRIPTION_AUTH_RECORD_TYPE = 'subscriptionAuthorization'
 
 function createReminder(data) {
   if (!wx.cloud) {
@@ -50,6 +51,25 @@ function getExpiryTemplateId() {
   return EXPIRY_REMINDER_TEMPLATE_ID
 }
 
+function getSubscribeDecisionStatus(result = {}) {
+  if (result.authorized) return 'accepted'
+  if (!result.supported) return 'unsupported'
+  if (result.setting === 'reject') return 'rejected'
+  return 'failed'
+}
+
+function recordSubscribeDecision(result = {}) {
+  return createReminder({
+    type: SUBSCRIPTION_AUTH_RECORD_TYPE,
+    templateId: result.templateId || getExpiryTemplateId(),
+    status: getSubscribeDecisionStatus(result),
+    setting: result.setting || '',
+    code: result.code || '',
+    detail: result.message || result.errMsg || '',
+    subscribeMessageAuthorized: Boolean(result.authorized),
+  })
+}
+
 function requestSubscribeMessage() {
   if (!wx.requestSubscribeMessage) {
     return Promise.resolve({
@@ -98,9 +118,20 @@ function requestSubscribeMessage() {
   })
 }
 
+function requestAndRecordSubscribeMessage() {
+  return requestSubscribeMessage().then((result) =>
+    recordSubscribeDecision(result)
+      .then((record) => ({ ...result, recorded: Boolean(record) }))
+      .catch(() => ({ ...result, recorded: false })),
+  )
+}
+
 module.exports = {
   cancelReminder,
   createReminder,
   getCalendarEvents,
   requestSubscribeMessage,
+  getSubscribeDecisionStatus,
+  recordSubscribeDecision,
+  requestAndRecordSubscribeMessage,
 }

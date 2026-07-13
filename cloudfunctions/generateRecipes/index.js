@@ -1512,6 +1512,16 @@ function normalizeAiRecommendations(aiResult, baseItems, maxCount = 5, sourceTyp
 }
 
 exports.main = async (event = {}) => {
+  if (!isEnabled(process.env.FRIDGE_ENABLE_RECIPE_FUNCTION)) {
+    return {
+      context: {},
+      selectedItems: [],
+      recommendations: [],
+      providerStatus: 'disabled',
+      fallbackReason: 'AI 菜谱能力当前未开放。',
+    }
+  }
+
   const items = Array.isArray(event.items) ? event.items : []
   const usableItems = getUsableItems(items)
   const scene = event.scene || event.mode || ''

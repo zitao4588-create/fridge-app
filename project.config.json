@@ -27,6 +27,10 @@
         "type": "folder"
       },
       {
+        "value": "tests",
+        "type": "folder"
+      },
+      {
         "value": ".codegraph",
         "type": "folder"
       },

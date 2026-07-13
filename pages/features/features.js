@@ -1,4 +1,4 @@
-const SHARE_TITLE = '冰箱小雷达功能说明｜5 分区、临期提醒、开饭雷达'
+const SHARE_TITLE = '冰箱小雷达功能说明｜6 分区、餐盘消耗、家庭共享'
 
 Page({
   onShareAppMessage() {

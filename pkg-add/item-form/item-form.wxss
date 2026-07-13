@@ -190,6 +190,55 @@
   color: var(--brand-mint-deep, #087a49);
 }
 
+.quantity-field {
+  padding: 22rpx;
+  border: 2rpx solid rgba(40, 185, 120, 0.16);
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.quantity-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.quantity-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.quantity-label {
+  margin-bottom: 6rpx;
+}
+
+.field-help {
+  display: block;
+  font-size: 23rpx;
+  line-height: 1.5;
+  color: var(--text-sub, #6f7c74);
+}
+
+.quantity-input {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-top: 20rpx;
+}
+
+.quantity-input t-input {
+  min-width: 0;
+  flex: 1;
+}
+
+.quantity-preview {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--brand-mint-deep, #087a49);
+}
+
 .submit-btn {
   margin-top: 16rpx;
 }

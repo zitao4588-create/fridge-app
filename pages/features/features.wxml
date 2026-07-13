@@ -1,17 +1,37 @@
 <view class="page features-page">
   <view class="features-hero">
     <text class="features-title">功能说明</text>
-    <text class="features-desc">冰箱小雷达围绕家庭冰箱库存管理做小步功能：5 分区、临期提醒、开饭雷达和隐私优先。</text>
+    <text class="features-desc">冰箱小雷达围绕家庭库存闭环做小步功能：6 分区、可选数量、餐盘消耗、临期提醒和私有家庭共享。</text>
   </view>
 
   <view class="feature-card">
-    <text class="feature-name">5 分区管理</text>
+    <text class="feature-name">6 分区管理</text>
     <text class="feature-label">是什么</text>
-    <text class="feature-text">按冷藏、冷冻、门架、果蔬抽屉、变温区记录食材，更贴近真实冰箱结构。</text>
+    <text class="feature-text">按冷藏、冷冻、门架、果蔬抽屉、变温和常温储物记录食材。</text>
     <text class="feature-label">怎么用</text>
     <text class="feature-text">在首页每个分区右上角点“加食材”，保存后可按分区查看库存、临期和过期状态。</text>
     <text class="feature-label">不会做什么</text>
     <text class="feature-text">不会自动读取冰箱硬件，也不会连接智能冰箱。</text>
+  </view>
+
+  <view class="feature-card">
+    <text class="feature-name">可选数量与餐盘消耗</text>
+    <text class="feature-label">是什么</text>
+    <text class="feature-text">数量由你决定是否记录；记录时只显示纯数字。长按食材拖到餐盘即可用掉。</text>
+    <text class="feature-label">怎么用</text>
+    <text class="feature-text">有数量时默认减 1，没有数量或减到 0 时移出库存，操作后可短时撤销。</text>
+    <text class="feature-label">不会做什么</text>
+    <text class="feature-text">不会把默认数量当成真实用量，也不会用垃圾桶表达正常消耗。</text>
+  </view>
+
+  <view class="feature-card">
+    <text class="feature-name">私有家庭共享</text>
+    <text class="feature-label">是什么</text>
+    <text class="feature-text">创建者通过微信邀请家庭成员，共同查看和修改同一个家庭库存。</text>
+    <text class="feature-label">怎么用</text>
+    <text class="feature-text">在首页进入家庭库存，创建家庭或确认受邀加入；创建者可以撤回邀请和移除成员。</text>
+    <text class="feature-label">不会做什么</text>
+    <text class="feature-text">不会公开家庭内容，不提供动态、评论、聊天、陌生人发现或社区。</text>
   </view>
 
   <view class="feature-card">
@@ -37,7 +57,7 @@
   <view class="feature-card">
     <text class="feature-name">隐私优先</text>
     <text class="feature-label">是什么</text>
-    <text class="feature-text">当前版本只围绕库存管理保存必要数据，食材数据按当前微信账号隔离。</text>
+    <text class="feature-text">个人库存按当前微信账号隔离；加入家庭后，仅受邀成员可以共同访问家庭库存。</text>
     <text class="feature-label">怎么用</text>
     <text class="feature-text">你可以随时编辑、删除单条食材，也可以在首页清空全部食品数据。</text>
     <text class="feature-label">不会做什么</text>

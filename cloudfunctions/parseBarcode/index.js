@@ -414,6 +414,21 @@ async function writeParseLog(db, wxContext, response) {
 }
 
 exports.main = async (event = {}) => {
+  if (!isEnabled(process.env.FRIDGE_ENABLE_BARCODE_FUNCTION)) {
+    return {
+      ok: false,
+      code: 'FEATURE_DISABLED',
+      type: 'barcode',
+      barcode: String(event.barcode || '').trim(),
+      fields: {},
+      result: {},
+      confidence: 0,
+      rawText: '',
+      providerStatus: 'disabled',
+      fallbackReason: '条形码识别能力当前未开放。',
+    }
+  }
+
   const wxContext = cloud.getWXContext()
   const db = cloud.database()
   let response

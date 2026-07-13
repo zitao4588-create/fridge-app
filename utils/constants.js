@@ -19,6 +19,7 @@ const STORAGE_LOCATION_OPTIONS = [
   '门架',
   '果蔬抽屉',
   '变温',
+  '常温',
 ]
 
 const STORAGE_LOCATION_ALIASES = {
@@ -26,6 +27,7 @@ const STORAGE_LOCATION_ALIASES = {
   果蔬: '果蔬抽屉',
   果蔬区: '果蔬抽屉',
   蔬果区: '果蔬抽屉',
+  常温区: '常温',
 }
 
 function normalizeStorageLocation(location) {
@@ -82,6 +84,15 @@ const HOME_ZONE_DEFINITIONS = [
     temperature: '0-2°C',
     theme: 'temp',
     hint: '短期肉类、软冷冻和即食食品',
+  },
+  {
+    key: 'ambient',
+    name: '常温储物',
+    location: '常温',
+    locations: ['常温'],
+    temperature: '室温',
+    theme: 'ambient',
+    hint: '干货、零食和无需冷藏的食材',
   },
 ]
 

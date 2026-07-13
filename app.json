@@ -4,6 +4,7 @@
     "pages/calendar/calendar",
     "pages/recipes/recipes",
     "pages/features/features",
+    "pages/family/family",
     "pages/privacy/privacy",
     "pages/about/about"
   ],

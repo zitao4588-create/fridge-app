@@ -2,6 +2,56 @@
   padding: 28rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
 }
 
+.family-entry {
+  min-height: 86rpx;
+  margin-top: 18rpx;
+  padding: 0 18rpx;
+  display: flex;
+  align-items: center;
+  border-top: 2rpx solid rgba(234, 219, 196, 0.8);
+  border-bottom: 2rpx solid rgba(234, 219, 196, 0.8);
+}
+
+.family-entry-icon {
+  width: 54rpx;
+  height: 54rpx;
+  line-height: 54rpx;
+  text-align: center;
+  border-radius: 50%;
+  font-size: 22rpx;
+  font-weight: 850;
+  color: #ffffff;
+  background: #167a50;
+}
+
+.family-entry-copy {
+  min-width: 0;
+  flex: 1;
+  margin-left: 16rpx;
+}
+
+.family-entry-title,
+.family-entry-sub {
+  display: block;
+}
+
+.family-entry-title {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.family-entry-sub {
+  margin-top: 2rpx;
+  font-size: 21rpx;
+  color: var(--text-sub, #647264);
+}
+
+.family-entry-arrow {
+  font-size: 38rpx;
+  color: var(--text-light, #647264);
+}
+
 /* 吉祥物气泡 */
 .hero {
   position: relative;
@@ -339,6 +389,10 @@
 .zone-card.temp .zone-icon { background: var(--zone-temp-tint); }
 .zone-card.temp .zone-temp { color: var(--zone-temp-ink); }
 
+.zone-card.ambient::before { background: #d5a22f; }
+.zone-card.ambient .zone-icon { background: #fff4c8; }
+.zone-card.ambient .zone-temp { color: #775615; }
+
 /* 分区统计：拍扁成内联汇总行，去卡片化以消除“可点”错觉 */
 .zone-summary {
   display: flex;
@@ -393,6 +447,22 @@
     radial-gradient(circle at 50% 30%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
     linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
   box-shadow: var(--shadow-1), var(--hi-inset);
+}
+
+.food-quantity {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  z-index: 2;
+  min-width: 38rpx;
+  padding: 3rpx 8rpx;
+  border-radius: 10rpx;
+  text-align: center;
+  font-size: 20rpx;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+  background: #167a50;
 }
 
 .food-img {
@@ -459,6 +529,107 @@
   background: rgba(37, 55, 48, 0.92);
   box-shadow: var(--shadow-2);
   z-index: 110;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  max-width: 620rpx;
+  white-space: nowrap;
+}
+
+.notice-undo {
+  position: relative;
+  flex-shrink: 0;
+  padding-left: 24rpx;
+  font-weight: 800;
+  color: #8ef0bd;
+}
+
+.notice-undo::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4rpx;
+  bottom: 4rpx;
+  width: 2rpx;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.consume-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.consume-layer.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.consume-tray {
+  position: absolute;
+  left: 50%;
+  bottom: calc(126rpx + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(16rpx);
+  width: 230rpx;
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14rpx;
+  border: 4rpx solid #ffffff;
+  border-radius: 56rpx;
+  color: #315043;
+  background: #f9fff9;
+  box-shadow: 0 14rpx 34rpx rgba(37, 55, 48, 0.24);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.consume-tray.active {
+  transform: translateX(-50%) translateY(0) scale(1.08);
+  color: #ffffff;
+  background: #167a50;
+}
+
+.consume-tray-icon {
+  font-size: 44rpx;
+}
+
+.consume-tray-label {
+  font-size: 27rpx;
+  font-weight: 800;
+}
+
+.dragging-food {
+  position: absolute;
+  transform: translate(-50%, -58%);
+  width: 126rpx;
+  min-height: 126rpx;
+  padding: 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24rpx;
+  background: #ffffff;
+  box-shadow: 0 18rpx 42rpx rgba(37, 55, 48, 0.28);
+}
+
+.dragging-food-img {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.dragging-food-name {
+  max-width: 110rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 21rpx;
+  font-weight: 700;
+  color: var(--text-main, #253730);
 }
 
 /* 通用底部弹层 */

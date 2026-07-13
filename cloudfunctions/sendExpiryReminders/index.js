@@ -1,5 +1,11 @@
 const cloud = require('wx-server-sdk')
 const https = require('https')
+const {
+  REMINDER_RECORD_TYPE,
+  classifySendError,
+  getAuthorizationState,
+  hasDailySummaryRecord,
+} = require('./domain')
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV,
@@ -13,7 +19,6 @@ const MESSAGE_STATES = ['developer', 'trial', 'formal']
 const DEFAULT_APPID = 'wx328e2b87665508e7'
 const SUBSCRIBE_SEND_PATH = '/cgi-bin/message/subscribe/send'
 const CHINA_TIMEZONE_OFFSET_MS = 8 * 60 * 60 * 1000
-const REMINDER_RECORD_TYPE = 'expirySummary'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -239,22 +244,30 @@ async function fetchReminderItems(event, today, endDate, openid) {
   return fetchDueItems(today, endDate, openid)
 }
 
-async function hasSummaryReminderRecord(target, remindDate) {
+async function fetchUserReminderRecords(openid, skip = 0, collected = []) {
   const res = await db
     .collection('reminders')
-    .where({
-      type: REMINDER_RECORD_TYPE,
-      _openid: target._openid,
-      remindDate,
-      status: 'sent',
-    })
-    .limit(1)
+    .where({ _openid: openid })
+    .skip(skip)
+    .limit(PAGE_SIZE)
     .get()
+  const records = collected.concat(res.data || [])
 
-  return Boolean(res.data && res.data.length)
+  if (!res.data || res.data.length < PAGE_SIZE) {
+    return records
+  }
+
+  return fetchUserReminderRecords(openid, skip + PAGE_SIZE, records)
 }
 
-async function writeSummaryReminderRecord(target, remindDate, status, detail) {
+async function writeSummaryReminderRecord(
+  target,
+  remindDate,
+  status,
+  detail,
+  failureCode = '',
+  retryable = false,
+) {
   return db.collection('reminders').add({
     data: {
       _openid: target._openid,
@@ -268,6 +281,8 @@ async function writeSummaryReminderRecord(target, remindDate, status, detail) {
       remindDate,
       status,
       detail: detail || '',
+      failureCode,
+      retryable,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     },
@@ -361,7 +376,10 @@ exports.main = async (event = {}) => {
     ok: true,
     sent: 0,
     skipped: 0,
+    skippedNoGrant: 0,
     failed: 0,
+    refused: 0,
+    retryableFailures: 0,
     sentItems: 0,
     skippedItems: invalidItemCount,
     failedItems: 0,
@@ -371,9 +389,18 @@ exports.main = async (event = {}) => {
   }
 
   for (const target of targets) {
-    const duplicated = await hasSummaryReminderRecord(target, today)
-    if (duplicated) {
+    const reminderRecords = await fetchUserReminderRecords(target._openid)
+
+    if (hasDailySummaryRecord(reminderRecords, today)) {
       stats.skipped += 1
+      stats.skippedItems += target.itemCount
+      continue
+    }
+
+    const authorization = getAuthorizationState(reminderRecords)
+    if (!authorization.available) {
+      stats.skipped += 1
+      stats.skippedNoGrant += 1
       stats.skippedItems += target.itemCount
       continue
     }
@@ -384,16 +411,30 @@ exports.main = async (event = {}) => {
       stats.sent += 1
       stats.sentItems += target.itemCount
     } catch (error) {
+      const failure = classifySendError(error)
       await writeSummaryReminderRecord(
         target,
         today,
-        'failed',
-        error && error.message ? error.message : 'send failed',
+        failure.status,
+        failure.detail,
+        failure.failureCode,
+        failure.retryable,
       )
-      stats.failed += 1
+      if (failure.status === 'refused') {
+        stats.refused += 1
+      } else {
+        stats.failed += 1
+      }
+      if (failure.retryable) stats.retryableFailures += 1
       stats.failedItems += target.itemCount
     }
   }
+
+  stats.ok = stats.failed === 0 && stats.refused === 0
+  console.log(JSON.stringify({
+    event: 'expiry_reminder_summary',
+    ...stats,
+  }))
 
   return stats
 }
