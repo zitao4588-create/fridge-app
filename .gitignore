@@ -3,6 +3,7 @@ node_modules/
 cloudfunctions/**/node_modules/
 
 # Build output
+.release/
 dist/
 dist-ssr/
 .vite/

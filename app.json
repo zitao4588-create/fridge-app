@@ -6,13 +6,16 @@
     "pages/features/features",
     "pages/family/family",
     "pages/privacy/privacy",
-    "pages/about/about"
+    "pages/about/about",
+    "pages/data-management/data-management"
   ],
   "subPackages": [
     {
       "root": "pkg-add",
       "pages": [
-        "item-form/item-form"
+        "item-form/item-form",
+        "quick-capture/quick-capture",
+        "capture-confirm/capture-confirm"
       ]
     }
   ],
@@ -50,6 +53,7 @@
     ]
   },
   "sitemapLocation": "sitemap.json",
+  "__usePrivacyCheck__": true,
   "style": "v2",
   "lazyCodeLoading": "requiredComponents"
 }

@@ -1,4 +1,6 @@
 const FAMILY_STATE_STORAGE_KEY = 'fridge_family_state_v2'
+let familyStateRevision = 0
+let pendingRefresh = null
 
 function callFamilyFunction(action, payload = {}) {
   if (!wx.cloud) {
@@ -48,7 +50,8 @@ function readCachedFamilyState() {
   }
 }
 
-function writeCachedFamilyState(state) {
+function writeCachedFamilyState(state, fromRefresh = false) {
+  if (!fromRefresh) familyStateRevision += 1
   try {
     if (state && state.family && state.membership) {
       wx.setStorageSync(FAMILY_STATE_STORAGE_KEY, state)
@@ -60,11 +63,42 @@ function writeCachedFamilyState(state) {
   }
 }
 
+function isFamilyAccessRevoked(error) {
+  return Boolean(
+    error &&
+      (error.code === 'NOT_IN_FAMILY' || error.code === 'FAMILY_UNAVAILABLE'),
+  )
+}
+
 function refreshFamilyState() {
-  return callFamilyFunction('getFamilyState').then((state) => {
-    writeCachedFamilyState(state)
-    return state
-  })
+  const revision = familyStateRevision
+  if (pendingRefresh && pendingRefresh.revision === revision) return pendingRefresh.request
+  const request = callFamilyFunction('getFamilyState')
+    .then((state) => {
+      if (revision !== familyStateRevision) {
+        const error = new Error('家庭状态已变化，请重试')
+        error.code = 'INVENTORY_SCOPE_CHANGED'
+        throw error
+      }
+      writeCachedFamilyState(state, true)
+      return state
+    })
+    .catch((error) => {
+      if (revision !== familyStateRevision) {
+        const changed = new Error('家庭状态已变化，请重试')
+        changed.code = 'INVENTORY_SCOPE_CHANGED'
+        throw changed
+      }
+      if (isFamilyAccessRevoked(error)) {
+        writeCachedFamilyState(null)
+      }
+      throw error
+    })
+    .finally(() => {
+      if (pendingRefresh && pendingRefresh.request === request) pendingRefresh = null
+    })
+  pendingRefresh = { revision, request }
+  return request
 }
 
 function createFamily(name) {
@@ -115,6 +149,7 @@ module.exports = {
   createFamily,
   createInvite,
   getInvitePreview,
+  isFamilyAccessRevoked,
   joinFamily,
   leaveFamily,
   readCachedFamilyState,

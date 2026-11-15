@@ -1,13 +1,19 @@
 <view class="page form-page">
   <view class="form-card">
+    <view wx:if="{{entryNotice}}" class="entry-notice" aria-role="alert">
+      <text class="entry-notice-title">已安全转为手动填写</text>
+      <text class="entry-notice-copy">{{entryNotice}}</text>
+    </view>
+
     <view class="field">
       <text class="field-label">食品名称</text>
-      <t-input
+      <input
+        class="native-input"
         value="{{form.name}}"
         placeholder="例如：牛奶、鸡蛋、菠菜，也可输 nn / jd"
         aria-label="食品名称"
         maxlength="30"
-        bindchange="handleNameInput"
+        bindinput="handleNameInput"
       />
       <view wx:if="{{lexiconHint}}" class="lexicon-hint">
         <text>{{lexiconHint}}，保存前可手动修改。</text>
@@ -64,7 +70,7 @@
       </view>
       <view wx:if="{{showLocationRecommend}}" class="recommend">
         <text class="recommend-text">推荐放「{{recommendedStorageLocation}}」（当前：{{form.storageLocation}}）</text>
-        <t-button size="extra-small" theme="primary" variant="outline" bindtap="handleApplyRecommendedLocation">采纳</t-button>
+        <button class="native-button native-button-small" bindtap="handleApplyRecommendedLocation">采纳</button>
       </view>
     </view>
 
@@ -82,12 +88,13 @@
         />
       </view>
       <view wx:if="{{form.quantityTracked}}" class="quantity-input">
-        <t-input
+        <input
+          class="native-input"
           type="number"
           value="{{form.quantity}}"
           placeholder="请输入数量"
           aria-label="食材数量"
-          bindchange="handleQuantityInput"
+          bindinput="handleQuantityInput"
         />
         <text class="quantity-preview">首页显示为 ×{{form.quantity || 1}}</text>
       </view>
@@ -102,14 +109,31 @@
       </view>
 
       <block wx:if="{{dateMode === 'production'}}">
-        <t-cell title="生产日期" note="{{form.productionDate || '点此选择'}}" arrow hover data-target="production" bindtap="openDatePicker" aria-label="选择生产日期" />
+        <picker
+          mode="date"
+          value="{{form.productionDate || today}}"
+          start="2018-01-01"
+          end="2035-12-31"
+          data-target="production"
+          bindchange="handleDateConfirm"
+          aria-label="选择生产日期"
+        >
+          <view class="date-cell">
+            <text class="date-cell-title">生产日期</text>
+            <view class="date-cell-value">
+              <text>{{form.productionDate || '点此选择'}}</text>
+              <text class="date-cell-arrow">›</text>
+            </view>
+          </view>
+        </picker>
         <view class="shelf-input">
-          <t-input
+          <input
+            class="native-input"
             type="number"
             value="{{form.shelfLifeDays}}"
             placeholder="保质期天数，例如 7 / 30 / 180"
             aria-label="保质期天数"
-            bindchange="handleShelfLifeInput"
+            bindinput="handleShelfLifeInput"
           />
         </view>
         <text class="date-result {{form.expireDate ? 'active' : ''}}">{{form.productionDate && form.shelfLifeDays && form.expireDate ? '自动生成过期日：' + form.expireDate : '填写后自动生成过期日'}}</text>
@@ -117,7 +141,23 @@
       </block>
 
       <block wx:else>
-        <t-cell title="过期日期" note="{{form.expireDate || '点此选择'}}" arrow hover data-target="expire" bindtap="openDatePicker" aria-label="选择过期日期" />
+        <picker
+          mode="date"
+          value="{{form.expireDate || today}}"
+          start="2018-01-01"
+          end="2035-12-31"
+          data-target="expire"
+          bindchange="handleDateConfirm"
+          aria-label="选择过期日期"
+        >
+          <view class="date-cell">
+            <text class="date-cell-title">过期日期</text>
+            <view class="date-cell-value">
+              <text>{{form.expireDate || '点此选择'}}</text>
+              <text class="date-cell-arrow">›</text>
+            </view>
+          </view>
+        </picker>
       </block>
 
       <text wx:if="{{errors.expireDate}}" class="field-error" aria-role="alert">{{errors.expireDate}}</text>
@@ -125,30 +165,18 @@
 
     <view class="field">
       <text class="field-label">备注</text>
-      <t-textarea
+      <textarea
+        class="native-textarea"
         value="{{form.note}}"
         placeholder="例如：开封后尽快吃完"
         aria-label="备注"
         maxlength="100"
-        bindchange="handleNoteInput"
+        bindinput="handleNoteInput"
       />
     </view>
 
-    <t-button class="submit-btn" theme="primary" size="large" block loading="{{saving}}" bindtap="handleSubmit">
+    <button class="native-button submit-btn {{saving ? 'native-button-disabled' : ''}}" loading="{{saving}}" disabled="{{saving}}" bindtap="handleSubmit">
       {{isEdit ? '保存修改' : '保存食品'}}
-    </t-button>
+    </button>
   </view>
-
-  <t-date-time-picker
-    visible="{{datePickerVisible}}"
-    mode="date"
-    value="{{datePickerValue}}"
-    format="YYYY-MM-DD"
-    title="{{datePickerTarget === 'production' ? '选择生产日期' : '选择过期日期'}}"
-    start="2018-01-01"
-    end="2035-12-31"
-    usePopup
-    bindconfirm="handleDateConfirm"
-    bindcancel="handleDateCancel"
-  />
 </view>

@@ -1,13 +1,16 @@
 const itemService = require('../../services/itemService')
-const parseService = require('../../services/parseService')
 const reminderService = require('../../services/reminderService')
+const captureImageService = require('../../services/captureImageService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
   STORAGE_LOCATION_OPTIONS,
 } = require('../../utils/constants')
-const { getTodayString } = require('../../utils/date')
-const { getFoodSuggestion } = require('../../utils/foodLexicon')
+const { calculateExpireDate, getTodayString } = require('../../utils/date')
+const { getFoodSuggestion, getRecommendedStorageLocation } = require('../../utils/foodLexicon')
+const {
+  validateConfirmationForm,
+} = require('../../utils/captureConfirmation')
 
 const emptyForm = {
   name: '',
@@ -68,7 +71,7 @@ function buildRecommendationState(form, smartRecommendEnabled, locationOptions) 
   }
 
   const recommendedStorageLocation = getSupportedStorageLocation(
-    parseService.getRecommendedStorageLocation(form),
+    getRecommendedStorageLocation(form),
     locationOptions,
   )
 
@@ -91,7 +94,7 @@ function buildLexiconState(form, options = {}) {
   const shouldUseSuggestionName = /^[a-z0-9]+$/i.test(inputName)
   const productionDate = form.productionDate || options.today || getTodayString()
   const shelfLifeDays = String(suggestion.shelfLifeDays)
-  const expireDate = parseService.calculateExpireDate(productionDate, shelfLifeDays)
+  const expireDate = calculateExpireDate(productionDate, shelfLifeDays)
   const nextForm = {
     ...form,
     name: shouldUseSuggestionName ? suggestion.name : form.name,
@@ -192,7 +195,7 @@ function buildFormFromRecentFood(food, today) {
   const productionDate = today || getTodayString()
   const shelfLifeDays = food.shelfLifeDays ? String(food.shelfLifeDays) : ''
   const expireDate = shelfLifeDays
-    ? parseService.calculateExpireDate(productionDate, shelfLifeDays)
+    ? calculateExpireDate(productionDate, shelfLifeDays)
     : ''
 
   return {
@@ -230,9 +233,14 @@ Page({
     datePickerTarget: 'production',
     datePickerValue: getTodayString(),
     today: getTodayString(),
+    entryNotice: '',
+    captureId: '',
+    retainImageRequested: false,
+    attachmentFinalized: false,
   },
 
   onLoad(options) {
+    this.bindRecognitionPreset()
     if (options.id) {
       this.setData({ id: options.id, isEdit: true, smartRecommendEnabled: false })
       wx.setNavigationBarTitle({ title: '编辑食品' })
@@ -243,6 +251,7 @@ Page({
     const storageLocation = getDefaultStorageLocation(options)
     const name = decodeOptionValue(options.name)
     const category = getDefaultCategory(options)
+    const isPhotoFallback = options.entry === 'photoFallback'
     let form = {
       ...this.data.form,
       ...(storageLocation ? { storageLocation } : {}),
@@ -260,10 +269,70 @@ Page({
       form,
       smartRecommendEnabled,
       hasPresetStorageLocation: Boolean(storageLocation),
+      entryNotice: isPhotoFallback
+        ? '照片没有上传或保存，识别也没有伪装成功。请手动填写并确认食材信息。'
+        : '',
       lexiconHint: lexiconState.lexiconHint,
       recentFoods: getRecentFoodList(),
       ...(lexiconState.matched ? { dateMode: 'production' } : {}),
       ...buildRecommendationState(form, smartRecommendEnabled, this.data.locationOptions),
+    })
+
+    if (isPhotoFallback) {
+      wx.setNavigationBarTitle({ title: '手动补录食品' })
+    }
+  },
+
+  onUnload() {
+    if (
+      this.data.captureId &&
+      this.data.retainImageRequested &&
+      !this.data.attachmentFinalized
+    ) {
+      captureImageService
+        .cleanupCaptureSession(this.data.captureId, {
+          reason: 'cancel',
+        })
+        .catch(() => null)
+    }
+  },
+
+  bindRecognitionPreset() {
+    const channel =
+      typeof this.getOpenerEventChannel === 'function'
+        ? this.getOpenerEventChannel()
+        : null
+    if (!channel || typeof channel.on !== 'function') return
+    channel.on('recognizedPreset', (payload = {}) => {
+      const validation = validateConfirmationForm(payload.preset)
+      if (!validation.valid) {
+        this.setData({
+          entryNotice:
+            '识别候选已失效，请继续手动填写并确认所有字段。',
+        })
+        return
+      }
+      const form = {
+        ...this.data.form,
+        ...validation.preset,
+        source: 'photo',
+      }
+      this.setData({
+        form,
+        smartRecommendEnabled: false,
+        captureId: String(payload.captureId || ''),
+        retainImageRequested:
+          payload.retainImage === true &&
+          Boolean(String(payload.captureId || '')),
+        entryNotice:
+          '以下内容来自不可信识别候选。请再次确认，保存前不会自动写入库存。',
+        ...buildRecommendationState(
+          form,
+          false,
+          this.data.locationOptions,
+        ),
+      })
+      wx.setNavigationBarTitle({ title: '确认并保存食品' })
     })
   },
 
@@ -446,7 +515,7 @@ Page({
 
   handleShelfLifeInput(event) {
     const shelfLifeDays = event.detail.value
-    const expireDate = parseService.calculateExpireDate(
+    const expireDate = calculateExpireDate(
       this.data.form.productionDate,
       shelfLifeDays,
     )
@@ -481,9 +550,11 @@ Page({
 
   handleDateConfirm(event) {
     const value = event.detail.value
+    const datePickerTarget =
+      event.currentTarget.dataset.target || this.data.datePickerTarget
 
-    if (this.data.datePickerTarget === 'production') {
-      const expireDate = parseService.calculateExpireDate(
+    if (datePickerTarget === 'production') {
+      const expireDate = calculateExpireDate(
         value,
         this.data.form.shelfLifeDays,
       )
@@ -559,6 +630,7 @@ Page({
     }
 
     const formToSave = { ...this.data.form }
+    let itemSaved = false
 
     this.setData({ saving: true })
 
@@ -571,17 +643,77 @@ Page({
           ? itemService.updateItem(this.data.id, formToSave)
           : itemService.createItem(formToSave)
       })
-      .then(() => {
+      .then((result) => {
+        itemSaved = true
         if (!this.data.isEdit) {
           rememberRecentFood(formToSave)
         }
 
+        const itemId = String(
+          result && (result._id || result.id || result.itemId) || '',
+        )
+        if (
+          !this.data.isEdit &&
+          this.data.retainImageRequested &&
+          this.data.captureId
+        ) {
+          if (!itemId) {
+            return captureImageService
+              .cleanupCaptureSession(this.data.captureId, {
+                reason: 'save_failed',
+              })
+              .then(() => ({ imageDiscarded: true }))
+              .catch(() => ({ imageStatusUncertain: true }))
+          }
+          return captureImageService
+            .attachCaptureToItem(this.data.captureId, itemId)
+            .then(() => ({ imageAttached: true }))
+            .catch(() =>
+              captureImageService
+                .cleanupCaptureSession(this.data.captureId, {
+                  reason: 'save_failed',
+                })
+                .then(() => ({ imageDiscarded: true }))
+                .catch(() => ({ imageStatusUncertain: true })),
+            )
+        }
+        return { imageAttached: false }
+      })
+      .then((outcome) => {
         wx.hideLoading()
-        this.setData({ saving: false })
-        wx.showToast({ title: '已保存', icon: 'success' })
+        this.setData({
+          saving: false,
+          attachmentFinalized: true,
+          captureId: '',
+        })
+
+        if (outcome.imageStatusUncertain) {
+          wx.showModal({
+            title: '食材已保存',
+            content:
+              '照片保留状态暂时无法确认，服务端会话仍可继续核对和清理。',
+            showCancel: false,
+            complete: () => wx.navigateBack(),
+          })
+          return
+        }
+
+        wx.showToast({
+          title: outcome.imageDiscarded
+            ? '已保存，照片未保留'
+            : '已保存',
+          icon: 'success',
+        })
         setTimeout(() => wx.navigateBack(), 400)
       })
       .catch(() => {
+        if (!itemSaved && this.data.captureId) {
+          captureImageService
+            .cleanupCaptureSession(this.data.captureId, {
+              reason: 'save_failed',
+            })
+            .catch(() => null)
+        }
         wx.hideLoading()
         this.setData({ saving: false })
         wx.showToast({ title: '保存失败', icon: 'none' })

@@ -2,8 +2,6 @@ App({
   globalData: {
     cloudReady: false,
     cloudEnvId: 'cloud1-d3g4v0ms8ee56bd94',
-    openid: '',
-    recipePrefillItemIds: [],
     scrollToRadar: false,
   },
 
@@ -23,19 +21,5 @@ App({
     })
 
     this.globalData.cloudReady = true
-    this.loadOpenId()
-  },
-
-  loadOpenId() {
-    wx.cloud
-      .callFunction({
-        name: 'getOpenId',
-      })
-      .then((res) => {
-        this.globalData.openid = res.result.openid || ''
-      })
-      .catch(() => {
-        this.globalData.openid = ''
-      })
   },
 })

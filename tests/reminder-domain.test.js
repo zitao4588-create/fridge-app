@@ -67,11 +67,12 @@ assert.deepStrictEqual(
     status: 'refused',
     failureCode: 'NO_ACTIVE_GRANT',
     retryable: false,
+    deliveryOutcome: 'API_REJECTED',
   },
 )
 assert.strictEqual(
   classifySendError(new Error('request timeout')).retryable,
-  true,
+  false,
 )
 assert.strictEqual(
   reminderService.getSubscribeDecisionStatus({ authorized: true }),

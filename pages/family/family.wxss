@@ -12,6 +12,9 @@
 .panel-label,
 .panel-title,
 .panel-meta,
+.result-title,
+.result-detail,
+.guide-line,
 .member-name,
 .member-role {
   display: block;
@@ -40,9 +43,11 @@
 
 .family-status,
 .family-error,
+.operation-result,
 .invite-panel,
 .create-panel,
 .migration-panel,
+.data-guide,
 .member-section,
 .invite-actions {
   margin-bottom: 22rpx;
@@ -55,6 +60,37 @@
 .family-error {
   color: #b3392f;
   background: #ffece6;
+}
+
+.operation-result--success {
+  color: #145c3c;
+  background: #eaf8ee;
+}
+
+.operation-result--warning {
+  color: #71531b;
+  background: #fff5d9;
+}
+
+.operation-result--error {
+  color: #8c3028;
+  background: #ffece6;
+}
+
+.result-title {
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.result-detail,
+.guide-line {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.guide-line {
+  color: #53655a;
 }
 
 .panel-title {

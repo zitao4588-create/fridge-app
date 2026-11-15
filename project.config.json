@@ -3,6 +3,10 @@
   "packOptions": {
     "ignore": [
       {
+        "value": ".release",
+        "type": "folder"
+      },
+      {
         "value": "node_modules",
         "type": "folder"
       },
@@ -23,6 +27,14 @@
         "type": "file"
       },
       {
+        "value": "pkg-add/node_modules",
+        "type": "folder"
+      },
+      {
+        "value": "pkg-add/miniprogram_npm",
+        "type": "folder"
+      },
+      {
         "value": "cloudfunctions",
         "type": "folder"
       },
@@ -31,7 +43,23 @@
         "type": "folder"
       },
       {
+        "value": "scripts",
+        "type": "folder"
+      },
+      {
+        "value": "dist",
+        "type": "folder"
+      },
+      {
         "value": ".codegraph",
+        "type": "folder"
+      },
+      {
+        "value": ".github",
+        "type": "folder"
+      },
+      {
+        "value": ".playwright-cli",
         "type": "folder"
       },
       {
@@ -67,6 +95,26 @@
         "type": "file"
       },
       {
+        "value": ".env",
+        "type": "file"
+      },
+      {
+        "value": ".env.local",
+        "type": "file"
+      },
+      {
+        "value": ".env.development.local",
+        "type": "file"
+      },
+      {
+        "value": ".env.production.local",
+        "type": "file"
+      },
+      {
+        "value": ".env.test.local",
+        "type": "file"
+      },
+      {
         "value": "AGENTS.md",
         "type": "file"
       },
@@ -92,6 +140,30 @@
       },
       {
         "value": "BUG_NOTES.md",
+        "type": "file"
+      },
+      {
+        "value": "NEXT_VERSION_GUIDE.md",
+        "type": "file"
+      },
+      {
+        "value": "SECURITY.md",
+        "type": "file"
+      },
+      {
+        "value": "CONTRIBUTING.md",
+        "type": "file"
+      },
+      {
+        "value": "LICENSE",
+        "type": "file"
+      },
+      {
+        "value": "CHANGELOG.md",
+        "type": "file"
+      },
+      {
+        "value": "OPEN_SOURCE_APPLICATION.md",
         "type": "file"
       },
       {

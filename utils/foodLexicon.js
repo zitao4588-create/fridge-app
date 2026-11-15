@@ -395,7 +395,61 @@ function getFoodLexiconSamples(limit = 48) {
     .filter(Boolean)
 }
 
+function getRecommendedStorageLocation(fields = {}) {
+  const category = fields.category || ''
+  const name = String(fields.name || '')
+  const suggestion = getFoodSuggestion(name)
+
+  if (suggestion && suggestion.storageLocation) {
+    return suggestion.storageLocation
+  }
+
+  if (category === '蔬菜' || category === '水果') {
+    return '果蔬抽屉'
+  }
+
+  if (
+    category === '饮料' ||
+    category === '调料' ||
+    name.includes('茶') ||
+    name.includes('可乐') ||
+    name.includes('雪碧') ||
+    name.includes('果汁') ||
+    name.includes('饮料') ||
+    name.includes('矿泉水') ||
+    name.includes('汽水') ||
+    name.includes('酱油') ||
+    name.includes('醋')
+  ) {
+    return '门架'
+  }
+
+  if (
+    category === '速冻' ||
+    name.includes('速冻') ||
+    name.includes('冻') ||
+    name.includes('冰')
+  ) {
+    return '冷冻'
+  }
+
+  if (
+    (category === '肉类' || category === '水产' || category === '肉蛋') &&
+    (name.includes('牛肉') ||
+      name.includes('鸡胸') ||
+      name.includes('猪肉') ||
+      name.includes('虾') ||
+      name.includes('鱼'))
+  ) {
+    return '冷冻'
+  }
+
+  return '冷藏'
+}
+
+
 module.exports = {
+  getRecommendedStorageLocation,
   FOOD_LEXICON,
   buildFoodDraft,
   getFoodLexiconSamples,

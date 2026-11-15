@@ -1,0 +1,10 @@
+{
+  "name": "extractFoodCandidates",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "tencentcloud-sdk-nodejs-ocr": "4.1.268",
+    "ws": "8.18.3",
+    "wx-server-sdk": "4.0.2"
+  }
+}

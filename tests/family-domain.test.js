@@ -24,6 +24,7 @@ assert.strictEqual(canManageFamily('owner'), true)
 assert.strictEqual(canManageFamily('editor'), false)
 assert.strictEqual(isInviteUsable(invite, family, now), true)
 assert.strictEqual(isInviteUsable({ ...invite, status: 'used' }, family, now), false)
+assert.strictEqual(isInviteUsable({ ...invite, status: 'revoked' }, family, now), false)
 assert.strictEqual(isInviteUsable({ ...invite, expiresAt: now }, family, now), false)
 assert.strictEqual(isInviteUsable(invite, { ...family, inviteVersion: 4 }, now), false)
 assert.strictEqual(getConsumeType({ quantityTracked: true, quantity: 2 }), 'decrease')
@@ -42,4 +43,4 @@ assert.strictEqual(
 )
 assert.strictEqual(isMissingDocumentError({ errCode: -1, errMsg: 'network failed' }), false)
 
-console.log('family-domain: 15 assertions passed')
+console.log('family-domain: 16 assertions passed')

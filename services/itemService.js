@@ -12,8 +12,14 @@ const ITEMS_CACHE_TTL = 10 * 1000
 let itemsCache = null
 let itemsCacheAt = 0
 let itemsCacheScope = ''
+let cacheRevision = 0
+const pendingLoads = new Map()
+const pendingAccessChecks = new Map()
 
 function invalidateItemsCache() {
+  cacheRevision += 1
+  pendingLoads.clear()
+  pendingAccessChecks.clear()
   itemsCache = null
   itemsCacheAt = 0
   itemsCacheScope = ''
@@ -37,8 +43,9 @@ function getInventoryScope() {
 }
 
 function callFamilyInventory(action, payload) {
+  const scope = getInventoryScope()
   return familyService.callFamilyFunction(action, payload).catch((error) => {
-    if (error.code === 'NOT_IN_FAMILY' || error.code === 'FAMILY_UNAVAILABLE') {
+    if (scope === getInventoryScope() && (error.code === 'NOT_IN_FAMILY' || error.code === 'FAMILY_UNAVAILABLE')) {
       familyService.writeCachedFamilyState(null)
     }
     throw error
@@ -69,23 +76,29 @@ function cleanItemPayload(payload) {
     note: String(payload.note || '').trim(),
     source: payload.source || 'manual',
     barcode: payload.barcode || '',
-    imageFileId: payload.imageFileId || '',
     parseConfidence:
       typeof payload.parseConfidence === 'number'
         ? payload.parseConfidence
         : undefined,
-    parseRawText: payload.parseRawText || '',
     parseStatus: payload.parseStatus || '',
   }
 }
 
+function stripSensitiveLegacyFields(item = {}) {
+  const safeItem = { ...item }
+  delete safeItem.parseRawText
+  delete safeItem.imageCaptureId
+  return safeItem
+}
+
 function decorateItems(items) {
   return items.map((item) => {
-    const quantityState = normalizeQuantityState(item)
+    const safeItem = stripSensitiveLegacyFields(item)
+    const quantityState = normalizeQuantityState(safeItem)
     return {
-      ...item,
+      ...safeItem,
       ...quantityState,
-      storageLocation: normalizeStorageLocation(item.storageLocation),
+      storageLocation: normalizeStorageLocation(safeItem.storageLocation),
     }
   }).sort((left, right) => {
     if (left.expireDate !== right.expireDate) {
@@ -260,6 +273,7 @@ function undoConsume(consumption) {
 function getItemById(id) {
   if (isFamilyMode()) {
     return callFamilyInventory('getItem', { itemId: id })
+      .then((item) => (item ? stripSensitiveLegacyFields(item) : item))
   }
 
   return getDb()
@@ -270,7 +284,7 @@ function getItemById(id) {
       if (res.data && (res.data.familyId || res.data.accessMode === 'family')) {
         throw new Error('没有访问该家庭食材的权限')
       }
-      return res.data
+      return res.data ? stripSensitiveLegacyFields(res.data) : res.data
     })
 }
 
@@ -292,21 +306,64 @@ function fetchItemsPage(offset, collected) {
     })
 }
 
-function getItems(options = {}) {
+function createItemsLoadResult(items, source, permissionState) {
+  return {
+    items,
+    source,
+    permissionState,
+    cachedAt: source === 'cache' ? itemsCacheAt : Date.now(),
+  }
+}
+
+function writeItemsCache(items, scope) {
+  itemsCache = items
+  itemsCacheAt = Date.now()
+  itemsCacheScope = scope
+  return items
+}
+
+function getItemsLoadResult(options = {}) {
+  const scope = getInventoryScope()
+  const revision = cacheRevision
+  const key = `${scope}:${options.forceRefresh === true}:${revision}`
+  if (pendingLoads.has(key)) return pendingLoads.get(key)
+  const request = loadItemsResult(options, scope, revision).finally(() => {
+    if (pendingLoads.get(key) === request) pendingLoads.delete(key)
+  })
+  pendingLoads.set(key, request)
+  return request
+}
+
+function loadItemsResult(options, inventoryScope, revision) {
   const forceRefresh = options.forceRefresh === true
-  const inventoryScope = getInventoryScope()
+  const familyMode = isFamilyMode()
   const isFresh =
     itemsCache &&
     itemsCacheScope === inventoryScope &&
     Date.now() - itemsCacheAt < ITEMS_CACHE_TTL
 
   if (!forceRefresh && isFresh) {
-    return Promise.resolve(itemsCache)
+    return Promise.resolve(
+      createItemsLoadResult(
+        itemsCache,
+        'cache',
+        familyMode ? 'valid' : 'personal',
+      ),
+    )
   }
 
-  if (isFamilyMode()) {
+  if (familyMode) {
     return callFamilyInventory('listItems')
       .then(decorateItems)
+      .then((items) => {
+        if (revision !== cacheRevision || inventoryScope !== getInventoryScope()) {
+          const error = new Error('库存状态已变化，请重试')
+          error.inventoryAccessUnverified = true
+          throw error
+        }
+        writeItemsCache(items, inventoryScope)
+        return createItemsLoadResult(items, 'cloud', 'valid')
+      })
       .catch((error) => {
         if (error.code !== 'NOT_IN_FAMILY' && error.code !== 'FAMILY_UNAVAILABLE') {
           throw error
@@ -316,12 +373,15 @@ function getItems(options = {}) {
             items.filter((item) => !item.familyId && item.accessMode !== 'family'),
           )
           .then(decorateItems)
-      })
-      .then((items) => {
-        itemsCache = items
-        itemsCacheAt = Date.now()
-        itemsCacheScope = getInventoryScope()
-        return items
+          .then((items) => {
+            if (revision !== cacheRevision || getInventoryScope() !== 'personal') {
+              const error = new Error('库存状态已变化，请重试')
+              error.inventoryAccessUnverified = true
+              throw error
+            }
+            writeItemsCache(items, getInventoryScope())
+            return createItemsLoadResult(items, 'cloud', 'revoked')
+          })
       })
   }
 
@@ -331,11 +391,50 @@ function getItems(options = {}) {
     )
     .then(decorateItems)
     .then((items) => {
-      itemsCache = items
-      itemsCacheAt = Date.now()
-      itemsCacheScope = inventoryScope
-      return items
+      if (revision !== cacheRevision || inventoryScope !== getInventoryScope()) {
+        const error = new Error('库存状态已变化，请重试')
+        error.inventoryAccessUnverified = true
+        throw error
+      }
+      writeItemsCache(items, inventoryScope)
+      return createItemsLoadResult(items, 'cloud', 'personal')
     })
+}
+
+function getItems(options = {}) {
+  return getItemsLoadResult(options).then((result) => result.items)
+}
+
+function getItemsWithFamilyAccessCheckResult(options = {}) {
+  const key = `${getInventoryScope()}:${options.forceRefresh === true}:${cacheRevision}`
+  if (pendingAccessChecks.has(key)) return pendingAccessChecks.get(key)
+  const hadFamily = isFamilyMode() || Boolean(itemsCache && itemsCacheScope.startsWith('family:'))
+  const request = familyService.refreshFamilyState()
+    .then((state) => getItemsLoadResult(options).then((result) => ({
+      ...result,
+      permissionState: !state && hadFamily ? 'revoked' : result.permissionState,
+    })))
+    .catch((error) => {
+      invalidateItemsCache()
+      if (familyService.isFamilyAccessRevoked(error)) {
+        return getItemsLoadResult({ ...options, forceRefresh: true }).then(
+          (result) => ({ ...result, permissionState: 'revoked' }),
+        )
+      }
+      error.inventoryAccessUnverified = true
+      throw error
+    })
+    .finally(() => {
+      if (pendingAccessChecks.get(key) === request) pendingAccessChecks.delete(key)
+    })
+  pendingAccessChecks.set(key, request)
+  return request
+}
+
+function getItemsWithFamilyAccessCheck(options = {}) {
+  return getItemsWithFamilyAccessCheckResult(options).then(
+    (result) => result.items,
+  )
 }
 
 function getExpiringItems(days) {
@@ -395,6 +494,9 @@ module.exports = {
   getExpiringItems,
   getItemById,
   getItems,
+  getItemsLoadResult,
+  getItemsWithFamilyAccessCheck,
+  getItemsWithFamilyAccessCheckResult,
   invalidateItemsCache,
   searchItems,
   undoConsume,

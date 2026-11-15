@@ -1,0 +1,102 @@
+{
+  "version": "2.1.0",
+  "releaseDirectory": ".release/v2.1-rc2-20260908",
+  "uploaded": true,
+  "submittedForReview": true,
+  "formallyPublished": true,
+  "publishedAt": "2026-09-10T12:51:40+08:00",
+  "agentPublished": false,
+  "publicationEvidence": {
+    "source": "user confirmation and supplied WeChat version management screenshot",
+    "screenshotName": "截屏2026-09-10 12.51.50.png",
+    "observedOnlineVersion": "2.1.0",
+    "releaseDescriptionMatchesUploadRecord": true,
+    "pendingReviewVersionVisible": false,
+    "liveBackendReadByAgent": false,
+    "finalServiceCategoryVerified": false,
+    "onlinePackageContentVerified": false
+  },
+  "agentSubmittedForReview": false,
+  "platformReviewStatus": "approved",
+  "platformReviewStatusBasis": "inferred from the version being formally published online",
+  "reviewEvidence": {
+    "source": "user-provided screenshot in v2.1 submission conversation; screenshot does not display version",
+    "receivedDate": "2026-09-10",
+    "statusAtCapture": "rejected",
+    "historical": true,
+    "reason": "service category does not match calendar functionality",
+    "requiredCategory": "工具-日历",
+    "categoryCorrected": false,
+    "resubmitted": false
+  },
+  "preview": {
+    "size": {
+      "total": 453613,
+      "packages": [
+        {
+          "name": "TOTAL",
+          "size": 453613
+        },
+        {
+          "name": "main",
+          "size": 433046
+        },
+        {
+          "name": "/pkg-add/",
+          "size": 20567
+        }
+      ]
+    }
+  },
+  "upload": {
+    "size": {
+      "total": 454074,
+      "packages": [
+        {
+          "name": "TOTAL",
+          "size": 454074
+        },
+        {
+          "name": "main",
+          "size": 433507
+        },
+        {
+          "name": "/pkg-add/",
+          "size": 20567
+        }
+      ]
+    }
+  },
+  "familyFunction": {
+    "name": "familyInventory",
+    "incrementalFile": "index.js",
+    "status": "Active",
+    "runtime": "Nodejs18.15",
+    "timeoutSeconds": 20,
+    "cloudSourceMatchesCandidate": true,
+    "otherFilesUnchanged": true,
+    "sdkVersionBefore": "4.0.2",
+    "sdkVersionAfter": "4.0.2",
+    "rollbackArchive": ".release/familyInventory-before-v21-20260908.tar.gz"
+  },
+  "userReportedDeviceChecks": {
+    "existingInventory": true,
+    "calendar": true,
+    "create": true,
+    "edit": true,
+    "consume": true,
+    "undo": true,
+    "nativeFeedbackSubmission": true,
+    "directDeviceRecipesTap": true
+  },
+  "pending": [
+    "feedback backend receipt",
+    "weak network and share real-device checks",
+    "post-release core-flow regression and stability observation"
+  ],
+  "cancelledByUser": [
+    "two-account removal and concurrent undo: not executed; removed as a v2.1 release prerequisite"
+  ],
+  "browserBlock": "Browser site-safety policy prohibits access to WeChat public platform; no workaround attempted.",
+  "productionReminderChanged": false
+}

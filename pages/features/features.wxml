@@ -29,7 +29,7 @@
     <text class="feature-label">是什么</text>
     <text class="feature-text">创建者通过微信邀请家庭成员，共同查看和修改同一个家庭库存。</text>
     <text class="feature-label">怎么用</text>
-    <text class="feature-text">在首页进入家庭库存，创建家庭或确认受邀加入；创建者可以撤回邀请和移除成员。</text>
+    <text class="feature-text">首页 → 家庭库存 → 创建家庭 → 右上角转发邀请成员。受邀者直接在微信内打开，无需下载 App；创建者可以撤回邀请和移除成员。</text>
     <text class="feature-label">不会做什么</text>
     <text class="feature-text">不会公开家庭内容，不提供动态、评论、聊天、陌生人发现或社区。</text>
   </view>

@@ -4,6 +4,7 @@
 
 .about-hero,
 .info-card,
+.feedback-card,
 .action-list {
   border-radius: 30rpx;
   background: var(--grad-card);
@@ -50,6 +51,11 @@
   padding: 28rpx 24rpx;
 }
 
+.feedback-card {
+  margin-top: 24rpx;
+  padding: 28rpx 24rpx;
+}
+
 .card-title {
   display: block;
   font-size: 30rpx;
@@ -68,6 +74,39 @@
 
 .fact-list {
   margin-top: 4rpx;
+}
+
+.feedback-text,
+.feedback-privacy {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--text-sub, #6f7c74);
+}
+
+.feedback-privacy {
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  color: var(--coral-deep, #c94238);
+  background: var(--coral-bg, #ffece6);
+}
+
+.feedback-button {
+  min-height: 72rpx;
+  margin-top: 20rpx;
+  padding: 0 24rpx;
+  border: 0;
+  border-radius: 18rpx;
+  line-height: 72rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--brand-mint, #28b978);
+}
+
+.feedback-button::after {
+  border: 0;
 }
 
 .action-list {

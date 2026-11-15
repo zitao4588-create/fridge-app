@@ -19,11 +19,19 @@
 
   <view class="info-card">
     <text class="card-title">当前阶段不做</text>
-    <text class="card-text">个人主体版本不开放 AI 菜谱、拍照识别、条形码扫描、支付会员、登录页或社区功能。后续如恢复这些能力，会先确认主体资质、微信类目和隐私边界。</text>
+    <text class="card-text">当前只提供一图一件的非生成式文字候选，所有结果都要由你确认后才能保存。暂不开放生成式视觉、AI 菜谱、条形码扫描、支付会员、登录页或社区功能；后续新增能力会先确认主体资质、微信类目和隐私边界。</text>
+  </view>
+
+  <view class="feedback-card">
+    <text class="card-title">问题反馈</text>
+    <text class="feedback-text">如果库存、家庭共享或提醒使用中遇到问题，可以通过微信原生反馈入口告诉我们。个人开发者预计在 3 个工作日内查看，但不保证实时回复。</text>
+    <text class="feedback-privacy">请不要提交手机号、身份证、家庭库存截图、邀请口令或其他敏感信息；说明所在页面、操作步骤和看到的提示即可。</text>
+    <button class="feedback-button" open-type="feedback">提交问题反馈</button>
   </view>
 
   <view class="action-list">
     <view class="action-item" bindtap="handleOpenFeatures" aria-role="button">查看功能说明</view>
     <view class="action-item" bindtap="handleOpenPrivacy" aria-role="button">查看隐私说明</view>
+    <view class="action-item" bindtap="handleOpenDataManagement" aria-role="button">库存数据管理</view>
   </view>
 </view>

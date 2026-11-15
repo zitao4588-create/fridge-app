@@ -7,6 +7,11 @@ const {
   getTodayString,
 } = require('../../utils/date')
 const { getExpiryStatus } = require('../../utils/status')
+const {
+  buildInventoryErrorState,
+  buildInventoryLoadingState,
+  buildInventoryResultState,
+} = require('../../utils/inventoryLoadState')
 const { buildMealRadar, getItemBucket } = require('../../utils/mealRadar')
 
 const WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六']
@@ -42,6 +47,9 @@ function buildStats(items) {
 
 Page({
   data: {
+    loading: true,
+    inventoryHasSnapshot: false,
+    inventoryView: buildInventoryLoadingState(false),
     weekLabels: WEEK_LABELS,
     year: 0,
     monthIndex: 0,
@@ -84,7 +92,7 @@ Page({
     const shouldScrollToRadar = Boolean(app && app.globalData && app.globalData.scrollToRadar)
     if (app && app.globalData) app.globalData.scrollToRadar = false
 
-    this.loadItems().then(() => {
+    this.loadItems({ verifyFamilyAccess: true }).then(() => {
       if (shouldScrollToRadar) this.scrollToRadar()
     })
   },
@@ -104,7 +112,8 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.loadItems().finally(() => wx.stopPullDownRefresh())
+    this.loadItems({ verifyFamilyAccess: true, forceRefresh: true })
+      .finally(() => wx.stopPullDownRefresh())
   },
 
   onShareAppMessage() {
@@ -115,20 +124,24 @@ Page({
     }
   },
 
-  onShareTimeline() {
-    return {
-      title: SHARE_TITLE,
-      query: '',
-      imageUrl: SHARE_IMAGE,
-    }
-  },
+  loadItems(options = {}) {
+    if (options.verifyFamilyAccess) this.clearInventorySnapshot()
+    const hadSnapshot = this.data.inventoryHasSnapshot === true
+    const requestId = (this.inventoryLoadRequestId || 0) + 1
+    this.inventoryLoadRequestId = requestId
+    this.setData({
+      loading: true,
+      inventoryView: buildInventoryLoadingState(hadSnapshot),
+    })
 
-  loadItems() {
-    this.setData({ loading: true })
+    const loadTask = options.verifyFamilyAccess
+      ? itemService.getItemsWithFamilyAccessCheckResult(options)
+      : itemService.getItemsLoadResult(options)
 
-    return itemService
-      .getItems()
-      .then((items) => {
+    return loadTask
+      .then((result) => {
+        if (requestId !== this.inventoryLoadRequestId) return
+        const items = result.items || []
         const allItems = items.map(decorate)
         const events = reminderService.getCalendarEvents(allItems)
         const patch = {
@@ -137,6 +150,8 @@ Page({
           stats: buildStats(allItems),
           radar: buildMealRadar(allItems),
           loading: false,
+          inventoryHasSnapshot: true,
+          inventoryView: buildInventoryResultState(result),
         }
 
         if (this.data.listPanelVisible && this.panelType) {
@@ -147,10 +162,58 @@ Page({
         this.renderCalendar(events)
         this.updateSelectedItems(this.data.selectedDate, events)
       })
-      .catch(() => {
-        this.setData({ loading: false })
-        wx.showToast({ title: '读取失败', icon: 'none' })
+      .catch((error) => {
+        if (requestId !== this.inventoryLoadRequestId) return
+        const inventoryView = buildInventoryErrorState(error, hadSnapshot)
+        const patch = {
+          loading: false,
+          inventoryView,
+          inventoryHasSnapshot: inventoryView.retainSnapshot,
+        }
+
+        if (!inventoryView.retainSnapshot) {
+          this.clearInventorySnapshot()
+          const allItems = []
+          Object.assign(patch, {
+            allItems,
+            events: {},
+            stats: buildStats(allItems),
+            radar: buildMealRadar(allItems),
+            selectedItems: [],
+          })
+
+          if (this.data.listPanelVisible && this.panelType) {
+            Object.assign(patch, this.buildListPanel(this.panelType, allItems))
+          }
+        }
+
+        this.setData(patch)
+        if (!inventoryView.retainSnapshot) {
+          this.renderCalendar({})
+        }
       })
+  },
+
+  handleInventoryRetry() {
+    return this.loadItems({ verifyFamilyAccess: true, forceRefresh: true })
+  },
+
+  clearInventorySnapshot() {
+    this.panelType = null
+    this.setData({
+      inventoryHasSnapshot: false,
+      allItems: [],
+      events: {},
+      days: [],
+      selectedItems: [],
+      stats: buildStats([]),
+      radar: buildMealRadar([]),
+      listPanelVisible: false,
+      listPanelItems: [],
+      listPanelTitle: '',
+      listPanelSubtitle: '',
+    })
+    this.setTabBar({ hidden: false })
   },
 
   renderCalendar(events = this.data.events) {

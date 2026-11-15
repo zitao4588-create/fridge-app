@@ -1,5 +1,11 @@
 const familyService = require('../../services/familyService')
 const itemService = require('../../services/itemService')
+const {
+  FAMILY_FAILURE_OUTCOME_KEYS,
+  FAMILY_OUTCOME_KEYS,
+  buildFamilyOutcome,
+  resolveFamilyRecoveryOutcome,
+} = require('../../utils/familyOutcome')
 
 const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
 
@@ -22,6 +28,7 @@ Page({
     invitePreview: null,
     pageError: '',
     serviceUnavailable: false,
+    operationResult: null,
   },
 
   onLoad(options) {
@@ -45,7 +52,13 @@ Page({
     return familyService
       .refreshFamilyState()
       .then((state) => {
-        this.setData({ state, loading: false })
+        const patch = { state, loading: false }
+        if (state && state.migrationPending) {
+          patch.operationResult = buildFamilyOutcome(
+            FAMILY_OUTCOME_KEYS.MIGRATION_PENDING,
+          )
+        }
+        this.setData(patch)
       })
       .catch((error) => {
         const unavailable = error.code === 'NOT_IN_FAMILY'
@@ -80,47 +93,99 @@ Page({
 
   handleCreateFamily() {
     if (this.data.operating || this.data.serviceUnavailable) return
-    this.setData({ operating: true, pageError: '' })
+    this.setData({ operating: true, pageError: '', operationResult: null })
     familyService
       .createFamily(this.data.familyName)
       .then((state) => {
         itemService.invalidateItemsCache()
-        this.setData({ state })
-        wx.showToast({ title: '家庭已创建', icon: 'success' })
+        this.setData({
+          state,
+          operationResult: buildFamilyOutcome(
+            state && state.migrationPending
+              ? FAMILY_OUTCOME_KEYS.MIGRATION_PENDING
+              : FAMILY_OUTCOME_KEYS.CREATED,
+          ),
+        })
       })
       .catch((error) => {
-        this.setData({ pageError: error.message || '创建失败' })
+        return this.recoverFamilyStateAfterFailure('create', error)
       })
       .finally(() => this.setData({ operating: false, loading: false }))
   },
 
   handleJoinFamily() {
     if (!this.data.pendingInviteCode || this.data.operating) return
-    this.setData({ operating: true, pageError: '' })
+    this.setData({ operating: true, pageError: '', operationResult: null })
     familyService
       .joinFamily(this.data.pendingInviteCode)
       .then((state) => {
         itemService.invalidateItemsCache()
-        this.setData({ state, invitePreview: null, pendingInviteCode: '' })
-        wx.showToast({ title: '已加入家庭', icon: 'success' })
+        this.setData({
+          state,
+          invitePreview: null,
+          pendingInviteCode: '',
+          operationResult: buildFamilyOutcome(
+            state && state.migrationPending
+              ? FAMILY_OUTCOME_KEYS.MIGRATION_PENDING
+              : FAMILY_OUTCOME_KEYS.JOINED,
+          ),
+        })
       })
       .catch((error) => {
-        this.setData({ pageError: error.message || '加入失败' })
+        return this.recoverFamilyStateAfterFailure('join', error)
       })
       .finally(() => this.setData({ operating: false, loading: false }))
   },
 
   handleRetryMigration() {
     if (this.data.operating) return
-    this.setData({ operating: true, pageError: '' })
+    this.setData({ operating: true, pageError: '', operationResult: null })
     familyService
       .retryMigration()
       .then((state) => {
         itemService.invalidateItemsCache()
-        this.setData({ state })
+        this.setData({
+          state,
+          operationResult: buildFamilyOutcome(
+            state && state.migrationPending
+              ? FAMILY_OUTCOME_KEYS.MIGRATION_PENDING
+              : FAMILY_OUTCOME_KEYS.MIGRATION_COMPLETED,
+          ),
+        })
       })
-      .catch((error) => this.setData({ pageError: error.message || '恢复失败' }))
+      .catch((error) =>
+        this.recoverFamilyStateAfterFailure('migration', error),
+      )
       .finally(() => this.setData({ operating: false }))
+  },
+
+  recoverFamilyStateAfterFailure(action, error, context = {}) {
+    return familyService
+      .refreshFamilyState()
+      .then((state) => {
+        itemService.invalidateItemsCache()
+        const outcomeKey = resolveFamilyRecoveryOutcome(action, state, context)
+        const fallbackKey =
+          FAMILY_FAILURE_OUTCOME_KEYS[action] ||
+          FAMILY_OUTCOME_KEYS.RESULT_UNKNOWN
+
+        this.setData({
+          state,
+          pageError:
+            outcomeKey === fallbackKey
+              ? error.message || '家庭操作失败'
+              : '',
+          operationResult: buildFamilyOutcome(outcomeKey),
+        })
+      })
+      .catch(() => {
+        this.setData({
+          pageError: error.message || '家庭操作结果暂时无法确认',
+          operationResult: buildFamilyOutcome(
+            FAMILY_OUTCOME_KEYS.RESULT_UNKNOWN,
+          ),
+        })
+      })
   },
 
   onShareAppMessage() {
@@ -154,7 +219,7 @@ Page({
       confirmText: '撤回',
       success: (res) => {
         if (!res.confirm) return
-        this.setData({ operating: true })
+        this.setData({ operating: true, pageError: '', operationResult: null })
         familyService
           .revokeInvite()
           .then(() => {
@@ -172,16 +237,26 @@ Page({
     if (!memberId || this.data.operating) return
     wx.showModal({
       title: '移除家庭成员',
-      content: '移除后，该成员将不能继续查看或修改家庭库存。',
+      content:
+        '移除后，该成员将不能继续查看或修改家庭库存；其此前迁入的库存仍留在家庭，不会自动回到个人库存。',
       confirmText: '移除',
       confirmColor: '#c94238',
       success: (res) => {
         if (!res.confirm) return
-        this.setData({ operating: true })
+        this.setData({ operating: true, pageError: '', operationResult: null })
         familyService
           .removeMember(memberId)
-          .then((state) => this.setData({ state }))
-          .catch((error) => this.setData({ pageError: error.message || '移除失败' }))
+          .then((state) =>
+            this.setData({
+              state,
+              operationResult: buildFamilyOutcome(
+                FAMILY_OUTCOME_KEYS.MEMBER_REMOVED,
+              ),
+            }),
+          )
+          .catch((error) =>
+            this.recoverFamilyStateAfterFailure('remove', error, { memberId }),
+          )
           .finally(() => this.setData({ operating: false }))
       },
     })
@@ -193,21 +268,34 @@ Page({
     wx.showModal({
       title: isOwner ? '解散家庭' : '退出家庭',
       content: isOwner
-        ? '只有移除其他成员后才能解散。解散后库存会恢复为你的个人库存。'
-        : '退出后将不能继续查看或修改这个家庭的库存。',
+        ? '只有移除其他成员后才能解散。解散后，当前家庭库存会恢复为创建者的个人库存。'
+        : '退出后将不能继续访问家庭库存；你此前迁入的库存仍留在家庭，不会自动回到个人库存。',
       confirmText: isOwner ? '解散' : '退出',
       confirmColor: '#c94238',
       success: (res) => {
         if (!res.confirm) return
-        this.setData({ operating: true })
+        this.setData({ operating: true, pageError: '', operationResult: null })
         familyService
           .leaveFamily()
           .then(() => {
             itemService.invalidateItemsCache()
-            this.setData({ state: null, inviteCode: '', inviteExpiresText: '' })
-            wx.showToast({ title: isOwner ? '家庭已解散' : '已退出家庭', icon: 'success' })
+            this.setData({
+              state: null,
+              inviteCode: '',
+              inviteExpiresText: '',
+              operationResult: buildFamilyOutcome(
+                isOwner
+                  ? FAMILY_OUTCOME_KEYS.DISSOLVED
+                  : FAMILY_OUTCOME_KEYS.LEFT,
+              ),
+            })
           })
-          .catch((error) => this.setData({ pageError: error.message || '操作失败' }))
+          .catch((error) =>
+            this.recoverFamilyStateAfterFailure(
+              isOwner ? 'dissolve' : 'leave',
+              error,
+            ),
+          )
           .finally(() => this.setData({ operating: false }))
       },
     })

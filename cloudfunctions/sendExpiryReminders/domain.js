@@ -19,7 +19,9 @@ function hasDailySummaryRecord(records, remindDate) {
     (record) =>
       record &&
       record.type === REMINDER_RECORD_TYPE &&
-      record.remindDate === remindDate,
+      record.remindDate === remindDate &&
+      !(record.status === 'failed' && record.retryable === true &&
+        ['NOT_SENT', 'API_REJECTED'].includes(record.deliveryOutcome)),
   )
 }
 
@@ -79,7 +81,9 @@ function classifySendError(error) {
     detail,
     status: refused ? 'refused' : 'failed',
     failureCode: refused ? 'NO_ACTIVE_GRANT' : 'SEND_FAILED',
-    retryable: !refused,
+    retryable: !refused && ['NOT_SENT', 'API_REJECTED'].includes(error && error.deliveryOutcome),
+    deliveryOutcome: refused ? 'API_REJECTED' :
+      (['NOT_SENT', 'API_REJECTED'].includes(error && error.deliveryOutcome) ? error.deliveryOutcome : 'UNKNOWN'),
   }
 }
 

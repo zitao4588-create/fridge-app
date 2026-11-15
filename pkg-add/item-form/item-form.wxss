@@ -9,6 +9,31 @@
   box-shadow: var(--shadow-1), var(--hi-inset);
 }
 
+.entry-notice {
+  margin-bottom: 26rpx;
+  padding: 20rpx;
+  border: 2rpx solid rgba(201, 126, 32, 0.24);
+  border-radius: 22rpx;
+  color: #75470d;
+  background: #fff7df;
+}
+
+.entry-notice-title,
+.entry-notice-copy {
+  display: block;
+}
+
+.entry-notice-title {
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.entry-notice-copy {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+
 .field {
   margin-bottom: 30rpx;
 }
@@ -26,6 +51,65 @@
   margin-top: 10rpx;
   font-size: 24rpx;
   color: var(--coral-deep, #c94238);
+}
+
+.native-input,
+.native-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 2rpx solid rgba(234, 219, 196, 0.9);
+  border-radius: 20rpx;
+  color: var(--text-main, #253730);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.native-input {
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.native-textarea {
+  min-height: 180rpx;
+  padding: 22rpx 24rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+.native-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  margin: 0;
+  border: 0;
+  border-radius: 22rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 1.2;
+  background: var(--grad-mint);
+  box-shadow: var(--shadow-mint), var(--hi-inset);
+}
+
+.native-button::after {
+  border: 0;
+}
+
+.native-button-disabled {
+  color: rgba(255, 255, 255, 0.82);
+  background: #87c9a8;
+}
+
+.native-button-small {
+  min-height: 58rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid rgba(8, 122, 73, 0.3);
+  border-radius: 999rpx;
+  color: var(--brand-mint-deep, #087a49);
+  font-size: 24rpx;
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .lexicon-hint {
@@ -161,6 +245,37 @@
   margin-top: 20rpx;
 }
 
+.date-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid rgba(234, 219, 196, 0.9);
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.date-cell-title {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: var(--text-main, #253730);
+}
+
+.date-cell-value {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 26rpx;
+  color: var(--text-sub, #6f7c74);
+}
+
+.date-cell-arrow {
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--text-light, #8c978f);
+}
+
 .date-result {
   display: block;
   margin-top: 16rpx;
@@ -227,7 +342,7 @@
   margin-top: 20rpx;
 }
 
-.quantity-input t-input {
+.quantity-input .native-input {
   min-width: 0;
   flex: 1;
 }

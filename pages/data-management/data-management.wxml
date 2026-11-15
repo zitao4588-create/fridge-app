@@ -1,0 +1,15 @@
+<view class="page data-page">
+  <view class="data-card">
+    <text class="data-title">库存数据管理</text>
+    <text class="data-copy">平时可以在首页逐条编辑、用掉或删除食材。只有需要重新整理整份库存时，才使用清空功能。</text>
+    <text wx:if="{{loading}}" class="data-copy">正在确认库存权限…</text>
+    <text wx:if="{{inventoryLabel}}" class="data-scope">{{inventoryLabel}}</text>
+    <text wx:if="{{message}}" class="data-copy" aria-role="alert">{{message}}</text>
+    <button wx:if="{{!loading && !canClear}}" class="data-retry" bindtap="handleRetry" disabled="{{clearing}}">重新读取</button>
+  </view>
+  <view wx:if="{{canClear}}" class="data-card">
+    <text class="data-title">清空全部食材</text>
+    <text class="data-copy">清空后无法恢复；家庭库存会同时影响所有成员。此操作不会退出或解散家庭。</text>
+    <button class="data-danger" bindtap="handleClearAll" disabled="{{loading || clearing}}" loading="{{clearing}}">清空{{inventoryLabel}}</button>
+  </view>
+</view>

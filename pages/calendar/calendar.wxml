@@ -1,4 +1,20 @@
 <view class="page calendar-page">
+  <view wx:if="{{inventoryView.showCard}}" class="inventory-state-card {{inventoryView.tone}}">
+    <view class="inventory-state-copy">
+      <text class="inventory-state-title">{{inventoryView.title}}</text>
+      <text class="inventory-state-detail">{{inventoryView.detail}}</text>
+    </view>
+    <view
+      wx:if="{{inventoryView.canRetry}}"
+      class="inventory-state-action"
+      bindtap="handleInventoryRetry"
+      aria-role="button"
+    >
+      重新读取
+    </view>
+  </view>
+
+  <block wx:if="{{inventoryHasSnapshot}}">
   <view class="cal-card">
     <view class="month-row">
       <view class="month-nav" bindtap="handlePrevMonth" aria-role="button" aria-label="上个月">‹</view>
@@ -118,6 +134,7 @@
       <text wx:else class="meal-radar-priority-empty">{{radar.priorityEmptyText}}</text>
     </view>
   </view>
+  </block>
 </view>
 
 <!-- 统计清单弹层 -->

@@ -267,6 +267,7 @@ async function writeSummaryReminderRecord(
   detail,
   failureCode = '',
   retryable = false,
+  deliveryOutcome = '',
 ) {
   return db.collection('reminders').add({
     data: {
@@ -283,6 +284,7 @@ async function writeSummaryReminderRecord(
       detail: detail || '',
       failureCode,
       retryable,
+      deliveryOutcome,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     },
@@ -308,7 +310,13 @@ async function getOfficialAccessToken() {
 }
 
 async function sendReminderWithServerApi(target, templateId, miniprogramState) {
-  const accessToken = await getOfficialAccessToken()
+  let accessToken
+  try {
+    accessToken = await getOfficialAccessToken()
+  } catch (error) {
+    error.deliveryOutcome = 'NOT_SENT'
+    throw error
+  }
   const body = JSON.stringify({
     touser: target._openid,
     template_id: templateId,
@@ -328,7 +336,9 @@ async function sendReminderWithServerApi(target, templateId, miniprogramState) {
   }, body)
 
   if (data.errcode !== 0) {
-    throw new Error(`errCode: ${data.errcode} | errMsg: ${data.errmsg || 'send failed'}`)
+    const error = new Error(`errCode: ${data.errcode} | errMsg: ${data.errmsg || 'send failed'}`)
+    if (typeof data.errcode === 'number' && data.errcode !== 0) error.deliveryOutcome = 'API_REJECTED'
+    throw error
   }
 
   return data
@@ -339,14 +349,20 @@ async function sendReminder(target, templateId, miniprogramState) {
     return sendReminderWithServerApi(target, templateId, miniprogramState)
   }
 
-  return cloud.openapi.subscribeMessage.send({
+  try {
+    return await cloud.openapi.subscribeMessage.send({
     touser: target._openid,
     templateId,
     page: 'pages/index/index',
     miniprogramState,
     lang: 'zh_CN',
     data: buildMessageData(target),
-  })
+    })
+  } catch (error) {
+    // Only structured positive WeChat error codes prove an API rejection.
+    if (Number.isInteger(error.errCode) && error.errCode > 0) error.deliveryOutcome = 'API_REJECTED'
+    throw error
+  }
 }
 
 exports.main = async (event = {}) => {
@@ -407,9 +423,6 @@ exports.main = async (event = {}) => {
 
     try {
       await sendReminder(target, templateId, miniprogramState)
-      await writeSummaryReminderRecord(target, today, 'sent')
-      stats.sent += 1
-      stats.sentItems += target.itemCount
     } catch (error) {
       const failure = classifySendError(error)
       await writeSummaryReminderRecord(
@@ -419,6 +432,7 @@ exports.main = async (event = {}) => {
         failure.detail,
         failure.failureCode,
         failure.retryable,
+        failure.deliveryOutcome,
       )
       if (failure.status === 'refused') {
         stats.refused += 1
@@ -427,7 +441,13 @@ exports.main = async (event = {}) => {
       }
       if (failure.retryable) stats.retryableFailures += 1
       stats.failedItems += target.itemCount
+      continue
     }
+    // Keep persistence outside the send catch: delivery already succeeded.
+    // If this write fails, surface the failure; never label it safe to resend.
+    await writeSummaryReminderRecord(target, today, 'sent')
+    stats.sent += 1
+    stats.sentItems += target.itemCount
   }
 
   stats.ok = stats.failed === 0 && stats.refused === 0

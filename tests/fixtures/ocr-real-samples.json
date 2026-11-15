@@ -1,0 +1,22 @@
+[
+  {"id":"milk-01","title":"File:-2019-09-07 UHT milk and specialist milk, Coop, Cromer.JPG","scenario":"multiple_packages"},
+  {"id":"milk-02","title":"File:-2022-02-09 A 2 Litre carton of skimmed milk, Trimingham, Norfolk (1).JPG","scenario":"front"},
+  {"id":"milk-03","title":"File:-2022-02-09 A 2 Litre carton of skimmed milk, Trimingham, Norfolk (2).JPG","scenario":"side"},
+  {"id":"milk-04","title":"File:-2022-02-09 A 2 Litre carton of skimmed milk, Trimingham, Norfolk (3).JPG","scenario":"angled"},
+  {"id":"milk-05","title":"File:2011年4月の牛乳 (5588310773).jpg","scenario":"japanese"},
+  {"id":"milk-06","title":"File:22-07-2017 Carton of UHT Milk of Matinal brand.JPG","scenario":"uht"},
+  {"id":"milk-07","title":"File:Almond Non-Dairy Milk (5082992066).jpg","scenario":"non_dairy"},
+  {"id":"milk-08","title":"File:Arla Ko Mellanmjölk 1L.jpg","scenario":"swedish"},
+  {"id":"milk-09","title":"File:Awaji Island milk.JPG","scenario":"japanese"},
+  {"id":"milk-10","title":"File:Bagged Milk in Store (3293358107).jpg","scenario":"store"},
+  {"id":"milk-11","title":"File:Berkeley Farms Fat-Free Half & Half.jpg","scenario":"small_text"},
+  {"id":"milk-12","title":"File:Brique de lait bleue C'est qui le Patron ?!.jpg","scenario":"french"},
+  {"id":"milk-13","title":"File:Flickr - cyclonebill - Iskaffe (1).jpg","scenario":"coffee_milk"},
+  {"id":"milk-14","title":"File:Flickr - cyclonebill - Iskaffe.jpg","scenario":"coffee_milk"},
+  {"id":"milk-15","title":"File:Food Standards (FDA 159) (8211144117).jpg","scenario":"small_text"},
+  {"id":"milk-16","title":"File:Coconut Non-Dairy Milk (5082424201).jpg","scenario":"non_dairy"},
+  {"id":"milk-17","title":"File:Gütelsiegel Heumilch.JPG","scenario":"label_closeup"},
+  {"id":"milk-18","title":"File:Dg milk containers.jpg","scenario":"multiple_packages"},
+  {"id":"milk-19","title":"File:Halal-Milk-DSCN8815.JPG","scenario":"multilingual"},
+  {"id":"milk-20","title":"File:Eroski esnea, Jauregi baserriaren irudiarekin.jpg","scenario":"basque"}
+]

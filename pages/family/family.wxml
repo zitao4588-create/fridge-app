@@ -7,11 +7,19 @@
 
   <view wx:if="{{loading}}" class="family-status">正在读取家庭状态…</view>
   <view wx:if="{{pageError}}" class="family-error">{{pageError}}</view>
+  <view
+    wx:if="{{operationResult}}"
+    class="operation-result operation-result--{{operationResult.tone}}"
+  >
+    <text class="result-title">{{operationResult.title}}</text>
+    <text class="result-detail">{{operationResult.detail}}</text>
+  </view>
 
   <view wx:if="{{invitePreview && !state}}" class="invite-panel">
     <text class="panel-label">家庭邀请</text>
     <text class="panel-title">{{invitePreview.familyName}}</text>
     <text class="panel-meta">邀请有效至 {{invitePreview.expiresText}}</text>
+    <text class="panel-meta">加入后，你现有的个人库存会迁入家庭。以后退出或被移除时，这些库存不会自动回到个人库存。</text>
     <view class="primary-action {{operating ? 'disabled' : ''}}" bindtap="handleJoinFamily" aria-role="button">确认加入</view>
   </view>
 
@@ -25,16 +33,24 @@
       bindinput="handleFamilyNameInput"
       aria-label="家庭名称"
     />
+    <text class="panel-meta">创建后，你现有的个人库存会迁入家庭库存，由受邀成员共同管理。</text>
     <view class="primary-action {{operating ? 'disabled' : ''}}" bindtap="handleCreateFamily" aria-role="button">创建家庭库存</view>
   </view>
 
   <view wx:if="{{state && state.migrationPending}}" class="migration-panel">
-    <text class="panel-title">正在整理原有库存</text>
-    <text class="panel-meta">迁移没有完成前，家庭成员不会看到不完整的数据。</text>
+    <text class="panel-title">家庭已建立，库存迁移未完成</text>
+    <text class="panel-meta">家庭关系已经成功建立，但原个人库存尚未全部迁入。迁移完成前，家庭成员不会看到不完整的数据。</text>
     <view class="secondary-action" bindtap="handleRetryMigration" aria-role="button">继续迁移</view>
   </view>
 
   <block wx:if="{{state && !state.migrationPending}}">
+    <view class="data-guide">
+      <text class="panel-label">家庭数据会怎样</text>
+      <text class="guide-line">创建或加入家庭时，个人库存会迁入家庭库存。</text>
+      <text class="guide-line">普通成员退出或被移除后，已迁入库存仍留在家庭，不会自动回到个人库存。</text>
+      <text class="guide-line">创建者移除其他成员并解散家庭后，当前家庭库存恢复为创建者的个人库存。</text>
+    </view>
+
     <view class="member-section">
       <view class="section-head">
         <text class="section-title">家庭成员</text>

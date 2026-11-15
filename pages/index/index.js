@@ -1,13 +1,18 @@
 const itemService = require('../../services/itemService')
-const familyService = require('../../services/familyService')
 const { CATEGORY_OPTIONS, HOME_ZONE_DEFINITIONS } = require('../../utils/constants')
 const { addDays, formatDate, getTodayString } = require('../../utils/date')
 const { getStarterFoodEntries } = require('../../utils/foodLexicon')
+const {
+  buildInventoryErrorState,
+  buildInventoryLoadingState,
+  buildInventoryResultState,
+} = require('../../utils/inventoryLoadState')
 const { buildHomeRadar, getItemBucket } = require('../../utils/mealRadar')
 const { getExpiryStatus } = require('../../utils/status')
 const { getIngredientVisual } = require('../../utils/visualAssets')
 
 const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
+const QUICK_CAPTURE_URL = '/pkg-add/quick-capture/quick-capture'
 const SHARE_TITLE = '冰箱小雷达｜微信里的冰箱食材库存管理小程序'
 const SHARE_PATH = '/pages/index/index'
 const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
@@ -174,10 +179,12 @@ function buildStarterPayload(entry) {
 
 Page({
   data: {
-    loading: false,
+    loading: true,
+    inventoryHasSnapshot: false,
+    inventoryView: buildInventoryLoadingState(false),
     homeMood: buildMood(null),
     homeRadar: buildHomeRadar([]),
-    allItems: [],
+    itemCount: 0,
     homeZones: [],
     starterFoods: buildStarterFoods([]),
     selectedStarterKeys: [],
@@ -208,12 +215,7 @@ Page({
       selected: 0,
       hidden: this.data.listPanelVisible || this.data.foodDetailVisible,
     })
-    const familyState = familyService.readCachedFamilyState()
-    const refreshTask = familyState
-      ? familyService.refreshFamilyState().catch(() => familyState)
-      : Promise.resolve(null)
-
-    refreshTask.then(() => this.loadItems())
+    this.loadItems({ verifyFamilyAccess: true })
   },
 
   setTabBar(patch) {
@@ -228,13 +230,7 @@ Page({
   },
 
   onPullDownRefresh() {
-    const familyState = familyService.readCachedFamilyState()
-    const refreshTask = familyState
-      ? familyService.refreshFamilyState().catch(() => familyState)
-      : Promise.resolve(null)
-
-    refreshTask
-      .then(() => this.loadItems())
+    this.loadItems({ verifyFamilyAccess: true, forceRefresh: true })
       .finally(() => wx.stopPullDownRefresh())
   },
 
@@ -246,28 +242,36 @@ Page({
     }
   },
 
-  onShareTimeline() {
-    return {
-      title: SHARE_TITLE,
-      query: '',
-      imageUrl: SHARE_IMAGE,
-    }
-  },
+  loadItems(options = {}) {
+    // 每次重新确认权限前撤下旧内容，包括已打开的详情和拖动对象。
+    if (options.verifyFamilyAccess) this.clearInventorySnapshot()
+    const hadSnapshot = this.data.inventoryHasSnapshot === true
+    const requestId = (this.inventoryLoadRequestId || 0) + 1
+    this.inventoryLoadRequestId = requestId
+    this.setData({
+      loading: true,
+      inventoryView: buildInventoryLoadingState(hadSnapshot),
+    })
 
-  loadItems() {
-    this.setData({ loading: true })
+    const loadTask = options.verifyFamilyAccess
+      ? itemService.getItemsWithFamilyAccessCheckResult(options)
+      : itemService.getItemsLoadResult(options)
 
-    return itemService
-      .getItems()
-      .then((items) => {
+    return loadTask
+      .then((result) => {
+        if (requestId !== this.inventoryLoadRequestId) return
+        const items = result.items || []
         const allItems = items.map(decorateItem)
+        this.inventoryItems = allItems
         const patch = {
-          allItems,
+          itemCount: allItems.length,
           homeMood: buildMood(buildStats(allItems)),
           homeRadar: buildHomeRadar(allItems),
           homeZones: buildHomeZones(allItems),
           starterFoods: buildStarterFoods(this.data.selectedStarterKeys),
           loading: false,
+          inventoryHasSnapshot: true,
+          inventoryView: buildInventoryResultState(result),
         }
 
         if (this.data.listPanelVisible && this.panelContext) {
@@ -276,14 +280,68 @@ Page({
 
         this.setData(patch)
       })
-      .catch(() => {
-        this.setData({ loading: false })
-        wx.showToast({ title: '读取失败', icon: 'none' })
+      .catch((error) => {
+        if (requestId !== this.inventoryLoadRequestId) return
+        const inventoryView = buildInventoryErrorState(error, hadSnapshot)
+        const patch = {
+          loading: false,
+          inventoryView,
+          inventoryHasSnapshot: inventoryView.retainSnapshot,
+        }
+
+        if (!inventoryView.retainSnapshot) {
+          this.clearInventorySnapshot()
+          const allItems = []
+          Object.assign(patch, {
+            itemCount: 0,
+            homeMood: buildMood(null),
+            homeRadar: buildHomeRadar(allItems),
+            homeZones: buildHomeZones(allItems),
+          })
+
+          if (this.data.listPanelVisible && this.panelContext) {
+            Object.assign(patch, this.buildListPanel(this.panelContext, allItems))
+          }
+        }
+
+        this.setData(patch)
       })
   },
 
+  handleInventoryRetry() {
+    return this.loadItems({ verifyFamilyAccess: true, forceRefresh: true })
+  },
+
+  clearInventorySnapshot() {
+    this.inventoryItems = []
+    this.panelContext = null
+    this.lastConsumption = null
+    this.consumeTrayRect = null
+    this.suppressFoodTap = false
+    if (this.noticeTimer) clearTimeout(this.noticeTimer)
+    this.setData({
+      inventoryHasSnapshot: false,
+      itemCount: 0,
+      homeZones: [],
+      homeRadar: buildHomeRadar([]),
+      homeMood: buildMood(null),
+      listPanelVisible: false,
+      listPanelGroups: [],
+      listPanelTitle: '',
+      listPanelSubtitle: '',
+      selectedFood: null,
+      foodDetailVisible: false,
+      draggingFood: null,
+      draggingFoodVisible: false,
+      dragOverTray: false,
+      undoConsumeVisible: false,
+      noticeMessage: '',
+    })
+    this.setTabBar({ hidden: false })
+  },
+
   buildListPanel(context, items) {
-    const matched = filterByContext(items || this.data.allItems, context)
+    const matched = filterByContext(items || (this.inventoryItems || []), context)
 
     return {
       listPanelVisible: true,
@@ -296,7 +354,7 @@ Page({
 
   openListPanel(context) {
     this.panelContext = context
-    this.setData(this.buildListPanel(context, this.data.allItems))
+    this.setData(this.buildListPanel(context, (this.inventoryItems || [])))
     this.setTabBar({ hidden: true })
   },
 
@@ -309,7 +367,7 @@ Page({
   noop() {},
 
   handleRadarTap() {
-    if (!this.data.allItems.length) return
+    if (!(this.inventoryItems || []).length) return
     const app = getApp()
     if (app && app.globalData) app.globalData.scrollToRadar = true
     wx.switchTab({ url: '/pages/calendar/calendar' })
@@ -321,8 +379,24 @@ Page({
 
   handleZoneAdd(event) {
     const location = event.currentTarget.dataset.location
-    wx.navigateTo({
-      url: `${ITEM_FORM_URL}?storageLocation=${encodeURIComponent(location)}&smartRecommend=1`,
+    const encodedLocation = encodeURIComponent(location)
+
+    wx.showActionSheet({
+      itemList: ['手动填写', '拍照或从相册选择'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.navigateTo({
+            url: `${ITEM_FORM_URL}?storageLocation=${encodedLocation}&smartRecommend=1`,
+          })
+          return
+        }
+
+        if (res.tapIndex === 1) {
+          wx.navigateTo({
+            url: `${QUICK_CAPTURE_URL}?storageLocation=${encodedLocation}`,
+          })
+        }
+      },
     })
   },
 
@@ -400,7 +474,7 @@ Page({
       return
     }
 
-    const food = this.data.allItems.find((item) => item._id === event.currentTarget.dataset.id)
+    const food = (this.inventoryItems || []).find((item) => item._id === event.currentTarget.dataset.id)
     if (food) {
       this.setData({ selectedFood: food, foodDetailVisible: true })
       this.setTabBar({ hidden: true })
@@ -408,7 +482,7 @@ Page({
   },
 
   handleFoodLongPress(event) {
-    const food = this.data.allItems.find(
+    const food = (this.inventoryItems || []).find(
       (item) => item._id === event.currentTarget.dataset.id,
     )
     const point = event.touches && event.touches[0]
@@ -482,10 +556,12 @@ Page({
   consumeFood(food) {
     if (!food || this.data.consuming) return
 
+    const viewRequestId = this.inventoryLoadRequestId
     this.setData({ consuming: true, undoConsumeVisible: false })
     itemService
       .consumeItem(food._id)
       .then((consumption) => {
+        if (viewRequestId !== this.inventoryLoadRequestId) return
         this.lastConsumption = consumption
         const message =
           consumption.type === 'decrease'
@@ -496,6 +572,7 @@ Page({
         return this.loadItems()
       })
       .catch(() => {
+        if (viewRequestId !== this.inventoryLoadRequestId) return
         wx.showToast({ title: '库存更新失败', icon: 'none' })
       })
       .finally(() => {
@@ -506,15 +583,18 @@ Page({
   handleUndoConsume() {
     if (!this.lastConsumption || this.data.consuming) return
 
+    const viewRequestId = this.inventoryLoadRequestId
     this.setData({ consuming: true, undoConsumeVisible: false })
     itemService
       .undoConsume(this.lastConsumption)
       .then(() => {
+        if (viewRequestId !== this.inventoryLoadRequestId) return
         this.lastConsumption = null
         this.showNotice('已撤销本次库存变更')
         return this.loadItems()
       })
       .catch(() => {
+        if (viewRequestId !== this.inventoryLoadRequestId) return
         wx.showToast({ title: '撤销失败，请检查当前库存', icon: 'none' })
       })
       .finally(() => {
@@ -564,30 +644,6 @@ Page({
           .catch(() => {
             wx.hideLoading()
             wx.showToast({ title: '删除失败', icon: 'none' })
-          })
-      },
-    })
-  },
-
-  handleClearAll() {
-    wx.showModal({
-      title: '清空全部数据',
-      content: '将删除所有食品记录，且无法恢复。确定继续？',
-      confirmText: '清空',
-      confirmColor: '#c94238',
-      success: (res) => {
-        if (!res.confirm) return
-        wx.showLoading({ title: '清空中' })
-        itemService
-          .clearItems()
-          .then(() => {
-            wx.hideLoading()
-            this.showNotice('已清空全部数据')
-            this.loadItems()
-          })
-          .catch(() => {
-            wx.hideLoading()
-            wx.showToast({ title: '清空失败', icon: 'none' })
           })
       },
     })

@@ -91,7 +91,19 @@ function buildMonthDays(year, monthIndex, eventMap, selectedDate) {
   return days
 }
 
+function calculateExpireDate(productionDate, shelfLifeDays) {
+  const days = Number(shelfLifeDays)
+
+  if (!productionDate || !Number.isFinite(days) || days <= 0) {
+    return ''
+  }
+
+  return addDays(productionDate, days)
+}
+
+
 module.exports = {
+  calculateExpireDate,
   DAY_MS,
   addDays,
   buildMonthDays,

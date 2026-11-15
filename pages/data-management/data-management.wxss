@@ -1,0 +1,8 @@
+.data-page { padding: 32rpx 28rpx calc(60rpx + env(safe-area-inset-bottom)); }
+.data-card { margin-bottom: 24rpx; padding: 28rpx 24rpx; border-radius: 30rpx; background: var(--grad-card); box-shadow: var(--shadow-1), var(--hi-inset); }
+.data-title { display: block; font-size: 30rpx; font-weight: 800; color: var(--text-main, #253730); }
+.data-copy { display: block; margin-top: 18rpx; font-size: 26rpx; line-height: 1.7; color: var(--text-sub, #6f7c74); }
+.data-scope { display: block; margin-top: 24rpx; font-size: 28rpx; font-weight: 700; color: var(--brand-mint-deep, #087a49); }
+.data-danger, .data-retry { margin-top: 28rpx; min-height: 88rpx; border-radius: 18rpx; line-height: 88rpx; font-size: 28rpx; font-weight: 700; }
+.data-danger { background: var(--coral-bg, #ffece6); color: var(--coral-deep, #c94238); }
+.data-retry { background: var(--brand-mint, #28b978); color: #fff; }

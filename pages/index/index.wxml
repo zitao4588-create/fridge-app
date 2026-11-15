@@ -1,12 +1,27 @@
 <page-meta page-style="overflow: {{draggingFoodVisible ? 'hidden' : 'visible'}};" />
 
 <view class="page index-page">
-  <view class="hero {{allItems.length > 0 ? homeRadar.levelClass : ''}}" bindtap="handleRadarTap" aria-role="button" aria-label="查看开饭雷达">
+  <view wx:if="{{inventoryView.showCard}}" class="inventory-state-card {{inventoryView.tone}}">
+    <view class="inventory-state-copy">
+      <text class="inventory-state-title">{{inventoryView.title}}</text>
+      <text class="inventory-state-detail">{{inventoryView.detail}}</text>
+    </view>
+    <view
+      wx:if="{{inventoryView.canRetry}}"
+      class="inventory-state-action"
+      bindtap="handleInventoryRetry"
+      aria-role="button"
+    >
+      重新读取
+    </view>
+  </view>
+
+  <view wx:if="{{inventoryHasSnapshot}}" class="hero {{itemCount > 0 ? homeRadar.levelClass : ''}}" bindtap="handleRadarTap" aria-role="button" aria-label="查看开饭雷达">
     <image class="hero-spark" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
     <image class="hero-mascot" src="{{homeMood.mascot}}" mode="aspectFit" aria-hidden="true" />
     <view class="hero-copy">
       <view class="hero-text">
-        <block wx:if="{{allItems.length > 0}}">
+        <block wx:if="{{itemCount > 0}}">
           <text class="hero-kicker">开饭小雷达</text>
           <text class="hero-title">{{homeRadar.title}}</text>
           <text class="hero-desc hero-target">{{homeRadar.actionText}}</text>
@@ -16,7 +31,7 @@
           <text class="hero-desc">{{homeMood.desc}}</text>
         </block>
       </view>
-      <text wx:if="{{allItems.length > 0}}" class="hero-arrow" aria-hidden="true">›</text>
+      <text wx:if="{{itemCount > 0}}" class="hero-arrow" aria-hidden="true">›</text>
     </view>
   </view>
 
@@ -29,7 +44,7 @@
     <text class="family-entry-arrow" aria-hidden="true">›</text>
   </view>
 
-  <view wx:if="{{allItems.length === 0}}" class="starter-card">
+  <view wx:if="{{inventoryHasSnapshot && itemCount === 0}}" class="starter-card">
     <view class="starter-head">
       <view>
         <text class="starter-title">30 秒装满样板冰箱</text>
@@ -54,7 +69,7 @@
     </view>
   </view>
 
-  <view class="search-bar">
+  <view wx:if="{{inventoryHasSnapshot}}" class="search-bar">
     <text class="search-ic" bindtap="handleSearchConfirm" aria-role="button" aria-label="搜索">🔍</text>
     <input
       class="search-input"
@@ -67,7 +82,7 @@
     />
   </view>
 
-  <view class="zone-list">
+  <view wx:if="{{inventoryHasSnapshot}}" class="zone-list">
     <view class="zone-card {{zone.theme}}" wx:for="{{homeZones}}" wx:for-item="zone" wx:key="key">
       <view class="zone-head">
         <view class="zone-title-wrap">
@@ -122,10 +137,6 @@
     </view>
   </view>
 
-  <view class="danger-zone">
-    <text class="danger-tip">清空后所有食品记录将无法恢复</text>
-    <view class="danger-clear" bindtap="handleClearAll" aria-role="button">清空全部食品数据</view>
-  </view>
 
   <view wx:if="{{noticeMessage}}" class="notice">
     <text>{{noticeMessage}}</text>

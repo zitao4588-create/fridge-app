@@ -1,0 +1,10 @@
+{
+  "name": "captureImageSession",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "3.17.2",
+    "ws": "8.18.3",
+    "wx-server-sdk": "4.0.2"
+  }
+}

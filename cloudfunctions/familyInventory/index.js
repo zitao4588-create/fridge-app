@@ -1,4 +1,5 @@
 const crypto = require('crypto')
+const { isDeepStrictEqual } = require('util')
 const cloud = require('wx-server-sdk')
 const {
   canManageFamily,
@@ -75,18 +76,23 @@ function cleanItemPayload(payload = {}) {
     note: String(payload.note || '').trim().slice(0, 100),
     source: payload.source || 'manual',
     barcode: payload.barcode || '',
-    imageFileId: payload.imageFileId || '',
     parseConfidence:
       typeof payload.parseConfidence === 'number'
         ? payload.parseConfidence
         : undefined,
-    parseRawText: payload.parseRawText || '',
     parseStatus: payload.parseStatus || '',
   }
 }
 
-function toClientItem(item) {
+function stripSensitiveLegacyFields(item = {}) {
   const safeItem = { ...item }
+  delete safeItem.parseRawText
+  delete safeItem.imageCaptureId
+  return safeItem
+}
+
+function toClientItem(item) {
+  const safeItem = stripSensitiveLegacyFields(item)
   delete safeItem._openid
   delete safeItem.createdByOpenid
   delete safeItem.actorOpenid
@@ -523,9 +529,11 @@ async function consumeItem(openid, event) {
 
     const quantity = Number(item.quantity)
     const type = getConsumeType(item)
+    const updatedAt = Math.max(Date.now(), (Number(item.updatedAt) || 0) + 1)
+    const after = type === 'decrease' ? { quantity: quantity - 1, updatedAt } : null
     if (type === 'decrease') {
       await transaction.collection(COLLECTIONS.items).doc(item._id).update({
-        data: { quantity: quantity - 1, updatedAt: Date.now() },
+        data: after,
       })
     } else {
       await transaction.collection(COLLECTIONS.items).doc(item._id).remove()
@@ -537,7 +545,8 @@ async function consumeItem(openid, event) {
         actorOpenid: openid,
         type,
         itemId: item._id,
-        before: item,
+        before: stripSensitiveLegacyFields(item),
+        after,
         status: 'active',
         createdAt: Date.now(),
       },
@@ -548,24 +557,43 @@ async function consumeItem(openid, event) {
 
 async function undoConsume(openid, event) {
   const membership = await requireMembership(openid)
-  const record = await getDocumentOrNull(COLLECTIONS.inventoryEvents, event.undoToken)
-  if (
-    !record ||
-    record.familyId !== membership.familyId ||
-    record.actorOpenid !== openid ||
-    record.status !== 'active' ||
-    Date.now() - record.createdAt > UNDO_TTL
-  ) {
-    fail('UNDO_EXPIRED', '撤销时间已过或库存已经变化')
-  }
-
   await db.runTransaction(async (transaction) => {
+    const read = async (collection, id) => {
+      try {
+        const result = await transaction.collection(collection).doc(id).get()
+        return result.data || null
+      } catch (error) {
+        if (isMissingDocumentError(error)) return null
+        throw error
+      }
+    }
+    const record = await read(COLLECTIONS.inventoryEvents, event.undoToken)
+    if (
+      !record ||
+      record.familyId !== membership.familyId ||
+      record.actorOpenid !== openid ||
+      record.status !== 'active' ||
+      Date.now() - record.createdAt > UNDO_TTL
+    ) {
+      fail('UNDO_EXPIRED', '撤销时间已过或库存已经变化')
+    }
+    const current = await read(COLLECTIONS.items, record.itemId)
+    // Older events lack an after-state; do not guess whether restoring is safe.
+    if (!Object.prototype.hasOwnProperty.call(record, 'after') || !record.before ||
+        !['decrease', 'remove'].includes(record.type) ||
+        (record.type === 'decrease'
+          ? !record.after || !current || !isDeepStrictEqual(
+            stripSensitiveLegacyFields(current), { ...record.before, ...record.after })
+          : record.after !== null || current)) {
+      fail('ITEM_CHANGED', '库存已被其他操作改变，无法撤销，请刷新后查看')
+    }
+    const updatedAt = Math.max(Date.now(), (Number(current && current.updatedAt) || 0) + 1)
     if (record.type === 'decrease') {
       await transaction.collection(COLLECTIONS.items).doc(record.itemId).update({
-        data: { quantity: record.before.quantity, updatedAt: Date.now() },
+        data: { quantity: record.before.quantity, updatedAt },
       })
     } else {
-      const restored = { ...record.before, updatedAt: Date.now() }
+      const restored = { ...record.before, updatedAt }
       delete restored._id
       await transaction.collection(COLLECTIONS.items).doc(record.itemId).set({ data: restored })
     }

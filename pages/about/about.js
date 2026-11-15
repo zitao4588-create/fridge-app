@@ -24,4 +24,8 @@ Page({
   handleOpenPrivacy() {
     wx.navigateTo({ url: '/pages/privacy/privacy' })
   },
+
+  handleOpenDataManagement() {
+    wx.navigateTo({ url: '/pages/data-management/data-management' })
+  },
 })
