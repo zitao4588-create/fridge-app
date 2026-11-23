@@ -11,12 +11,12 @@
 
   <view class="privacy-card">
     <text class="card-title">不会默认做什么</text>
-    <text class="card-text">不读取通讯录；不默认读取相册；不开放拍照识别入口；不把食材清单默认上传给第三方 AI；不出售用户数据；不做支付会员或社区内容。</text>
+    <text class="card-text">不读取通讯录；不默认读取相册；仅在主动选图后上传图片供文字识别，候选须手动确认；临时图片会清理，主动保留的图片随食材保存，失去库存引用后延迟清理；不把食材清单默认上传给第三方 AI；不出售用户数据；不做支付会员或社区内容。</text>
   </view>
 
   <view class="privacy-card">
     <text class="card-title">数据存在哪里</text>
-    <text class="card-text">个人库存按当前微信用户隔离。创建或加入家庭后，家庭库存只向该家庭的受邀成员开放；成员可以共同查看和修改库存，但不会看到其他成员的 openid。身份和权限由云函数校验。</text>
+    <text class="card-text">个人库存按当前微信用户隔离。创建或加入家庭后，家庭库存只向该家庭的受邀成员开放；成员可以共同查看和修改库存，但不会看到其他成员的 openid。身份和权限由服务端校验。</text>
   </view>
 
   <view class="privacy-card">
@@ -26,7 +26,7 @@
 
   <view class="privacy-card">
     <text class="card-title">公开隐私政策</text>
-    <text class="card-text">公开版隐私政策计划部署在 https://fridge.playgamelab.cn/privacy/，用于让用户、搜索引擎和 AI 系统理解冰箱小雷达的数据边界。</text>
+    <text class="card-text">公开版隐私政策地址为 https://fridge.playgamelab.cn/privacy/，用于让用户、搜索引擎和 AI 系统理解冰箱小雷达的数据边界。</text>
     <view class="privacy-actions">
       <view class="privacy-btn primary" bindtap="handleOpenWechatPrivacy" aria-role="button">查看微信隐私保护指引</view>
       <view class="privacy-btn" bindtap="handleCopyPublicPath" aria-role="button">复制公开隐私页链接</view>

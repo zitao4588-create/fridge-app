@@ -8,18 +8,37 @@ function toDateString(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+// 只接受真实存在的 YYYY-M-D 日期；2026-02-31 这类不存在的日期返回 null，
+// 不再被 Date 悄悄进位成 3 月 3 日。非字符串 / 空值同样返回 null，调用方可安全降级。
 function parseDate(dateString) {
-  if (!dateString) {
+  if (typeof dateString !== 'string') {
     return null
   }
 
-  const parts = dateString.split('-').map(Number)
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(dateString.trim())
 
-  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
+  if (!match) {
     return null
   }
 
-  return new Date(parts[0], parts[1] - 1, parts[2])
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const date = new Date(year, month - 1, day)
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null
+  }
+
+  return date
+}
+
+function isValidDateString(dateString) {
+  return parseDate(dateString) !== null
 }
 
 function getToday() {
@@ -45,8 +64,10 @@ function addDays(dateString, days) {
 function getDaysUntil(dateString) {
   const target = parseDate(dateString)
 
+  // 空日期或无效日期没有「距到期天数」，返回 NaN 而不是 0（0 会被当成今天到期）。
+  // NaN 与任何数字比较都为 false，旧数据在分桶 / 状态判断里会安全落到非临期分支。
   if (!target) {
-    return 0
+    return NaN
   }
 
   return Math.round((target.getTime() - getToday().getTime()) / DAY_MS)
@@ -94,7 +115,8 @@ function buildMonthDays(year, monthIndex, eventMap, selectedDate) {
 function calculateExpireDate(productionDate, shelfLifeDays) {
   const days = Number(shelfLifeDays)
 
-  if (!productionDate || !Number.isFinite(days) || days <= 0) {
+  // Number('') / Number(null) 为 0，Number(undefined) 为 NaN，都会在这里被拦下。
+  if (!isValidDateString(productionDate) || !Number.isInteger(days) || days <= 0) {
     return ''
   }
 
@@ -111,6 +133,7 @@ module.exports = {
   getDaysUntil,
   getMonthTitle,
   getTodayString,
+  isValidDateString,
   parseDate,
   toDateString,
 }

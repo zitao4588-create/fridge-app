@@ -118,6 +118,7 @@
             wx:for-item="food"
             wx:key="_id"
             data-id="{{food._id}}"
+            bindtouchstart="handleFoodTouchStart"
             catchtap="handleFoodTap"
             bindlongpress="handleFoodLongPress"
             catchtouchmove="{{draggingFoodVisible ? 'handleFoodTouchMove' : ''}}"
@@ -199,7 +200,8 @@
 
 <!-- 食品详情 -->
 <view wx:if="{{foodDetailVisible}}" class="mask" bindtap="handleCloseFoodDetail">
-  <view class="sheet detail" catchtap="noop">
+  <view class="sheet detail" catchtap="noop" aria-role="dialog" aria-label="{{selectedFood.name}}详情">
+    <view class="sheet-close detail-close" bindtap="handleCloseFoodDetail" aria-role="button" aria-label="关闭详情">关闭</view>
     <image class="detail-img" src="{{selectedFood.thumbImage || '/images/foods/default.png'}}" mode="aspectFit" aria-hidden="true" />
     <text class="detail-name">{{selectedFood.name}}</text>
     <view class="detail-meta">
@@ -210,6 +212,15 @@
     <view wx:if="{{selectedFood.note}}" class="detail-note">
       <text class="detail-note-label">备注</text>
       <text class="detail-note-text">{{selectedFood.note}}</text>
+    </view>
+    <view
+      class="detail-btn primary detail-consume {{consuming ? 'disabled' : ''}}"
+      bindtap="handleDetailConsume"
+      aria-role="button"
+      aria-label="{{selectedFood.consumeActionLabel}}"
+      aria-disabled="{{consuming}}"
+    >
+      {{selectedFood.consumeActionText}}
     </view>
     <view class="detail-actions">
       <view class="detail-btn" bindtap="handleEdit" aria-role="button">编辑</view>

@@ -1,7 +1,7 @@
 <view class="page form-page">
   <view class="form-card">
     <view wx:if="{{entryNotice}}" class="entry-notice" aria-role="alert">
-      <text class="entry-notice-title">已安全转为手动填写</text>
+      <text class="entry-notice-title">请核对录入信息</text>
       <text class="entry-notice-copy">{{entryNotice}}</text>
     </view>
 
@@ -137,6 +137,7 @@
           />
         </view>
         <text class="date-result {{form.expireDate ? 'active' : ''}}">{{form.productionDate && form.shelfLifeDays && form.expireDate ? '自动生成过期日：' + form.expireDate : '填写后自动生成过期日'}}</text>
+        <text wx:if="{{errors.productionDate}}" class="field-error" aria-role="alert">{{errors.productionDate}}</text>
         <text wx:if="{{errors.shelfLifeDays}}" class="field-error" aria-role="alert">{{errors.shelfLifeDays}}</text>
       </block>
 

@@ -39,7 +39,12 @@ for (const file of files) {
     }
   }
 }
-assert.deepEqual(fs.readdirSync(path.join(root, 'cloudfunctions')), ['familyInventory'])
+if (JSON.parse(read('project.config.json')).projectname === 'fridge-v2.3-release') {
+  assert.equal(fs.existsSync(path.join(root, 'cloudfunctions')), false)
+  assert.ok(read('services/backendService.js').includes('https://fridge.playgamelab.cn/fridge-api/v2'))
+} else {
+  assert.deepEqual(fs.readdirSync(path.join(root, 'cloudfunctions')), ['familyInventory'])
+}
 assert.match(read('pages/about/about.wxml'), /open-type="feedback"/)
 assert.match(read('pages/about/about.wxml'), /提交问题反馈/)
 assert.match(read('pages/recipes/recipes.wxml'), /bindtap="handleOpenAbout"/)
@@ -75,12 +80,15 @@ async function run() {
   assert.equal(saves.length, 0)
   assert.equal(messages.at(-1), '请填写食品名称')
   Object.assign(page.data.form, { name: '合成测试食材', expireDate: '2030-01-01', quantityTracked: false })
+  page.data.dateMode = 'expire'
+  page.data.expireModeDate = page.data.form.expireDate
   page.handleSubmit()
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(saves.length, 1)
   assert.equal(saves[0].quantityTracked, false)
   assert.equal(saves[0].source, 'manual')
   assert.equal(page.data.saving, false)
+  page.saved = false // Reopen as a new edit form.
   page.data.isEdit = true
   page.data.id = 'synthetic-edit'
   page.data.form.quantityTracked = true
@@ -90,11 +98,14 @@ async function run() {
   assert.equal(saves.length, 2)
   assert.equal(saves[1].id, 'synthetic-edit')
   assert.equal(saves[1].quantity, 3)
+  page.data.dateMode = 'production'
   page.data.form.productionDate = '2028-02-28'
   page.handleShelfLifeInput({ detail: { value: '2' } })
   assert.equal(page.data.form.expireDate, '2028-03-01')
   const failed = loadForm({ createItem: async () => { throw new Error('synthetic network error') } })
   Object.assign(failed.page.data.form, { name: '合成失败测试', expireDate: '2030-01-01' })
+  failed.page.data.dateMode = 'expire'
+  failed.page.data.expireModeDate = failed.page.data.form.expireDate
   failed.page.handleSubmit()
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(failed.page.data.saving, false)

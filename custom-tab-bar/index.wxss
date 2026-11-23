@@ -32,7 +32,7 @@
 
 .tab-txt {
   font-size: 24rpx;
-  color: #9aa9a1;
+  color: #63746b; /* a11y：原 #9aa9a1 在白底仅 2.45:1，现 4.95:1 */
 }
 
 .tab-item.on .tab-txt {

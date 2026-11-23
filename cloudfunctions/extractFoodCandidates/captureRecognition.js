@@ -74,7 +74,7 @@ async function handleCaptureRecognition(
       openid,
       captureId,
     )
-    await dependencies.markRecognizing(openid, captureId)
+    const recognitionId = await dependencies.markRecognizing(openid, captureId)
     const result = await handleRecognitionRequest(
       { imageFileId: session.fileId },
       {
@@ -88,6 +88,7 @@ async function handleCaptureRecognition(
       openid,
       captureId,
       result.ok === true,
+      recognitionId,
     )
     if (result.ok !== true && completion && completion.cleanupPending) {
       return {

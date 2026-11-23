@@ -15,6 +15,10 @@
     <text class="result-detail">{{operationResult.detail}}</text>
   </view>
 
+  <view wx:if="{{invitePreview && state}}" class="invite-panel">
+    <text class="panel-title">收到「{{invitePreview.familyName}}」的邀请</text>
+    <text class="panel-meta">你已有家庭，暂时无法加入另一个家庭。退出后，共享食材仍留在原家庭。可先与家人确认，再决定是否切换。</text>
+  </view>
   <view wx:if="{{invitePreview && !state}}" class="invite-panel">
     <text class="panel-label">家庭邀请</text>
     <text class="panel-title">{{invitePreview.familyName}}</text>
@@ -73,7 +77,8 @@
     </view>
 
     <view wx:if="{{state.membership.role === 'owner'}}" class="invite-actions">
-      <button class="share-action" open-type="share">邀请家庭成员</button>
+      <button wx:if="{{!inviteCode}}" class="share-action" loading="{{operating}}" disabled="{{operating}}" bindtap="handlePrepareInvite">生成家庭邀请</button>
+      <button wx:else class="share-action" open-type="share">分享家庭邀请</button>
       <view wx:if="{{inviteCode}}" class="invite-live">
         <text>本次邀请有效至 {{inviteExpiresText}}</text>
         <view class="revoke-action" bindtap="handleRevokeInvite" aria-role="button">撤回</view>

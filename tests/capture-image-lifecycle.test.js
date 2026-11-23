@@ -53,7 +53,13 @@ async function run() {
       get(captureId) {
         return Promise.resolve(sessions.get(captureId) || null)
       },
-      update(captureId, patch) {
+      findRetained(now, limit) {
+        return [...sessions.values()].filter(row => row.status === 'retained' && row.cleanupAfter <= now).slice(0, limit)
+      },
+      transition(captureId, expected, patch) {
+        if (!Object.entries(expected).every(([key, value]) => sessions.get(captureId)[key] === value)) {
+          throw new Error('Concurrent session update')
+        }
         sessions.set(captureId, {
           ...sessions.get(captureId),
           ...patch,
@@ -125,6 +131,7 @@ async function run() {
       },
     },
     items: {
+      referencesImage(fileId) { return [...items.values()].some(item => item.imageFileId === fileId) },
       get(itemId) {
         return Promise.resolve(items.get(itemId) || null)
       },
@@ -149,7 +156,7 @@ async function run() {
         status: 'retained',
         itemId: payload.itemId,
         retainedAt: payload.retainedAt,
-        cleanupAfter: null,
+        cleanupAfter: payload.retainedAt + SESSION_TTL_MS,
       })
       return Promise.resolve()
     },
@@ -500,6 +507,29 @@ async function run() {
     captureId: `capture_${'9'.repeat(36)}`,
     fileId: uploadFileId,
   })
+
+  // Shared references and a restored item survive the delayed orphan sweep.
+  items.delete('personal-item')
+  items.set('shared-reference', { imageFileId: firstFileId })
+  currentTime += SESSION_TTL_MS + 1
+  await lifecycle.retryDue()
+  assert.equal(sessions.get(first.captureId).status, 'retained')
+  items.delete('shared-reference')
+  currentTime += SESSION_TTL_MS + 1
+  await lifecycle.retryDue()
+  assert.ok(sessions.get(first.captureId).orphanObservedAt)
+  items.set('undo-restored', { imageFileId: firstFileId })
+  currentTime += SESSION_TTL_MS + 1
+  await lifecycle.retryDue()
+  assert.equal(sessions.get(first.captureId).orphanObservedAt, 0)
+  items.delete('undo-restored')
+  currentTime += SESSION_TTL_MS + 1
+  await lifecycle.retryDue()
+  currentTime += SESSION_TTL_MS + 1
+  await lifecycle.retryDue()
+  assert.equal(sessions.get(first.captureId).status, 'deleted')
+  assert.equal(storageFiles.has(firstFileId), false)
+  await assert.rejects(lifecycle.completeRecognition('owner-a', first.captureId, true))
 
   const disabledClient = createCaptureImageClient({ enabled: false })
   await assert.rejects(

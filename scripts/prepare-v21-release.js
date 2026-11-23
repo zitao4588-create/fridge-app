@@ -2,6 +2,7 @@
 const fs = require('fs')
 const path = require('path')
 
+const vps = process.argv.includes('--v2.3')
 const root = path.resolve(__dirname, '..')
 const destination = path.resolve(process.argv[2] || '')
 if (!process.argv[2] || destination === root || fs.existsSync(destination)) {
@@ -37,6 +38,7 @@ function replaceOnce(source, oldText, nextText) {
 let form = fs.readFileSync(path.join(root, 'pkg-add/item-form/item-form.js'), 'utf8')
 form = replaceOnce(form, "const captureImageService = require('../../services/captureImageService')\n", '')
 form = replaceOnce(form, "const {\n  validateConfirmationForm,\n} = require('../../utils/captureConfirmation')\n", '')
+form = replaceOnce(form, "    this.recognizedEntry = options.entry === 'recognizedPhoto'\n", '')
 form = replaceOnce(form, '    this.bindRecognitionPreset()\n', '')
 form = replaceOnce(form, "    const isPhotoFallback = options.entry === 'photoFallback'\n", '')
 form = replaceOnce(form, "      entryNotice: isPhotoFallback\n        ? '照片没有上传或保存，识别也没有伪装成功。请手动填写并确认食材信息。'\n        : '',\n", '')
@@ -56,16 +58,17 @@ form = replaceOnce(form, '    let itemSaved = false\n', '')
 const submitStart = form.indexOf('      .then((result) => {', form.indexOf('  handleSubmit()'))
 if (submitStart < 0 || !form.endsWith('  },\n})\n')) throw new Error('Missing capture save boundary')
 form = form.slice(0, submitStart) + `      .then(() => {
+        this.saved = true
         if (!this.data.isEdit) rememberRecentFood(formToSave)
         wx.hideLoading()
         this.setData({ saving: false })
         wx.showToast({ title: '已保存', icon: 'success' })
         setTimeout(() => wx.navigateBack(), 400)
       })
-      .catch(() => {
+      .catch((error) => {
         wx.hideLoading()
         this.setData({ saving: false })
-        wx.showToast({ title: '保存失败', icon: 'none' })
+        wx.showToast({ title: error && error.code === 'ITEM_CHANGED' ? '库存已变动，请重新打开核对' : '保存失败', icon: 'none' })
       })
   },
 })
@@ -88,11 +91,12 @@ about = replaceOnce(about,
   '当前只提供一图一件的非生成式文字候选，所有结果都要由你确认后才能保存。暂不开放生成式视觉、AI 菜谱、条形码扫描、支付会员、登录页或社区功能；后续新增能力会先确认主体资质、微信类目和隐私边界。',
   'v2.1 提供手动录入、临期查看和私有家庭共享，重点完善库存权限、加载恢复与问题反馈。拍照识别、AI 菜谱、条形码扫描、支付会员、登录页和社区功能尚未开放。')
 let template = fs.readFileSync(path.join(root, 'pkg-add/item-form/item-form.wxml'), 'utf8')
-template = replaceOnce(template, '    <view wx:if="{{entryNotice}}" class="entry-notice" aria-role="alert">\n      <text class="entry-notice-title">已安全转为手动填写</text>\n      <text class="entry-notice-copy">{{entryNotice}}</text>\n    </view>\n\n', '')
+template = replaceOnce(template, '    <view wx:if="{{entryNotice}}" class="entry-notice" aria-role="alert">\n      <text class="entry-notice-title">请核对录入信息</text>\n      <text class="entry-notice-copy">{{entryNotice}}</text>\n    </view>\n\n', '')
 
 const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json')))
 app.subPackages = [{ root: 'pkg-add', pages: ['item-form/item-form'] }]
 const config = JSON.parse(fs.readFileSync(path.join(root, 'project.config.json')))
+config.miniprogramRoot = './'
 config.projectname = 'fridge-v2.1-release'
 config.setting.packNpmManually = false
 config.setting.packNpmRelationList = []
@@ -103,9 +107,15 @@ config.packOptions = { ignore: [
 ], include: [] }
 
 fs.mkdirSync(destination, { recursive: true })
-for (const entry of ['app.js', 'app.wxss', 'sitemap.json', 'pages', 'custom-tab-bar', 'images', 'styles', 'pkg-add/item-form', 'cloudfunctions/familyInventory']) copy(entry)
+for (const entry of ['app.js', 'app.wxss', 'sitemap.json', 'pages', 'custom-tab-bar', 'images', 'styles', 'pkg-add/item-form', ...(vps ? [] : ['cloudfunctions/familyInventory'])]) copy(entry)
 for (const name of ['itemService', 'familyService', 'reminderService']) copy(`services/${name}.js`)
 for (const name of ['constants', 'date', 'foodLexicon', 'inventory', 'inventoryLoadState', 'familyOutcome', 'mealRadar', 'status', 'visualAssets']) copy(`utils/${name}.js`)
+for (const [file, from, to] of [
+  ['pages/privacy/privacy.wxml', '仅在主动选图后上传图片供文字识别，候选须手动确认；临时图片会清理，主动保留的图片随食材保存，失去库存引用后延迟清理', '不开放拍照识别入口'],
+  ['pages/features/features.wxml', '可主动拍照或选一张图片生成文字候选，需手动核对。', '当前提供手动录入，拍照识别关闭。'],
+]) {
+  write(file, replaceOnce(fs.readFileSync(path.join(destination, file), 'utf8'), from, to))
+}
 write('app.json', JSON.stringify(app, null, 2) + '\n')
 write('project.config.json', JSON.stringify(config, null, 2) + '\n')
 write('pages/index/index.js', home)
@@ -113,4 +123,15 @@ write('pages/about/about.wxml', about)
 write('pkg-add/item-form/item-form.js', form)
 write('pkg-add/item-form/item-form.wxml', template)
 write('RELEASE_NOTES.md', '# 冰箱小雷达 2.1.0\n\n改善库存权限确认、加载失败恢复、家庭消耗撤销和问题反馈；清空库存移至关于页的数据管理。此版本不开放拍照或OCR。\n\n该目录由 scripts/prepare-v21-release.js 从当前工作区生成；原V3候选保留。仅familyInventory需要单独部署，提醒云函数不在本次目录中。\n')
-console.log(JSON.stringify({ destination, version: '2.1.0', captureEnabled: false }))
+if (vps) {
+  const overlay = path.join(root, 'release/vps')
+  for (const name of ['app.js', ...fs.readdirSync(path.join(overlay, 'services')).map(file => 'services/' + file)]) {
+    write(name, fs.readFileSync(path.join(overlay, name)))
+  }
+  config.projectname = 'fridge-v2.3-release'
+  delete config.cloudfunctionRoot
+  write('project.config.json', JSON.stringify(config, null, 2) + '\n')
+  write('pages/about/about.wxml', about.replace('v2.1 提供', 'v2.3 提供'))
+  write('RELEASE_NOTES.md', '# 冰箱小雷达 2.3.0 本地候选\n\n使用 VPS 库存接口。拍照识别关闭。\n')
+}
+console.log(JSON.stringify({ destination, version: vps ? '2.3.0' : '2.1.0', captureEnabled: false }))

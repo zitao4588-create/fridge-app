@@ -37,7 +37,7 @@
   <view class="feature-card">
     <text class="feature-name">临期提醒</text>
     <text class="feature-label">是什么</text>
-    <text class="feature-text">根据你录入的过期日期，在首页和日历页展示快过期、已过期食材，并可通过订阅消息做每日汇总提醒。</text>
+    <text class="feature-text">根据你录入的过期日期，在首页和日历页展示快过期、已过期食材，并可通过订阅消息做每日汇总提醒。家庭提醒只发给主动允许订阅且仍在家庭中的成员，每人每天最多一条。</text>
     <text class="feature-label">怎么用</text>
     <text class="feature-text">添加或编辑食材时填写保质期或过期日期，日历页会自动标记到期日。</text>
     <text class="feature-label">不会做什么</text>
@@ -59,10 +59,12 @@
     <text class="feature-label">是什么</text>
     <text class="feature-text">个人库存按当前微信账号隔离；加入家庭后，仅受邀成员可以共同访问家庭库存。</text>
     <text class="feature-label">怎么用</text>
-    <text class="feature-text">你可以随时编辑、删除单条食材，也可以在首页清空全部食品数据。</text>
+    <text class="feature-text">你可以随时编辑、删除单条食材，也可以在「菜谱 → 关于冰箱小雷达 → 数据管理」清空当前库存。</text>
     <text class="feature-label">不会做什么</text>
-    <text class="feature-text">不会开放登录页、支付会员、UGC 社区、拍照识别或 AI 菜谱。</text>
+    <text class="feature-text">可主动拍照或选一张图片生成文字候选，需手动核对。未开放登录页、支付会员、UGC 社区或 AI 菜谱。</text>
   </view>
+
+
 
   <view class="features-footer" bindtap="handleOpenPrivacy" aria-role="button">查看隐私与数据说明</view>
 </view>

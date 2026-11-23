@@ -53,6 +53,9 @@ Page({
       .refreshFamilyState()
       .then((state) => {
         const patch = { state, loading: false }
+        if (this.preparedInvite && (this.preparedInvite.family !== state?.family.id || this.preparedInvite.expiresAt <= Date.now())) {
+          Object.assign(patch, { inviteCode: '', inviteExpiresText: '' })
+        }
         if (state && state.migrationPending) {
           patch.operationResult = buildFamilyOutcome(
             FAMILY_OUTCOME_KEYS.MIGRATION_PENDING,
@@ -188,26 +191,40 @@ Page({
       })
   },
 
+  async handlePrepareInvite() {
+    const state = this.data.state
+    if (!state || state.membership.role !== 'owner' || this.data.operating) return
+    this.setData({ operating: true, pageError: '' })
+    try {
+      const invite = await familyService.createInvite()
+      if (this.data.state?.family.id !== state.family.id) return
+      this.preparedInvite = { ...invite, family: state.family.id }
+      this.setData({ inviteCode: invite.inviteCode, inviteExpiresText: formatExpireTime(invite.expiresAt) })
+      clearTimeout(this.inviteTimer)
+      this.inviteTimer = setTimeout(() => {
+        this.setData({ inviteCode: '', inviteExpiresText: '' })
+      }, Math.max(0, invite.expiresAt - Date.now()))
+    } catch (error) {
+      this.setData({ pageError: error.message || '邀请生成失败，请重试' })
+    } finally {
+      this.setData({ operating: false })
+    }
+  },
+
+  onUnload() {
+    clearTimeout(this.inviteTimer)
+  },
+
   onShareAppMessage() {
-    if (!this.data.state || this.data.state.membership.role !== 'owner') {
+    const invite = this.preparedInvite
+    if (!this.data.inviteCode || !invite || this.data.state?.membership.role !== 'owner' ||
+        invite.family !== this.data.state.family.id || invite.expiresAt <= Date.now()) {
       return { title: '冰箱小雷达', path: '/pages/index/index', imageUrl: SHARE_IMAGE }
     }
-
     return {
-      title: `加入「${this.data.state.family.name}」一起管理冰箱`,
-      path: '/pages/family/family',
+      title: `加入「${invite.familyName}」一起管理冰箱`,
+      path: `/pages/family/family?invite=${encodeURIComponent(invite.inviteCode)}`,
       imageUrl: SHARE_IMAGE,
-      promise: familyService.createInvite().then((invite) => {
-        this.setData({
-          inviteCode: invite.inviteCode,
-          inviteExpiresText: formatExpireTime(invite.expiresAt),
-        })
-        return {
-          title: `加入「${invite.familyName}」一起管理冰箱`,
-          path: `/pages/family/family?invite=${encodeURIComponent(invite.inviteCode)}`,
-          imageUrl: SHARE_IMAGE,
-        }
-      }),
     }
   },
 

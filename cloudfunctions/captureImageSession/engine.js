@@ -201,8 +201,19 @@ function createImageLifecycle(dependencies = {}) {
     const cleanupReason = normalizeCleanupReason(options.reason)
     const cleanupStartedAt = now()
 
+    if (session.status === 'cleanup_pending' && session.cleanupToken && session.leaseUntil > cleanupStartedAt) {
+      throw createLifecycleError('CLEANUP_IN_PROGRESS', '清理正在进行', true)
+    }
+    const cleanupToken = crypto.randomBytes(16).toString('hex')
+    const expected = { status: session.status }
+    if (session.cleanupToken) expected.cleanupToken = session.cleanupToken
+    await sessions.transition(session._id, expected, {
+      status: 'cleanup_pending', cleanupReason, cleanupToken, leaseUntil: cleanupStartedAt + 60000,
+    })
+    const advance = patch => sessions.transition(session._id, { status: 'cleanup_pending', cleanupToken }, patch)
+
     async function failCleanup(lastErrorCode) {
-      await sessions.update(session._id, {
+      await advance({
         status: 'cleanup_failed',
         retryCount: Number(session.retryCount || 0) + 1,
         lastErrorCode,
@@ -231,7 +242,7 @@ function createImageLifecycle(dependencies = {}) {
       }
 
       if (staged && staged.missing === true) {
-        await sessions.update(session._id, {
+        await advance({
           status: 'deleted',
           deletedAt: cleanupStartedAt,
           cleanupReason,
@@ -248,7 +259,7 @@ function createImageLifecycle(dependencies = {}) {
       }
 
       recoverySourcePending = true
-      await sessions.update(session._id, {
+      await advance({
         status: 'cleanup_pending',
         cleanupReason,
         cleanupStartedAt,
@@ -259,7 +270,7 @@ function createImageLifecycle(dependencies = {}) {
       })
     }
 
-    await sessions.update(session._id, {
+    await advance({
       status: 'cleanup_pending',
       cleanupReason,
       cleanupStartedAt,
@@ -285,7 +296,7 @@ function createImageLifecycle(dependencies = {}) {
       ) {
         return failCleanup('STORAGE_RECOVERY_MISMATCH')
       }
-      await sessions.update(session._id, {
+      await advance({
         recoverySourcePending: false,
         recoverySourceRemovedAt: now(),
       })
@@ -293,7 +304,7 @@ function createImageLifecycle(dependencies = {}) {
 
     try {
       await storage.delete(fileId)
-      await sessions.update(session._id, {
+      await advance({
         status: 'deleted',
         deletedAt: now(),
         fileId: '',
@@ -360,7 +371,7 @@ function createImageLifecycle(dependencies = {}) {
       )
     }
 
-    await sessions.update(session._id, {
+    await sessions.transition(session._id, { status: session.status }, {
       fileId,
       status: 'uploaded',
       imageType,
@@ -412,13 +423,13 @@ function createImageLifecycle(dependencies = {}) {
 
   async function markRecognizing(openid, captureId) {
     const session = await getOwnedSession(openid, captureId)
-    if (session.status !== 'uploaded') {
+    if (session.status !== 'uploaded' || !session.fileId || session.cleanupAfter <= now()) {
       throw createLifecycleError(
         'CAPTURE_NOT_READY',
         '图片当前不能识别，请重新选择',
       )
     }
-    await sessions.update(session._id, {
+    await sessions.transition(session._id, { status: 'uploaded' }, {
       status: 'recognizing',
       recognizingAt: now(),
     })
@@ -426,8 +437,9 @@ function createImageLifecycle(dependencies = {}) {
 
   async function completeRecognition(openid, captureId, succeeded) {
     const session = await getOwnedSession(openid, captureId)
+    if (session.status !== 'recognizing') throw createLifecycleError('CAPTURE_NOT_READY', '本次识别已结束')
     if (succeeded) {
-      await sessions.update(session._id, {
+      await sessions.transition(session._id, { status: 'recognizing' }, {
         status: 'uploaded',
         recognizedAt: now(),
         lastErrorCode: '',
@@ -511,7 +523,30 @@ function createImageLifecycle(dependencies = {}) {
         failed += 1
       }
     }
-    return { scanned: due.length, deleted, failed }
+    const retained = await sessions.findRetained(now(), Math.max(1, Math.min(50, limit)))
+    for (const session of retained) {
+      try {
+        if (!session.fileId || !isExpectedFileId(session.fileId, session.cloudPath)) {
+          failed += 1
+          continue
+        }
+        const referenced = await items.referencesImage(session.fileId)
+        const expected = { status: 'retained', cleanupAfter: session.cleanupAfter }
+        if (referenced || !session.orphanObservedAt || now() - session.orphanObservedAt < SESSION_TTL_MS) {
+          await sessions.transition(session._id, expected, {
+            orphanObservedAt: referenced ? 0 : session.orphanObservedAt || now(),
+            cleanupAfter: now() + SESSION_TTL_MS,
+          })
+          continue
+        }
+        await sessions.transition(session._id, expected, { status: 'cleanup_pending', cleanupToken: '', leaseUntil: 0 })
+        await cleanupRecord({ ...session, status: 'cleanup_pending', cleanupToken: '' }, { reason: 'expired' })
+        deleted += 1
+      } catch (error) {
+        failed += 1
+      }
+    }
+    return { scanned: due.length + retained.length, deleted, failed }
   }
 
   return {

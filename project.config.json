@@ -220,7 +220,7 @@
   "libVersion": "3.15.2",
   "appid": "wx328e2b87665508e7",
   "projectname": "fridge-miniapp",
-  "miniprogramRoot": "./",
+  "miniprogramRoot": ".release/v2.3.0/",
   "cloudfunctionRoot": "cloudfunctions/",
   "condition": {},
   "simulatorPluginLibVersion": {},

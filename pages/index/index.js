@@ -3,6 +3,10 @@ const { CATEGORY_OPTIONS, HOME_ZONE_DEFINITIONS } = require('../../utils/constan
 const { addDays, formatDate, getTodayString } = require('../../utils/date')
 const { getStarterFoodEntries } = require('../../utils/foodLexicon')
 const {
+  getConsumptionType,
+  getQuantityAfterConsumption,
+} = require('../../utils/inventory')
+const {
   buildInventoryErrorState,
   buildInventoryLoadingState,
   buildInventoryResultState,
@@ -44,6 +48,51 @@ function decorateItem(item) {
   }
 }
 
+// 详情面板「用掉」按钮文案：只根据本地数据预告语义，真正结果以服务返回的 type 为准。
+// 本产品不用「个、盒、瓶」等单位词，所以用「数量减 1」表达。
+function buildConsumeAction(item) {
+  if (getConsumptionType(item || {}) === 'decrease') {
+    return {
+      consumeActionText: '用掉，数量减 1',
+      consumeActionLabel: '用掉，数量减 1，可撤销',
+    }
+  }
+
+  return {
+    consumeActionText: '用完，移出库存',
+    consumeActionLabel: '用完，把这样食材移出库存，可撤销',
+  }
+}
+
+// 用服务返回的信息计算剩余数量：家庭模式云函数返回事务内读到的 quantityBefore，
+// 个人模式返回扣减前刚从数据库读到的 item。都拿不到时返回 null，不显示可能错的数字。
+function getRemainingQuantity(consumption) {
+  if (!consumption || consumption.type !== 'decrease') return null
+
+  const before = Number(consumption.quantityBefore)
+  if (Number.isInteger(before) && before > 1) {
+    return getQuantityAfterConsumption({ quantityTracked: true, quantity: before })
+  }
+
+  const item = consumption.item
+  if (item && item.quantityTracked === true && getConsumptionType(item) === 'decrease') {
+    return getQuantityAfterConsumption(item)
+  }
+
+  return null
+}
+
+function buildConsumeMessage(consumption, name) {
+  if (consumption && consumption.type === 'decrease') {
+    const remaining = getRemainingQuantity(consumption)
+    return remaining === null
+      ? `已用掉「${name}」，数量减 1`
+      : `已用掉「${name}」1，剩余 ${remaining}`
+  }
+
+  return `已将「${name}」移出库存`
+}
+
 function buildStats(items) {
   return {
     total: items.length,
@@ -80,6 +129,11 @@ function getZoneItems(items, zone) {
   return items.filter((item) => locations.includes(item.storageLocation))
 }
 
+function homeRadarView(items) {
+  const { levelClass, title, actionText } = buildHomeRadar(items)
+  return { levelClass, title, actionText }
+}
+
 function buildHomeZones(items) {
   return HOME_ZONE_DEFINITIONS.map((zone) => {
     const zoneItems = getZoneItems(items, zone)
@@ -92,7 +146,9 @@ function buildHomeZones(items) {
       itemCount: zoneItems.length,
       expiring,
       overdue,
-      items: zoneItems,
+      items: zoneItems.map(({ _id, name, quantityText, thumbImage, bucket, statusLabel, statusHint, expireDateText }) => ({
+        _id, name, quantityText, thumbImage, bucket, statusLabel, statusHint, expireDateText,
+      })),
     }
   })
 }
@@ -183,10 +239,10 @@ Page({
     inventoryHasSnapshot: false,
     inventoryView: buildInventoryLoadingState(false),
     homeMood: buildMood(null),
-    homeRadar: buildHomeRadar([]),
+    homeRadar: homeRadarView([]),
     itemCount: 0,
     homeZones: [],
-    starterFoods: buildStarterFoods([]),
+    starterFoods: [],
     selectedStarterKeys: [],
     starterSaving: false,
     noticeMessage: '',
@@ -266,9 +322,9 @@ Page({
         const patch = {
           itemCount: allItems.length,
           homeMood: buildMood(buildStats(allItems)),
-          homeRadar: buildHomeRadar(allItems),
+          homeRadar: homeRadarView(allItems),
           homeZones: buildHomeZones(allItems),
-          starterFoods: buildStarterFoods(this.data.selectedStarterKeys),
+          starterFoods: allItems.length ? [] : buildStarterFoods(this.data.selectedStarterKeys),
           loading: false,
           inventoryHasSnapshot: true,
           inventoryView: buildInventoryResultState(result),
@@ -295,7 +351,7 @@ Page({
           Object.assign(patch, {
             itemCount: 0,
             homeMood: buildMood(null),
-            homeRadar: buildHomeRadar(allItems),
+            homeRadar: homeRadarView(allItems),
             homeZones: buildHomeZones(allItems),
           })
 
@@ -323,7 +379,7 @@ Page({
       inventoryHasSnapshot: false,
       itemCount: 0,
       homeZones: [],
-      homeRadar: buildHomeRadar([]),
+      homeRadar: homeRadarView([]),
       homeMood: buildMood(null),
       listPanelVisible: false,
       listPanelGroups: [],
@@ -468,6 +524,14 @@ Page({
     })
   },
 
+  // 长按拖动后的「吞掉一次点击」只针对同一次触摸：
+  // 长按 → 标记；该次手势的 touchend/touchcancel 之后若紧跟 tap 就吞掉；
+  // 下一次手势一开始（touchstart）无条件清除，避免把用户下一次正常点击吞掉。
+  // 微信在触发 longpress 后通常不再派发 tap，所以不能指望 tap 来复位。
+  handleFoodTouchStart() {
+    this.suppressFoodTap = false
+  },
+
   handleFoodTap(event) {
     if (this.suppressFoodTap) {
       this.suppressFoodTap = false
@@ -476,7 +540,10 @@ Page({
 
     const food = (this.inventoryItems || []).find((item) => item._id === event.currentTarget.dataset.id)
     if (food) {
-      this.setData({ selectedFood: food, foodDetailVisible: true })
+      this.setData({
+        selectedFood: { ...food, ...buildConsumeAction(food) },
+        foodDetailVisible: true,
+      })
       this.setTabBar({ hidden: true })
     }
   },
@@ -490,6 +557,7 @@ Page({
     if (!food || !point || this.data.consuming) return
 
     this.suppressFoodTap = true
+    this.lastDragPaint = 0
     wx.createSelectorQuery()
       .select('.consume-tray')
       .boundingClientRect((rect) => {
@@ -520,6 +588,9 @@ Page({
         point.clientY <= rect.bottom,
     )
 
+    const now = Date.now()
+    if (now - this.lastDragPaint < 16 && dragOverTray === this.data.dragOverTray) return
+    this.lastDragPaint = now
     this.setData({
       dragX: point.clientX,
       dragY: point.clientY,
@@ -563,12 +634,8 @@ Page({
       .then((consumption) => {
         if (viewRequestId !== this.inventoryLoadRequestId) return
         this.lastConsumption = consumption
-        const message =
-          consumption.type === 'decrease'
-            ? `已用掉「${food.name}」1，剩余 ${Number(food.quantity) - 1}`
-            : `已将「${food.name}」移出库存`
-
-        this.showNotice(message, { undoConsume: true })
+        // 剩余数量来自服务返回值，不用点击前本地的旧数量（多人同时操作时会错）。
+        this.showNotice(buildConsumeMessage(consumption, food.name), { undoConsume: true })
         return this.loadItems()
       })
       .catch(() => {
@@ -600,6 +667,20 @@ Page({
       .finally(() => {
         this.setData({ consuming: false })
       })
+  },
+
+  // 详情面板「用掉」按钮：与拖到餐盘走同一个 consumeFood（同一套消耗与撤销）。
+  handleDetailConsume() {
+    const selected = this.data.selectedFood
+    if (!selected || this.data.consuming) return
+
+    const food = (this.inventoryItems || []).find((item) => item._id === selected._id)
+    if (!food) return
+
+    // 先收起面板，让页面底部的结果提示和「撤销」可见。
+    this.setData({ foodDetailVisible: false, selectedFood: null })
+    this.setTabBar({ hidden: this.data.listPanelVisible })
+    this.consumeFood(food)
   },
 
   handleCloseFoodDetail() {

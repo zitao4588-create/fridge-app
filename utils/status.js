@@ -21,10 +21,25 @@ const STATUS_META = {
     label: '正常',
     className: 'status-normal',
   },
+  // 历史数据里可能有空的或格式不规范的到期日：不当成今天到期，也不报错，
+  // 沿用正常态样式，只把文案降级为「日期待补」。
+  unknown: {
+    label: '日期待补',
+    className: 'status-normal',
+  },
 }
 
 function getExpiryStatus(expireDate) {
   const diffDays = getDaysUntil(expireDate)
+
+  if (!Number.isFinite(diffDays)) {
+    return {
+      key: 'unknown',
+      days: null,
+      hint: '未设置有效到期日',
+      ...STATUS_META.unknown,
+    }
+  }
 
   if (diffDays < 0) {
     return {

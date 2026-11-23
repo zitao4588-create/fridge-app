@@ -27,8 +27,8 @@
   },
   "tabBar": {
     "custom": true,
-    "color": "#8FA39A",
-    "selectedColor": "#159A5B",
+    "color": "#63746B",
+    "selectedColor": "#087A49",
     "backgroundColor": "#FFFEF8",
     "borderStyle": "white",
     "list": [

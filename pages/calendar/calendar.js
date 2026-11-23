@@ -28,13 +28,19 @@ function decorate(item) {
   const status = getExpiryStatus(item.expireDate)
 
   return {
-    ...item,
+    _id: item._id, name: item.name, category: item.category,
+    storageLocation: item.storageLocation, expireDate: item.expireDate,
     expireDateText: formatDate(item.expireDate),
     statusLabel: status.label,
     statusHint: status.hint,
     statusClass: status.className,
     bucket: bucketOf(item.expireDate),
   }
+}
+
+function calendarRadar(items) {
+  const { overdueItems, priorityItems, ...score } = buildMealRadar(items)
+  return { ...score, priorityItems: priorityItems.map(({ _id, name }) => ({ _id, name })) }
 }
 
 function buildStats(items) {
@@ -67,8 +73,6 @@ Page({
       explanation: '基于库存、临期和过期风险计算',
       priorityItems: [],
     },
-    allItems: [],
-    events: {},
     listPanelVisible: false,
     listPanelTitle: '',
     listPanelSubtitle: '',
@@ -144,11 +148,11 @@ Page({
         const items = result.items || []
         const allItems = items.map(decorate)
         const events = reminderService.getCalendarEvents(allItems)
+        this.inventoryItems = allItems
+        this.calendarEvents = events
         const patch = {
-          allItems,
-          events,
           stats: buildStats(allItems),
-          radar: buildMealRadar(allItems),
+          radar: calendarRadar(items),
           loading: false,
           inventoryHasSnapshot: true,
           inventoryView: buildInventoryResultState(result),
@@ -175,10 +179,8 @@ Page({
           this.clearInventorySnapshot()
           const allItems = []
           Object.assign(patch, {
-            allItems,
-            events: {},
             stats: buildStats(allItems),
-            radar: buildMealRadar(allItems),
+            radar: calendarRadar(allItems),
             selectedItems: [],
           })
 
@@ -200,14 +202,14 @@ Page({
 
   clearInventorySnapshot() {
     this.panelType = null
+    this.inventoryItems = []
+    this.calendarEvents = {}
     this.setData({
       inventoryHasSnapshot: false,
-      allItems: [],
-      events: {},
       days: [],
       selectedItems: [],
       stats: buildStats([]),
-      radar: buildMealRadar([]),
+      radar: calendarRadar([]),
       listPanelVisible: false,
       listPanelItems: [],
       listPanelTitle: '',
@@ -216,7 +218,7 @@ Page({
     this.setTabBar({ hidden: false })
   },
 
-  renderCalendar(events = this.data.events) {
+  renderCalendar(events = this.calendarEvents || {}) {
     const today = getTodayString()
     const days = buildMonthDays(
       this.data.year,
@@ -231,7 +233,7 @@ Page({
     })
   },
 
-  updateSelectedItems(date, events = this.data.events) {
+  updateSelectedItems(date, events = this.calendarEvents || {}) {
     this.setData({
       selectedDate: date,
       selectedDateText: formatDate(date),
@@ -265,7 +267,7 @@ Page({
   },
 
   buildListPanel(type, items) {
-    const source = items || this.data.allItems
+    const source = items || this.inventoryItems || []
     const matched =
       type === 'expiring'
         ? source.filter((item) => item.bucket === 'expiring')
@@ -286,7 +288,7 @@ Page({
   handleStatsTap(event) {
     const type = event.currentTarget.dataset.type || 'total'
     this.panelType = type
-    this.setData(this.buildListPanel(type, this.data.allItems))
+    this.setData(this.buildListPanel(type, this.inventoryItems || []))
     this.setTabBar({ hidden: true })
   },
 

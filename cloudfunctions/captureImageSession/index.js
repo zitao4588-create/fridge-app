@@ -78,11 +78,18 @@ function createRepositories() {
           (session) => session ? { _id: captureId, ...session } : null,
         )
       },
-      update(captureId, patch) {
-        return db
-          .collection(SESSION_COLLECTION)
-          .doc(captureId)
-          .update({ data: patch })
+      async transition(captureId, expected, patch) {
+        const result = await db.collection(SESSION_COLLECTION)
+          .where({ _id: captureId, ...expected }).update({ data: patch })
+        if (result.stats.updated !== 1) throw createLifecycleError('CAPTURE_STATE_INVALID', '图片状态已变化，请刷新', true)
+      },
+      async findRetained(now, limit) {
+        const collection = db.collection(SESSION_COLLECTION)
+        const legacy = (await collection.where({ status: 'retained', cleanupAfter: null }).limit(limit).get()).data
+        if (legacy.length === limit) return legacy
+        const due = await collection.where({ status: 'retained', cleanupAfter: _.lte(now) })
+          .orderBy('cleanupAfter', 'asc').limit(limit - legacy.length).get()
+        return [...new Map([...legacy, ...due.data].map(row => [row._id, row])).values()]
       },
       findDue(now, limit) {
         return db
@@ -111,6 +118,10 @@ function createRepositories() {
       ...cleanupStorage,
     },
     items: {
+      async referencesImage(fileId) {
+        const rows = await db.collection('items').where({ imageFileId: fileId }).limit(1).get()
+        return rows.data.length > 0
+      },
       get(itemId) {
         return getDocumentOrNull('items', itemId)
       },
@@ -199,7 +210,7 @@ function createRepositories() {
               status: 'retained',
               itemId: payload.itemId,
               retainedAt: payload.retainedAt,
-              cleanupAfter: null,
+              cleanupAfter: payload.retainedAt + 86400000,
               lastErrorCode: '',
             },
           })

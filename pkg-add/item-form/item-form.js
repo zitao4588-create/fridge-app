@@ -6,7 +6,11 @@ const {
   normalizeStorageLocation,
   STORAGE_LOCATION_OPTIONS,
 } = require('../../utils/constants')
-const { calculateExpireDate, getTodayString } = require('../../utils/date')
+const {
+  calculateExpireDate,
+  getTodayString,
+  isValidDateString,
+} = require('../../utils/date')
 const { getFoodSuggestion, getRecommendedStorageLocation } = require('../../utils/foodLexicon')
 const {
   validateConfirmationForm,
@@ -28,8 +32,26 @@ const emptyForm = {
 const emptyErrors = {
   name: '',
   quantity: '',
+  productionDate: '',
   shelfLifeDays: '',
   expireDate: '',
+}
+
+// 记录用户亲手改过（或从入口/最近常加/识别候选明确带入）的字段：
+// 词库只补这里为 false 的字段，不再静默覆盖用户的输入。
+const emptyManualFields = {
+  category: false,
+  storageLocation: false,
+  productionDate: false,
+  shelfLifeDays: false,
+  expireDate: false,
+}
+const allManualFields = {
+  category: true,
+  storageLocation: true,
+  productionDate: true,
+  shelfLifeDays: true,
+  expireDate: true,
 }
 const SHARE_TITLE = '冰箱小雷达：记录食材，到期不忘'
 const SHARE_PATH = '/pages/index/index'
@@ -83,35 +105,110 @@ function buildRecommendationState(form, smartRecommendEnabled, locationOptions) 
   }
 }
 
+// production 模式的到期日是「算出来的」：生产日或保质期任一为空 / 无效时返回空串，
+// 绝不沿用旧值，避免界面显示一个用户没确认过的日期。
+function getComputedExpireDate(form) {
+  return calculateExpireDate(form.productionDate, form.shelfLifeDays)
+}
+
+// expire 模式的到期日是用户自己选的，单独存在 expireModeDate 里，切模式不会互相覆盖。
+function resolveExpireDate(form, dateMode, expireModeDate) {
+  return dateMode === 'expire' ? expireModeDate || '' : getComputedExpireDate(form)
+}
+
+// 已有的生产日 + 保质期能精确算出已存的到期日时才进 production 模式，
+// 否则（历史数据、识别候选只给了到期日）用 expire 模式原样展示已存到期日。
+function getInitialDateMode(form) {
+  const computed = getComputedExpireDate(form)
+
+  return computed && computed === form.expireDate ? 'production' : 'expire'
+}
+
+function joinHintParts(parts) {
+  if (parts.length <= 1) return parts.join('')
+
+  return `${parts.slice(0, -1).join('、')}和${parts[parts.length - 1]}`
+}
+
 function buildLexiconState(form, options = {}) {
   const suggestion = getFoodSuggestion(form.name)
+  const dateMode = options.dateMode || 'production'
 
   if (!suggestion) {
-    return { form, lexiconHint: '', matched: false }
+    return { form, lexiconHint: '', matched: false, dateMode }
   }
 
+  const manual = options.manualFields || emptyManualFields
   const inputName = String(form.name || '').trim()
   const shouldUseSuggestionName = /^[a-z0-9]+$/i.test(inputName)
-  const productionDate = form.productionDate || options.today || getTodayString()
-  const shelfLifeDays = String(suggestion.shelfLifeDays)
-  const expireDate = calculateExpireDate(productionDate, shelfLifeDays)
+  const suggestedDays = String(suggestion.shelfLifeDays)
+  // 用户已在「直接选过期日」里手选了到期日：日期相关字段一律不动，只给建议。
+  const keepDateFields = dateMode === 'expire' && manual.expireDate
   const nextForm = {
     ...form,
     name: shouldUseSuggestionName ? suggestion.name : form.name,
-    category: suggestion.category,
-    productionDate,
-    shelfLifeDays,
-    expireDate: expireDate || form.expireDate,
+  }
+  const applied = []
+  const suggested = []
+  let nextDateMode = dateMode
+
+  if (!manual.category) {
+    nextForm.category = suggestion.category
+    applied.push('品类')
+  } else if (form.category !== suggestion.category) {
+    suggested.push(`品类「${suggestion.category}」`)
   }
 
-  if (!options.keepStorageLocation) {
+  if (keepDateFields) {
+    if (String(form.shelfLifeDays) !== suggestedDays) {
+      suggested.push(`${suggestedDays}天保质期`)
+    }
+  } else {
+    if (!nextForm.productionDate && !manual.productionDate) {
+      nextForm.productionDate = options.today || getTodayString()
+      applied.push('今天为生产日')
+    }
+
+    if (!manual.shelfLifeDays) {
+      nextForm.shelfLifeDays = suggestedDays
+      applied.push(`${suggestedDays}天保质期`)
+    } else if (String(form.shelfLifeDays) !== suggestedDays) {
+      suggested.push(`${suggestedDays}天保质期`)
+    }
+
+    nextDateMode = 'production'
+  }
+
+  if (!manual.storageLocation) {
     nextForm.storageLocation = suggestion.storageLocation
+    applied.push(suggestion.storageLocation)
+  } else if (
+    form.storageLocation !== suggestion.storageLocation &&
+    !buildRecommendationState(
+      nextForm,
+      options.smartRecommendEnabled,
+      options.locationOptions || STORAGE_LOCATION_OPTIONS,
+    ).showLocationRecommend
+  ) {
+    // 若页面已显示「推荐放…［采纳］」，这里不再重复。
+    suggested.push(`放${suggestion.storageLocation}`)
+  }
+
+  nextForm.expireDate = resolveExpireDate(nextForm, nextDateMode, options.expireModeDate)
+
+  let lexiconHint = applied.length
+    ? `已按「${suggestion.name}」预填${joinHintParts(applied)}`
+    : ''
+
+  if (suggested.length) {
+    lexiconHint += `${lexiconHint ? '；' : `「${suggestion.name}」`}建议${suggested.join('、')}`
   }
 
   return {
     form: nextForm,
-    lexiconHint: `已按「${suggestion.name}」预填品类、${suggestion.shelfLifeDays}天保质期和${suggestion.storageLocation}`,
+    lexiconHint,
     matched: true,
+    dateMode: nextDateMode,
   }
 }
 
@@ -213,6 +310,18 @@ function buildFormFromRecentFood(food, today) {
   }
 }
 
+// 保存前按当前模式收口：production 用重新算出的到期日；expire 用用户选的到期日，
+// 若隐藏的生产日 + 保质期与它对不上，就不保存那个保质期，避免下次编辑时被算回别的日期。
+function buildFormToSave(form, dateMode) {
+  if (dateMode !== 'expire') {
+    return { ...form, expireDate: getComputedExpireDate(form) }
+  }
+
+  return getComputedExpireDate(form) === form.expireDate
+    ? { ...form }
+    : { ...form, shelfLifeDays: '' }
+}
+
 Page({
   data: {
     id: '',
@@ -229,6 +338,8 @@ Page({
     lexiconHint: '',
     recentFoods: [],
     dateMode: 'production',
+    expireModeDate: '',
+    manualFields: { ...emptyManualFields },
     datePickerVisible: false,
     datePickerTarget: 'production',
     datePickerValue: getTodayString(),
@@ -240,6 +351,7 @@ Page({
   },
 
   onLoad(options) {
+    this.recognizedEntry = options.entry === 'recognizedPhoto'
     this.bindRecognitionPreset()
     if (options.id) {
       this.setData({ id: options.id, isEdit: true, smartRecommendEnabled: false })
@@ -259,14 +371,26 @@ Page({
       ...(category ? { category } : {}),
     }
     const smartRecommendEnabled = options.smartRecommend === '1'
+    // 从分区 / 品类入口带进来的值算作用户已选，词库不覆盖，只给建议。
+    const manualFields = {
+      ...emptyManualFields,
+      storageLocation: Boolean(storageLocation),
+      category: Boolean(category),
+    }
     const lexiconState = buildLexiconState(form, {
       today: this.data.today,
-      keepStorageLocation: Boolean(storageLocation),
+      manualFields,
+      dateMode: this.data.dateMode,
+      expireModeDate: this.data.expireModeDate,
+      smartRecommendEnabled,
+      locationOptions: this.data.locationOptions,
     })
 
     form = lexiconState.form
     this.setData({
       form,
+      manualFields,
+      dateMode: lexiconState.dateMode,
       smartRecommendEnabled,
       hasPresetStorageLocation: Boolean(storageLocation),
       entryNotice: isPhotoFallback
@@ -274,7 +398,6 @@ Page({
         : '',
       lexiconHint: lexiconState.lexiconHint,
       recentFoods: getRecentFoodList(),
-      ...(lexiconState.matched ? { dateMode: 'production' } : {}),
       ...buildRecommendationState(form, smartRecommendEnabled, this.data.locationOptions),
     })
 
@@ -304,6 +427,7 @@ Page({
         : null
     if (!channel || typeof channel.on !== 'function') return
     channel.on('recognizedPreset', (payload = {}) => {
+      this.recognizedEntry = true
       const validation = validateConfirmationForm(payload.preset)
       if (!validation.valid) {
         this.setData({
@@ -317,8 +441,21 @@ Page({
         ...validation.preset,
         source: 'photo',
       }
+      // 识别候选通常只给到期日：能由生产日 + 保质期精确算出时才用 production 模式，
+      // 否则切到「直接选过期日」，确保候选到期日原样可见、可保存。
+      const dateMode = getInitialDateMode(form)
       this.setData({
         form,
+        dateMode,
+        expireModeDate: form.expireDate || '',
+        manualFields: {
+          ...allManualFields,
+          category: form.category !== '其他',
+          productionDate: Boolean(form.productionDate),
+          shelfLifeDays: Boolean(form.shelfLifeDays),
+        },
+        lexiconHint: '',
+        errors: { ...emptyErrors },
         smartRecommendEnabled: false,
         captureId: String(payload.captureId || ''),
         retainImageRequested:
@@ -368,10 +505,15 @@ Page({
           storageLocation: normalizeStorageLocation(item.storageLocation),
           shelfLifeDays: item.shelfLifeDays || '',
         }
-        const dateMode =
-          form.productionDate && form.shelfLifeDays ? 'production' : 'expire'
+        const dateMode = getInitialDateMode(form)
 
-        this.setData({ form, dateMode, datePickerTarget: dateMode })
+        this.setData({
+          form,
+          dateMode,
+          datePickerTarget: dateMode,
+          expireModeDate: form.expireDate || '',
+          manualFields: { ...allManualFields },
+        })
         this.applyRecommendation(form)
       })
       .catch(() => {
@@ -406,7 +548,11 @@ Page({
       ? { form, lexiconHint: '', matched: false }
       : buildLexiconState(form, {
           today: this.data.today,
-          keepStorageLocation: this.data.hasPresetStorageLocation,
+          manualFields: this.data.manualFields,
+          dateMode: this.data.dateMode,
+          expireModeDate: this.data.expireModeDate,
+          smartRecommendEnabled: this.data.smartRecommendEnabled,
+          locationOptions: this.data.locationOptions,
         })
     const nextForm = lexiconState.form
 
@@ -414,7 +560,7 @@ Page({
       form: nextForm,
       errors,
       lexiconHint: lexiconState.lexiconHint,
-      ...(lexiconState.matched ? { dateMode: 'production' } : {}),
+      ...(lexiconState.matched ? { dateMode: lexiconState.dateMode } : {}),
       ...buildRecommendationState(
         nextForm,
         this.data.smartRecommendEnabled,
@@ -437,7 +583,14 @@ Page({
       form,
       errors: { ...emptyErrors },
       lexiconHint: `已按最近常加「${recentFood.name}」预填，可继续修改`,
-      dateMode: 'production',
+      dateMode: form.shelfLifeDays ? 'production' : 'expire',
+      expireModeDate: form.expireDate || '',
+      manualFields: {
+        ...this.data.manualFields,
+        category: true,
+        storageLocation: true,
+        shelfLifeDays: Boolean(form.shelfLifeDays),
+      },
       ...buildRecommendationState(
         form,
         this.data.smartRecommendEnabled,
@@ -474,6 +627,7 @@ Page({
 
     this.setData({
       form,
+      manualFields: { ...this.data.manualFields, category: true },
       ...buildRecommendationState(
         form,
         this.data.smartRecommendEnabled,
@@ -488,6 +642,7 @@ Page({
 
     this.setData({
       form,
+      manualFields: { ...this.data.manualFields, storageLocation: true },
       ...buildRecommendationState(
         form,
         this.data.smartRecommendEnabled,
@@ -505,31 +660,55 @@ Page({
 
     this.setData({
       form: { ...this.data.form, storageLocation },
+      manualFields: { ...this.data.manualFields, storageLocation: true },
       showLocationRecommend: false,
     })
   },
 
   handleDateModeTap(event) {
-    this.setData({ dateMode: event.currentTarget.dataset.mode })
+    const dateMode = event.currentTarget.dataset.mode
+
+    if (!dateMode || dateMode === this.data.dateMode) {
+      return
+    }
+
+    const form = this.data.form
+    let expireModeDate = this.data.expireModeDate
+
+    // 第一次切到「直接选过期日」时，把已算好的有效到期日带过去当起点（界面上可见、可改）。
+    if (dateMode === 'expire' && !expireModeDate) {
+      expireModeDate = getComputedExpireDate(form)
+    }
+
+    this.setData({
+      dateMode,
+      expireModeDate,
+      form: { ...form, expireDate: resolveExpireDate(form, dateMode, expireModeDate) },
+      errors: {
+        ...this.data.errors,
+        productionDate: '',
+        shelfLifeDays: '',
+        expireDate: '',
+      },
+    })
   },
 
   handleShelfLifeInput(event) {
     const shelfLifeDays = event.detail.value
-    const expireDate = calculateExpireDate(
-      this.data.form.productionDate,
-      shelfLifeDays,
-    )
+    const form = { ...this.data.form, shelfLifeDays }
+
+    // 只有 production 模式的到期日跟随保质期；算不出就清空，不再沿用旧日期。
+    if (this.data.dateMode !== 'expire') {
+      form.expireDate = getComputedExpireDate(form)
+    }
 
     this.setData({
-      form: {
-        ...this.data.form,
-        shelfLifeDays,
-        expireDate: expireDate || this.data.form.expireDate,
-      },
+      form,
+      manualFields: { ...this.data.manualFields, shelfLifeDays: true },
       errors: {
         ...this.data.errors,
         shelfLifeDays: '',
-        expireDate: expireDate ? '' : this.data.errors.expireDate,
+        expireDate: form.expireDate ? '' : this.data.errors.expireDate,
       },
     })
   },
@@ -554,16 +733,19 @@ Page({
       event.currentTarget.dataset.target || this.data.datePickerTarget
 
     if (datePickerTarget === 'production') {
-      const expireDate = calculateExpireDate(
-        value,
-        this.data.form.shelfLifeDays,
-      )
+      const form = { ...this.data.form, productionDate: value }
+
+      if (this.data.dateMode !== 'expire') {
+        form.expireDate = getComputedExpireDate(form)
+      }
 
       this.setData({
-        form: {
-          ...this.data.form,
-          productionDate: value,
-          expireDate: expireDate || this.data.form.expireDate,
+        form,
+        manualFields: { ...this.data.manualFields, productionDate: true },
+        errors: {
+          ...this.data.errors,
+          productionDate: '',
+          expireDate: form.expireDate ? '' : this.data.errors.expireDate,
         },
         datePickerVisible: false,
       })
@@ -572,6 +754,8 @@ Page({
 
     this.setData({
       form: { ...this.data.form, expireDate: value },
+      expireModeDate: value,
+      manualFields: { ...this.data.manualFields, expireDate: true },
       errors: { ...this.data.errors, expireDate: '' },
       datePickerVisible: false,
     })
@@ -592,18 +776,6 @@ Page({
       errors.name = '食品名称不要超过30个字'
     }
 
-    if (form.shelfLifeDays !== '') {
-      const shelfLifeDays = Number(form.shelfLifeDays)
-
-      if (
-        !Number.isFinite(shelfLifeDays) ||
-        !Number.isInteger(shelfLifeDays) ||
-        shelfLifeDays <= 0
-      ) {
-        errors.shelfLifeDays = '保质期天数需要是正整数'
-      }
-    }
-
     if (form.quantityTracked === true) {
       const quantity = Number(form.quantity)
 
@@ -612,8 +784,36 @@ Page({
       }
     }
 
-    if (!form.expireDate) {
-      errors.expireDate = '请选择过期日期'
+    if (this.data.dateMode === 'expire') {
+      // 到期日由用户自己选，保质期字段在此模式下隐藏，不参与校验。
+      if (!form.expireDate) {
+        errors.expireDate = '请选择过期日期'
+      } else if (!isValidDateString(form.expireDate)) {
+        errors.expireDate = '过期日期无效，请重新选择'
+      }
+    } else {
+      if (!form.productionDate) {
+        errors.productionDate = '请选择生产日期'
+      } else if (!isValidDateString(form.productionDate)) {
+        errors.productionDate = '生产日期无效，请重新选择'
+      }
+
+      const shelfLifeText = String(
+        form.shelfLifeDays === undefined || form.shelfLifeDays === null
+          ? ''
+          : form.shelfLifeDays,
+      ).trim()
+      const shelfLifeDays = Number(shelfLifeText)
+
+      if (!shelfLifeText) {
+        errors.shelfLifeDays = '请填写保质期天数'
+      } else if (!Number.isInteger(shelfLifeDays) || shelfLifeDays <= 0) {
+        errors.shelfLifeDays = '保质期天数需要是正整数'
+      }
+
+      if (!errors.productionDate && !errors.shelfLifeDays && !getComputedExpireDate(form)) {
+        errors.expireDate = '请选择过期日期'
+      }
     }
 
     this.setData({ errors })
@@ -622,6 +822,7 @@ Page({
   },
 
   handleSubmit() {
+    if (this.data.saving || this.saved) return
     const errorMessage = this.validateForm()
 
     if (errorMessage) {
@@ -629,7 +830,7 @@ Page({
       return
     }
 
-    const formToSave = { ...this.data.form }
+    const formToSave = buildFormToSave(this.data.form, this.data.dateMode)
     let itemSaved = false
 
     this.setData({ saving: true })
@@ -645,6 +846,7 @@ Page({
       })
       .then((result) => {
         itemSaved = true
+        this.saved = true
         if (!this.data.isEdit) {
           rememberRecentFood(formToSave)
         }
@@ -680,6 +882,7 @@ Page({
         return { imageAttached: false }
       })
       .then((outcome) => {
+        const afterSave = this.recognizedEntry ? () => wx.switchTab({ url: '/pages/index/index' }) : () => wx.navigateBack()
         wx.hideLoading()
         this.setData({
           saving: false,
@@ -693,7 +896,7 @@ Page({
             content:
               '照片保留状态暂时无法确认，服务端会话仍可继续核对和清理。',
             showCancel: false,
-            complete: () => wx.navigateBack(),
+            complete: afterSave,
           })
           return
         }
@@ -704,7 +907,7 @@ Page({
             : '已保存',
           icon: 'success',
         })
-        setTimeout(() => wx.navigateBack(), 400)
+        setTimeout(afterSave, 400)
       })
       .catch(() => {
         if (!itemSaved && this.data.captureId) {

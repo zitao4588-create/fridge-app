@@ -51,6 +51,13 @@ async function run() {
     collection(name) {
       assert.strictEqual(name, 'imageCaptureSessions')
       return {
+        where({ _id, ...expected }) {
+          return { update: async ({ data }) => {
+            if (!Object.entries(expected).every(([key, value]) => records.get(_id)?.[key] === value)) return { stats: { updated: 0 } }
+            await this.doc(_id).update({ data })
+            return { stats: { updated: 1 } }
+          } }
+        },
         doc(captureId) {
           return {
             get() {
@@ -150,19 +157,25 @@ async function run() {
     },
   )
 
-  await store.markRecognizing('owner-a', firstCaptureId)
+  const starts = await Promise.allSettled([1, 2].map(() => store.markRecognizing('owner-a', firstCaptureId)))
+  assert.equal(starts.filter(result => result.status === 'fulfilled').length, 1)
   assert.strictEqual(records.get(firstCaptureId).status, 'recognizing')
-  await store.completeRecognition('owner-a', firstCaptureId, true)
+  const oldLease = starts.find(result => result.status === 'fulfilled').value
+  records.get(firstCaptureId).leaseUntil = currentTime - 1
+  const newLease = await store.markRecognizing('owner-a', firstCaptureId)
+  await assert.rejects(store.completeRecognition('owner-a', firstCaptureId, true, oldLease))
+  await store.completeRecognition('owner-a', firstCaptureId, true, newLease)
   assert.strictEqual(records.get(firstCaptureId).status, 'uploaded')
   assert.strictEqual(
     records.get(firstCaptureId).recognizedAt,
     currentTime,
   )
 
+  const cleanupId = await store.markRecognizing('owner-a', secondCaptureId)
   const cleaned = await store.completeRecognition(
     'owner-a',
     secondCaptureId,
-    false,
+    false, cleanupId,
   )
   assert.deepStrictEqual(cleaned, { deleted: true })
   assert.deepStrictEqual(deleteCalls.at(-1), [secondFileId])
@@ -176,11 +189,13 @@ async function run() {
     cleanupAfter: currentTime + 60_000,
     retryCount: 2,
   })
+  await assert.rejects(store.completeRecognition('owner-a', secondCaptureId, true))
+  const retryId = await store.markRecognizing('owner-a', secondCaptureId)
   failDelete = true
   const pending = await store.completeRecognition(
     'owner-a',
     secondCaptureId,
-    false,
+    false, retryId,
   )
   assert.deepStrictEqual(pending, { cleanupPending: true })
   assert.strictEqual(records.get(secondCaptureId).status, 'cleanup_failed')

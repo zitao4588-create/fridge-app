@@ -65,6 +65,7 @@ assert.deepStrictEqual(
   {
     detail: 'errCode: 43101 | user refuse to accept the msg',
     status: 'refused',
+    category: 'user',
     failureCode: 'NO_ACTIVE_GRANT',
     retryable: false,
     deliveryOutcome: 'API_REJECTED',

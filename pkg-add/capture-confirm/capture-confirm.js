@@ -73,9 +73,15 @@ Page({
         warnings: state.review.warnings,
         dateCandidates: buildDateCandidateViews(state.review),
         form: state.form,
+        categoryIndex: CATEGORY_OPTIONS.indexOf(state.form.category),
+        locationIndex: STORAGE_LOCATION_OPTIONS.indexOf(state.form.storageLocation),
         errorMessage: '',
       })
     })
+  },
+
+  onShow() {
+    if (this.data.leaving) this.setData({ leaving: false })
   },
 
   onUnload() {
@@ -109,12 +115,14 @@ Page({
   handleCategoryChange(event) {
     const category =
       this.data.categoryOptions[Number(event.detail.value)] || '其他'
+    this.setData({ categoryIndex: CATEGORY_OPTIONS.indexOf(category) })
     updateForm(this, { category })
   },
 
   handleLocationChange(event) {
     const storageLocation =
       this.data.locationOptions[Number(event.detail.value)] || '冷藏'
+    this.setData({ locationIndex: STORAGE_LOCATION_OPTIONS.indexOf(storageLocation) })
     updateForm(this, { storageLocation })
   },
 
@@ -127,7 +135,7 @@ Page({
   },
 
   handleRetainImage(event) {
-    this.setData({ retainImage: event.detail.value === true })
+    this.setData({ retainImage: Boolean(this.data.captureId) && event.detail.value === true })
   },
 
   cleanupCapture(reason) {
@@ -191,6 +199,7 @@ Page({
               captureId,
               retainImage,
             })
+            this.setData({ captureId: '', retainImage: false })
           }
           resolve()
         },
@@ -203,7 +212,7 @@ Page({
   },
 
   async handleContinue() {
-    if (this.data.leaving) return
+    if (this.data.leaving || this.data.cleaning) return
     const validation = validateConfirmationForm(this.data.form)
     if (!validation.valid) {
       this.setData({ errorMessage: validation.errors[0] })
@@ -212,7 +221,7 @@ Page({
 
     if (!this.data.retainImage) {
       const cleanupResult = await this.cleanupCapture('not_retained')
-      if (cleanupResult.cleanupPending) return
+      if (cleanupResult.cleanupPending || this.data.leaving) return
     }
 
     try {

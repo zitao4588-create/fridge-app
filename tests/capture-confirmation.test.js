@@ -255,6 +255,11 @@ async function run() {
   assert.strictEqual(retryPreset.retainImage, false)
   assert.strictEqual(retryPreset.captureId, '')
 
+  retryPage.onShow()
+  assert.strictEqual(retryPage.data.leaving, false)
+  retryPage.handleRetainImage({ detail: { value: true } })
+  assert.strictEqual(retryPage.data.retainImage, false)
+
   const missingChannelPage = createPage(null)
   missingChannelPage.onLoad()
   assert.strictEqual(missingChannelPage.data.loaded, true)

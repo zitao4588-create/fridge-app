@@ -10,6 +10,9 @@ const INVENTORY_VIEW_KEYS = Object.freeze({
   ERROR: 'error',
 })
 
+// 已由服务端确认的权限状态：个人库存，或家庭成员身份有效。
+const CONFIRMED_PERMISSION_STATES = Object.freeze(['personal', 'valid'])
+
 function buildInventoryLoadingState(hasSnapshot) {
   if (hasSnapshot) {
     return {
@@ -34,6 +37,18 @@ function buildInventoryLoadingState(hasSnapshot) {
   }
 }
 
+function buildEmptyState() {
+  return {
+    key: INVENTORY_VIEW_KEYS.EMPTY,
+    tone: 'empty',
+    title: '云端库存为空',
+    detail: '已完成读取，目前没有食材记录，可以从“加食材”开始。',
+    showCard: true,
+    canRetry: false,
+    retainSnapshot: true,
+  }
+}
+
 function buildInventoryResultState(result) {
   const items = (result && result.items) || []
 
@@ -50,6 +65,24 @@ function buildInventoryResultState(result) {
   }
 
   if (result && result.source === 'cache') {
+    // 服务只在缓存仍在有效期内、且本次权限已确认（个人 / 家庭有效）时返回 cache，
+    // 这属于正常切换，不打扰用户。真正读取失败只能显示旧数据时走 buildInventoryErrorState
+    // 的 ERROR_STALE；权限不明 / 已失效分别走 PERMISSION_UNVERIFIED / PERMISSION_REVOKED。
+    // 空的新鲜缓存与云端空库存一样，交给下面的 EMPTY 分支，保持两种来源表现一致。
+    if (CONFIRMED_PERMISSION_STATES.includes(result.permissionState)) {
+      if (items.length === 0) return buildEmptyState()
+      return {
+        key: INVENTORY_VIEW_KEYS.CACHE,
+        tone: 'info',
+        title: '已显示最近读取的库存',
+        detail: '',
+        showCard: false,
+        canRetry: false,
+        retainSnapshot: true,
+      }
+    }
+
+    // 权限状态缺失或无法识别的缓存：保留醒目提示和重新读取，避免误当成最新结果。
     return {
       key: INVENTORY_VIEW_KEYS.CACHE,
       tone: 'warning',
@@ -61,17 +94,7 @@ function buildInventoryResultState(result) {
     }
   }
 
-  if (items.length === 0) {
-    return {
-      key: INVENTORY_VIEW_KEYS.EMPTY,
-      tone: 'empty',
-      title: '云端库存为空',
-      detail: '已完成读取，目前没有食材记录，可以从“加食材”开始。',
-      showCard: true,
-      canRetry: false,
-      retainSnapshot: true,
-    }
-  }
+  if (items.length === 0) return buildEmptyState()
 
   return {
     key: INVENTORY_VIEW_KEYS.SUCCESS,

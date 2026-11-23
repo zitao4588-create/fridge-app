@@ -38,6 +38,12 @@ Page({
     })
   },
 
+  onShow() {
+    if (this.data.handoffCapture) {
+      this.setData({ state: 'empty', handoffCapture: false, captureId: '', previewPath: '', processing: false })
+    }
+  },
+
   onUnload() {
     if (
       this.data.captureId &&

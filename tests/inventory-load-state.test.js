@@ -22,7 +22,43 @@ const cache = buildInventoryResultState({
   permissionState: 'personal',
 })
 assert.strictEqual(cache.key, INVENTORY_VIEW_KEYS.CACHE)
-assert.strictEqual(cache.canRetry, true)
+// 新鲜缓存且权限已确认：正常切换不显示醒目提示，也不需要「重新读取」。
+assert.strictEqual(cache.showCard, false)
+assert.strictEqual(cache.canRetry, false)
+assert.strictEqual(cache.retainSnapshot, true)
+
+const familyCache = buildInventoryResultState({
+  items: [{ _id: 'cached-family-item' }],
+  source: 'cache',
+  permissionState: 'valid',
+})
+assert.strictEqual(familyCache.key, INVENTORY_VIEW_KEYS.CACHE)
+assert.strictEqual(familyCache.showCard, false)
+
+const emptyCache = buildInventoryResultState({
+  items: [],
+  source: 'cache',
+  permissionState: 'personal',
+})
+assert.strictEqual(emptyCache.key, INVENTORY_VIEW_KEYS.EMPTY)
+
+// 权限状态缺失的缓存不能静默当成最新结果。
+const unknownCache = buildInventoryResultState({
+  items: [{ _id: 'cached-item' }],
+  source: 'cache',
+})
+assert.strictEqual(unknownCache.key, INVENTORY_VIEW_KEYS.CACHE)
+assert.strictEqual(unknownCache.showCard, true)
+assert.strictEqual(unknownCache.canRetry, true)
+
+// 家庭权限失效优先于缓存来源。
+const revokedCache = buildInventoryResultState({
+  items: [{ _id: 'cached-item' }],
+  source: 'cache',
+  permissionState: 'revoked',
+})
+assert.strictEqual(revokedCache.key, INVENTORY_VIEW_KEYS.PERMISSION_REVOKED)
+assert.strictEqual(revokedCache.showCard, true)
 
 const success = buildInventoryResultState({
   items: [{ _id: 'cloud-item' }],
@@ -59,6 +95,9 @@ assert.strictEqual(permissionUnverified.retainSnapshot, false)
 const stale = buildInventoryErrorState(new Error('network failed'), true)
 assert.strictEqual(stale.key, INVENTORY_VIEW_KEYS.ERROR_STALE)
 assert.strictEqual(stale.retainSnapshot, true)
+// 真正读取失败、只能展示旧数据时才显示提示和「重新读取」。
+assert.strictEqual(stale.showCard, true)
+assert.strictEqual(stale.canRetry, true)
 
 const error = buildInventoryErrorState(new Error('network failed'), false)
 assert.strictEqual(error.key, INVENTORY_VIEW_KEYS.ERROR)
@@ -87,4 +126,4 @@ assert.match(calendarTemplate, /<block wx:if="{{inventoryHasSnapshot}}">/)
 assert.match(indexTemplate, /bindtap="handleInventoryRetry"/)
 assert.match(calendarTemplate, /bindtap="handleInventoryRetry"/)
 
-console.log('inventory-load-state: 24 assertions passed')
+console.log('inventory-load-state: load, cache, permission and error state checks passed')

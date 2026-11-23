@@ -26,13 +26,13 @@
     </view>
 
     <view class="field-grid">
-      <picker mode="selector" range="{{categoryOptions}}" bindchange="handleCategoryChange">
+      <picker mode="selector" range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="handleCategoryChange">
         <view class="picker-field">
           <text class="field-label">品类</text>
           <text class="picker-value">{{form.category}}</text>
         </view>
       </picker>
-      <picker mode="selector" range="{{locationOptions}}" bindchange="handleLocationChange">
+      <picker mode="selector" range="{{locationOptions}}" value="{{locationIndex}}" bindchange="handleLocationChange">
         <view class="picker-field">
           <text class="field-label">存放分区</text>
           <text class="picker-value">{{form.storageLocation}}</text>
@@ -80,7 +80,7 @@
         <text class="field-label">保存时保留照片</text>
         <text class="field-help">默认关闭。关闭后会精确清理本次临时云文件。</text>
       </view>
-      <switch checked="{{retainImage}}" color="#28b978" bindchange="handleRetainImage" />
+      <switch checked="{{retainImage}}" disabled="{{!captureId || cleaning || leaving}}" color="#28b978" bindchange="handleRetainImage" />
     </view>
 
     <text wx:if="{{cleanupPending}}" class="cleanup-note" aria-role="alert">
