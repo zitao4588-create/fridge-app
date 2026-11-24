@@ -1,10 +1,5 @@
 <view class="page form-page">
   <view class="form-card">
-    <view wx:if="{{entryNotice}}" class="entry-notice" aria-role="alert">
-      <text class="entry-notice-title">请核对录入信息</text>
-      <text class="entry-notice-copy">{{entryNotice}}</text>
-    </view>
-
     <view class="field">
       <text class="field-label">食品名称</text>
       <input
@@ -46,13 +41,16 @@
       <text class="field-label">品类</text>
       <view class="chip-row">
         <view
-          wx:for="{{categoryOptions}}"
+          wx:for="{{visibleCategories}}"
           wx:key="*this"
           class="chip {{form.category === item ? 'active' : ''}}"
-          data-index="{{index}}"
+          data-category="{{item}}"
           bindtap="handleCategoryTap"
           aria-role="button"
         >{{item}}</view>
+        <view class="chip chip-more" bindtap="handleToggleCategories" aria-role="button">
+          {{showAllCategories ? '收起' : '更多 ▾'}}
+        </view>
       </view>
     </view>
 
@@ -166,10 +164,10 @@
 
     <view class="field">
       <text class="field-label">备注</text>
-      <textarea
-        class="native-textarea"
+      <input
+        class="native-input"
         value="{{form.note}}"
-        placeholder="例如：开封后尽快吃完"
+        placeholder="可选：例如开封后尽快吃完"
         aria-label="备注"
         maxlength="100"
         bindinput="handleNoteInput"

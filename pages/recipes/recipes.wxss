@@ -1,5 +1,5 @@
 .recipes-page {
-  padding: 32rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
+  padding: 24rpx 28rpx calc(148rpx + env(safe-area-inset-bottom));
 }
 
 .coming-card {
@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 52rpx 32rpx 40rpx;
+  padding: 40rpx 32rpx 32rpx;
   border-radius: 36rpx;
   background: var(--grad-hero);
   box-shadow: var(--shadow-1), var(--hi-inset);
@@ -44,14 +44,14 @@
 }
 
 .coming-mascot {
-  width: 156rpx;
-  height: 156rpx;
+  width: 140rpx;
+  height: 140rpx;
   filter: drop-shadow(0 8rpx 14rpx rgba(40, 120, 80, 0.18));
 }
 
 .coming-badge {
-  margin-top: 14rpx;
-  padding: 8rpx 28rpx;
+  margin-top: 12rpx;
+  padding: 8rpx 26rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 800;
@@ -62,26 +62,26 @@
 }
 
 .coming-title {
-  margin-top: 20rpx;
-  font-size: 38rpx;
+  margin-top: 16rpx;
+  font-size: 36rpx;
   font-weight: 800;
   color: var(--text-main, #253730);
 }
 
 .coming-desc {
-  margin-top: 14rpx;
-  font-size: 26rpx;
-  line-height: 1.7;
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  line-height: 1.65;
   text-align: center;
-  color: var(--text-sub, #6f7c74);
+  color: var(--text-sub, #5c6a62);
 }
 
 .coming-list {
   width: 100%;
-  margin-top: 28rpx;
-  padding: 12rpx 8rpx;
+  margin-top: 22rpx;
+  padding: 10rpx 8rpx;
   border-radius: 24rpx;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow-1);
 }
 
@@ -89,24 +89,24 @@
   display: flex;
   align-items: center;
   gap: 14rpx;
-  padding: 16rpx 18rpx;
-  font-size: 26rpx;
+  padding: 14rpx 16rpx;
+  font-size: 25rpx;
   color: var(--text-main, #253730);
 }
 
 .coming-ic {
-  width: 52rpx;
-  height: 52rpx;
-  line-height: 52rpx;
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 48rpx;
   text-align: center;
-  font-size: 28rpx;
-  border-radius: 16rpx;
+  font-size: 26rpx;
+  border-radius: 14rpx;
   background: var(--brand-mint-soft, #eaf8ee);
 }
 
 .settings-card {
-  margin-top: 28rpx;
-  padding: 28rpx 24rpx;
+  margin-top: 22rpx;
+  padding: 24rpx;
   border-radius: 28rpx;
   background: var(--grad-card);
   box-shadow: var(--shadow-1), var(--hi-inset);
@@ -114,42 +114,45 @@
 
 .settings-title {
   display: block;
-  font-size: 30rpx;
+  font-size: 29rpx;
   font-weight: 800;
   color: var(--text-main, #253730);
 }
 
 .settings-text {
   display: block;
-  margin-top: 14rpx;
+  margin-top: 10rpx;
   font-size: 24rpx;
-  line-height: 1.7;
-  color: var(--text-sub, #6f7c74);
+  line-height: 1.65;
+  color: var(--text-sub, #5c6a62);
 }
 
 .settings-actions {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12rpx;
-  margin-top: 20rpx;
+  margin-top: 18rpx;
 }
 
 .settings-link {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 64rpx;
-  padding: 0 18rpx;
+  min-height: 68rpx;
+  padding: 0 14rpx;
   border-radius: 18rpx;
-  font-size: 26rpx;
+  text-align: center;
+  font-size: 24rpx;
   font-weight: 700;
   color: var(--brand-mint-deep, #087a49);
-  background: rgba(255, 255, 255, 0.72);
-  border: 2rpx solid rgba(40, 185, 120, 0.16);
+  background: rgba(255, 255, 255, 0.8);
+  border: 2rpx solid rgba(8, 122, 73, 0.18);
 }
 
 .settings-link.primary {
+  grid-column: span 2;
+  font-size: 26rpx;
   color: #ffffff;
-  background: var(--brand-mint, #28b978);
+  background: var(--brand-mint-deep, #087a49);
   border-color: transparent;
 }

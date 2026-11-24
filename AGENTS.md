@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> 日常开发使用 `fridge-app` 的 `main` 分支。微信开发者工具打开项目根目录，工程配置会加载 `.release/v2.3.0/`。2.3.0 开发版源码标签是 `v2.3.0-rc.1`，使用 VPS 接口，拍照识别关闭。修改源码后请按[构建与验收说明](docs/V23_DELIVERY.md#重建与校验)重新生成预览包。下文的 CloudBase、V2 和 V3 记录按原日期阅读。
+> 日常开发使用 `fridge-app` 的 `main` 分支（单一根目录源码，`miniprogramRoot: "./"`）。v2.3 已切为纯原生组件 + VPS 后端（`backend/`），零第三方 npm 运行时依赖，拍照识别关闭；V3 OCR 与历史 CloudBase 代码保存在独立分支 `feat/v3-ocr` 与标签 `v2.3.0-rc.1`。修改后可直接运行 `npm test` 与 `npm run verify:release` 校验。下文的 CloudBase、V2 和 V3 记录按原日期阅读。
 
 ## 协作规则
 

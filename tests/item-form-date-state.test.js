@@ -21,10 +21,6 @@ function loadForm({ items = {}, saved = [], opener } = {}) {
       getItemById: async (id) => items[id],
     },
     '../../services/reminderService': { requestAndRecordSubscribeMessage: async () => {} },
-    '../../services/captureImageService': {
-      cleanupCaptureSession: async () => ({}),
-      attachCaptureToItem: async () => ({}),
-    },
   }
   const wx = {
     getStorageSync: () => [], setStorageSync: noop, setNavigationBarTitle: noop,
@@ -269,29 +265,25 @@ test('编辑旧数据：已存到期日与生产日+保质期对不上时，原�
   assert.equal(legacy.validateForm(), '过期日期无效，请重新选择')
 })
 
-test('识别候选只给到期日时进入 expire 模式并原样保存', async () => {
-  const saved = []
-  let receiver
-  const form = loadForm({ saved, opener: { on: (_, fn) => { receiver = fn } } })
+test('品类默认展示常用 6 项，展开或词库命中次要品类时自动展示全部 12 项', () => {
+  const form = loadForm()
   form.onLoad({})
-  receiver({
-    captureId: '',
-    preset: {
-      name: '合成牛奶', category: '乳制品', quantityTracked: false, quantity: 1,
-      productionDate: '', shelfLifeDays: '', expireDate: '2026-12-10', storageLocation: '冷藏',
-    },
-  })
-  assert.equal(form.data.form.source, 'photo')
-  assert.equal(form.data.dateMode, 'expire')
-  assert.equal(form.data.form.expireDate, '2026-12-10')
+  assert.equal(form.data.showAllCategories, false)
+  assert.equal(form.data.visibleCategories.length, 6)
 
-  form.handleNameInput(nameEvent('牛奶'))
-  assert.equal(form.data.dateMode, 'expire')
-  assert.equal(form.data.form.expireDate, '2026-12-10')
-  assert.equal(form.data.form.category, '乳制品')
+  form.handleToggleCategories()
+  assert.equal(form.data.showAllCategories, true)
+  assert.equal(form.data.visibleCategories.length, 12)
 
-  form.handleSubmit()
-  await flush()
-  assert.equal(saved.length, 1)
-  assert.equal(saved[0].expireDate, '2026-12-10')
+  form.handleToggleCategories()
+  assert.equal(form.data.showAllCategories, false)
+  assert.equal(form.data.visibleCategories.length, 6)
+
+  form.handleNameInput(nameEvent('速冻水饺'))
+  assert.equal(form.data.form.category, '速冻')
+  assert.equal(form.data.showAllCategories, true)
+  assert.equal(form.data.visibleCategories.length, 12)
+
+  form.handleCategoryTap({ currentTarget: { dataset: { category: '蔬菜' } } })
+  assert.equal(form.data.form.category, '蔬菜')
 })

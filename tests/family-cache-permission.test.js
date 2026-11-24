@@ -2,6 +2,7 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 
+const backendServicePath = require.resolve('../services/backendService')
 const familyServicePath = require.resolve('../services/familyService')
 const itemServicePath = require.resolve('../services/itemService')
 
@@ -22,36 +23,30 @@ function createRuntime() {
     removeStorageSync(key) {
       storage.delete(key)
     },
-    cloud: {
-      callFunction(request) {
-        calls.push(request.data.action)
-        return familyHandler(request.data)
+  }
+
+  delete require.cache[backendServicePath]
+  delete require.cache[familyServicePath]
+  delete require.cache[itemServicePath]
+
+  require.cache[backendServicePath] = {
+    id: backendServicePath,
+    filename: backendServicePath,
+    loaded: true,
+    exports: {
+      family(action, payload = {}) {
+        calls.push(action)
+        return familyHandler({ action, ...payload })
       },
-      database() {
-        return {
-          collection() {
-            return {
-              skip() {
-                return this
-              },
-              limit() {
-                return this
-              },
-              get() {
-                if (personalError) {
-                  return Promise.reject(personalError)
-                }
-                return Promise.resolve({ data: personalItems })
-              },
-            }
-          },
+      personal(action) {
+        if (personalError) return Promise.reject(personalError)
+        if (action === 'listItems') {
+          return Promise.resolve({ data: personalItems, hasMore: false, revision: '' })
         }
+        return Promise.resolve({ data: null })
       },
     },
   }
-
-  delete require.cache[familyServicePath]
-  delete require.cache[itemServicePath]
 
   const familyService = require('../services/familyService')
   const itemService = require('../services/itemService')
@@ -80,13 +75,13 @@ function familyState() {
 }
 
 function ok(data) {
-  return Promise.resolve({ result: { ok: true, data } })
+  return Promise.resolve(data)
 }
 
 function denied(code) {
-  return Promise.resolve({
-    result: { ok: false, error: code, message: '没有家庭访问权限' },
-  })
+  const error = new Error('没有家庭访问权限')
+  error.code = code
+  return Promise.reject(error)
 }
 
 async function run() {
@@ -161,9 +156,7 @@ async function run() {
   await timeoutRuntime.itemService.getItems()
   await assert.rejects(
     () => timeoutRuntime.itemService.getItemsWithFamilyAccessCheck(),
-    (error) =>
-      error.code === 'FAMILY_FUNCTION_UNAVAILABLE' &&
-      error.inventoryAccessUnverified === true,
+    (error) => error.inventoryAccessUnverified === true,
   )
   assert.deepStrictEqual(timeoutRuntime.familyService.readCachedFamilyState(), familyState())
 
@@ -234,7 +227,7 @@ async function run() {
   racing.itemService.invalidateItemsCache()
   racing.setFamilyHandler(() => ok([{ _id: 'new', name: '新库存', expireDate: '2026-09-09' }]))
   await racing.itemService.getItemsLoadResult()
-  resolveOld({ result: { ok: true, data: [{ _id: 'old', name: '旧库存', expireDate: '2026-09-09' }] } })
+  resolveOld([{ _id: 'old', name: '旧库存', expireDate: '2026-09-09' }])
   await assert.rejects(old, (error) => error.inventoryAccessUnverified === true)
   assert.strictEqual((await racing.itemService.getItemsLoadResult()).items[0]._id, 'new')
 
@@ -244,7 +237,7 @@ async function run() {
   scopeRace.setFamilyHandler(() => new Promise((resolve) => { resolveScope = resolve }))
   const beforeSwitch = scopeRace.itemService.getItemsLoadResult()
   scopeRace.familyService.writeCachedFamilyState({ ...familyState(), family: { id: 'family-b' } })
-  resolveScope({ result: { ok: true, data: [] } })
+  resolveScope([])
   await assert.rejects(beforeSwitch, (error) => error.inventoryAccessUnverified === true)
 
   const stateRace = createRuntime()
@@ -252,7 +245,7 @@ async function run() {
   stateRace.setFamilyHandler(() => new Promise((resolve) => { resolveState = resolve }))
   const stateRequest = stateRace.familyService.refreshFamilyState()
   stateRace.familyService.writeCachedFamilyState(familyState())
-  resolveState({ result: { ok: true, data: null } })
+  resolveState(null)
   await assert.rejects(stateRequest, (error) => error.code === 'INVENTORY_SCOPE_CHANGED')
   assert.deepStrictEqual(stateRace.familyService.readCachedFamilyState(), familyState())
 
@@ -264,9 +257,12 @@ async function run() {
   const forced = refreshModes.itemService.getItemsLoadResult({ forceRefresh: true })
   assert.notStrictEqual(ordinary, forced)
   assert.deepStrictEqual(refreshModes.calls, ['listItems', 'listItems'])
-  resolvers.forEach((resolve) => resolve({ result: { ok: true, data: [] } }))
+  resolvers.forEach((resolve) => resolve([]))
   await Promise.all([ordinary, forced])
 
+  delete require.cache[backendServicePath]
+  delete require.cache[familyServicePath]
+  delete require.cache[itemServicePath]
   console.log('family-cache-permission: permission, discovery and request race checks passed')
 }
 

@@ -1,19 +1,15 @@
 const assert = require('assert')
-const fs = require('fs')
-const vm = require('vm')
 const path = require('path')
-const { createRequire } = require('module')
-const filename = path.resolve(__dirname, '../cloudfunctions/familyInventory/index.js')
-const realRequire = createRequire(filename)
+const createFamilyHandler = require('../backend/family/handler.cjs')
 const copy = (v) => v == null ? v : structuredClone(v)
 
 function setup(quantity = 3) {
   let rows = {
+    families: { home: { _id: 'home', name: '测试家庭', status: 'active', ownerOpenid: 'A' } },
     items: { food: { _id: 'food', familyId: 'home', name: '蛋', quantityTracked: true, quantity, updatedAt: 1 } },
-    familyMembers: { A: { _id: 'A', openid: 'A', familyId: 'home', status: 'active' }, B: { _id: 'B', openid: 'B', familyId: 'home', status: 'active' } },
+    familyMembers: { A: { _id: 'A', openid: 'A', familyId: 'home', status: 'active', role: 'editor' }, B: { _id: 'B', openid: 'B', familyId: 'home', status: 'active', role: 'editor' } },
     inventoryEvents: {},
   }
-  let actor = 'A'
   let queue = Promise.resolve()
   function collection(name) {
     return {
@@ -40,14 +36,9 @@ function setup(quantity = 3) {
     queue = result.catch(() => {})
     return result
   } }
-  const cloud = { init() {}, database: () => db, getWXContext: () => ({ OPENID: actor }) }
-  const module = { exports: {} }
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
-    require: name => name === 'wx-server-sdk' ? cloud : realRequire(name),
-    exports: module.exports, process: { env: {} }, console: { error() {} }, Date,
-  }, { filename })
+  const handler = createFamilyHandler(db)
   return {
-    async call(action, who = 'A', extra = {}) { actor = who; return module.exports.main({ action, itemId: 'food', ...extra }) },
+    async call(action, who = 'A', extra = {}) { return handler(who, { action, itemId: 'food', ...extra }) },
     item: () => rows.items.food,
     replace: value => { rows.items.food = value },
     event: token => rows.inventoryEvents[token],

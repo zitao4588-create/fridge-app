@@ -1,5 +1,5 @@
 .about-page {
-  padding: 32rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
+  padding: 28rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
 }
 
 .about-hero,
@@ -15,45 +15,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 44rpx 30rpx 36rpx;
+  padding: 40rpx 30rpx 32rpx;
   text-align: center;
 }
 
 .about-mascot {
-  width: 148rpx;
-  height: 148rpx;
+  width: 140rpx;
+  height: 140rpx;
   filter: drop-shadow(0 8rpx 14rpx rgba(40, 120, 80, 0.18));
 }
 
 .about-title {
-  margin-top: 20rpx;
-  font-size: 40rpx;
+  margin-top: 18rpx;
+  font-size: 38rpx;
   font-weight: 800;
   color: var(--text-main, #253730);
 }
 
 .about-subtitle {
   margin-top: 8rpx;
-  font-size: 28rpx;
+  font-size: 27rpx;
   font-weight: 800;
   color: var(--brand-mint-deep, #087a49);
 }
 
 .about-desc {
-  margin-top: 18rpx;
+  margin-top: 16rpx;
   font-size: 25rpx;
-  line-height: 1.7;
-  color: var(--text-sub, #6f7c74);
+  line-height: 1.68;
+  color: var(--text-sub, #5c6a62);
 }
 
-.info-card {
-  margin-top: 24rpx;
-  padding: 28rpx 24rpx;
-}
-
+.info-card,
 .feedback-card {
-  margin-top: 24rpx;
-  padding: 28rpx 24rpx;
+  margin-top: 22rpx;
+  padding: 26rpx 24rpx;
 }
 
 .card-title {
@@ -66,10 +62,10 @@
 .card-text,
 .fact-item {
   display: block;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   font-size: 24rpx;
-  line-height: 1.7;
-  color: var(--text-sub, #6f7c74);
+  line-height: 1.68;
+  color: var(--text-sub, #5c6a62);
 }
 
 .fact-list {
@@ -79,30 +75,31 @@
 .feedback-text,
 .feedback-privacy {
   display: block;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   font-size: 24rpx;
-  line-height: 1.7;
-  color: var(--text-sub, #6f7c74);
+  line-height: 1.68;
+  color: var(--text-sub, #5c6a62);
 }
 
 .feedback-privacy {
   padding: 16rpx 18rpx;
   border-radius: 18rpx;
-  color: var(--coral-deep, #c94238);
+  color: var(--coral-deep, #b3392f);
   background: var(--coral-bg, #ffece6);
 }
 
 .feedback-button {
-  min-height: 72rpx;
+  width: 100% !important;
+  min-height: 76rpx;
   margin-top: 20rpx;
   padding: 0 24rpx;
   border: 0;
   border-radius: 18rpx;
-  line-height: 72rpx;
+  line-height: 76rpx;
   font-size: 26rpx;
   font-weight: 800;
   color: #ffffff;
-  background: var(--brand-mint, #28b978);
+  background: var(--brand-mint-deep, #087a49);
 }
 
 .feedback-button::after {
@@ -113,7 +110,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12rpx;
-  margin-top: 24rpx;
+  margin-top: 22rpx;
   padding: 18rpx;
 }
 
@@ -122,8 +119,9 @@
   border-radius: 18rpx;
   line-height: 68rpx;
   text-align: center;
-  font-size: 26rpx;
+  font-size: 25rpx;
   font-weight: 800;
-  color: #ffffff;
-  background: var(--brand-mint, #28b978);
+  color: var(--brand-mint-deep, #087a49);
+  background: rgba(255, 255, 255, 0.85);
+  border: 2rpx solid rgba(8, 122, 73, 0.18);
 }

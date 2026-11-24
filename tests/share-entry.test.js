@@ -13,7 +13,6 @@ const privatePages = [
   'pages/calendar/calendar.js',
   'pages/family/family.js',
   'pkg-add/item-form/item-form.js',
-  'pkg-add/quick-capture/quick-capture.js',
 ]
 
 privatePages.forEach((file) => {

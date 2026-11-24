@@ -12,14 +12,10 @@ function clampScore(value) {
   return Math.max(0, Math.min(99, Math.round(value)))
 }
 
-function getMealRadarLevel(score) {
-  if (score >= 80) {
-    return { levelLabel: '高', levelTitle: '今天很适合开饭', levelClass: 'high' }
-  }
-  if (score >= 50) {
-    return { levelLabel: '中', levelTitle: '可以开饭，建议补 1-2 样', levelClass: 'medium' }
-  }
-  return { levelLabel: '低', levelTitle: '先处理风险或补货', levelClass: 'low' }
+function getMealRadarLevelClass(score) {
+  if (score >= 80) return 'high'
+  if (score >= 50) return 'medium'
+  return 'low'
 }
 
 function getTimeContext(now = new Date()) {
@@ -32,7 +28,7 @@ function getTimeContext(now = new Date()) {
     return { period: 'noon', shortText: '午饭前', timeText: '午饭前先安排' }
   }
   if (hour >= 14 && hour < 18) {
-    return { period: 'afternoon', shortText: '傍晚前', timeText: '傍晚前先定下来' }
+    return { period: 'afternoon', shortText: '傍晚', timeText: '傍晚先定下来' }
   }
   if (hour >= 18 && hour < 23) {
     return { period: 'evening', shortText: '晚饭前', timeText: '晚饭前优先处理' }
@@ -116,29 +112,36 @@ function buildMealRadar(items = [], options = {}) {
   const score = clampScore(
     inventoryScore + diversityScore + expiryValueScore - overduePenalty,
   )
-  const baseRadar = {
-    usableCount,
-    expiringCount,
-    overdueCount,
-  }
-  const statusCopy = buildStatusCopy(baseRadar, timeContext)
+  const statusCopy = buildStatusCopy(
+    { usableCount, expiringCount, overdueCount },
+    timeContext,
+  )
   const priorityItems = overdueCount > 0
     ? overdueItems.slice(0, 3)
     : expiringItems.slice(0, 3)
 
+  const verdictClass =
+    overdueCount > 0
+      ? 'low'
+      : expiringCount > 0
+        ? 'medium'
+        : usableCount > 0
+          ? 'high'
+          : 'low'
+
   return {
     score,
-    scoreText: `${score}%`,
-    ...getMealRadarLevel(score),
+    levelClass: getMealRadarLevelClass(score),
+    verdictClass,
     ...statusCopy,
     period: timeContext.period,
+    shortText: timeContext.shortText,
     timeText: timeContext.timeText,
     usableCount,
     expiringCount,
     overdueCount,
     overdueItems,
     priorityItems,
-    explanation: `已扫描 ${usableCount} 个可用库存 · ${expiringCount} 个临期 · ${overdueCount} 个过期风险`,
   }
 }
 
@@ -150,35 +153,35 @@ function buildHomeRadar(items = [], options = {}) {
   if (radar.overdueCount > 0) {
     return {
       ...radar,
-      title: `${radar.timeText}过期风险`,
+      levelClass: 'low',
+      title: `${radar.shortText}先处理过期风险`,
       actionText: overdueNames.length ? overdueNames.join('、') : '查看已过期清单',
-      body: '有食材已经过期，先确认还能不能吃，再安排今天这顿。',
     }
   }
 
   if (priorityNames.length > 0) {
     return {
       ...radar,
-      title: `${radar.timeText}临期食材`,
+      levelClass: 'medium',
+      title: `${radar.shortText}优先安排临期食材`,
       actionText: priorityNames.join('、'),
-      body: '这些食材快到期了，今晚优先安排它们，浪费会少很多。',
     }
   }
 
   if (radar.usableCount > 0) {
     return {
       ...radar,
-      title: `${radar.timeText}放心开饭`,
+      levelClass: 'high',
+      title: `${radar.shortText}库存稳定，放心开饭`,
       actionText: '暂无临期压力',
-      body: '库存状态稳定，可以按想吃的口味安排一顿。',
     }
   }
 
   return {
     ...radar,
+    levelClass: 'high',
     title: '先放进几样常吃的',
     actionText: '从牛奶、鸡蛋、蔬菜开始',
-    body: '录入第一批食材后，小雷达会帮你记住谁该先吃。',
   }
 }
 

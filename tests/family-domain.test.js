@@ -4,12 +4,12 @@ const {
   getConsumeType,
   getFamilyOwnerOpenid,
   isInviteUsable,
-} = require('../cloudfunctions/familyInventory/domain')
+} = require('../backend/family/domain')
 const {
   createCollectionNames,
   isMissingDocumentError,
   normalizeCollectionPrefix,
-} = require('../cloudfunctions/familyInventory/collections')
+} = require('../backend/family/collections')
 
 const now = 1_000
 const family = { _id: 'family_a', status: 'active', inviteVersion: 3 }

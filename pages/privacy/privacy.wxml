@@ -11,7 +11,7 @@
 
   <view class="privacy-card">
     <text class="card-title">不会默认做什么</text>
-    <text class="card-text">不读取通讯录；不默认读取相册；仅在主动选图后上传图片供文字识别，候选须手动确认；临时图片会清理，主动保留的图片随食材保存，失去库存引用后延迟清理；不把食材清单默认上传给第三方 AI；不出售用户数据；不做支付会员或社区内容。</text>
+    <text class="card-text">不读取通讯录；不默认读取相册；不开放拍照识别入口；不把食材清单默认上传给第三方 AI；不出售用户数据；不做支付会员或社区内容。</text>
   </view>
 
   <view class="privacy-card">

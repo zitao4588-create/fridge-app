@@ -1,5 +1,4 @@
 @import "styles/tokens.wxss";
-@import "styles/tdesign-theme.wxss";
 
 page {
   min-height: 100vh;
@@ -10,7 +9,7 @@ page {
       var(--cream-bg, #fff6e8) 58%,
       #fffaf0 100%
     );
-  color: var(--text-main, #24352f);
+  color: var(--text-main, #253730);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -33,4 +32,208 @@ button::after {
 
 .page {
   min-height: 100vh;
+}
+
+/* 共享：库存读取与权限状态提示卡 */
+.inventory-state-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-bottom: 18rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  background: #f3f8f5;
+  border: 2rpx solid rgba(40, 185, 120, 0.18);
+}
+
+.inventory-state-card.warning,
+.inventory-state-card.empty {
+  background: var(--honey-bg, #fff5dc);
+  border-color: rgba(154, 90, 14, 0.22);
+}
+
+.inventory-state-card.error {
+  background: var(--coral-bg, #ffece6);
+  border-color: rgba(179, 57, 47, 0.24);
+}
+
+.inventory-state-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.inventory-state-title,
+.inventory-state-detail {
+  display: block;
+}
+
+.inventory-state-title {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.inventory-state-detail {
+  margin-top: 5rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--text-sub, #5c6a62);
+}
+
+.inventory-state-action {
+  flex-shrink: 0;
+  min-height: 60rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  line-height: 60rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--brand-mint-deep, #087a49);
+}
+
+/* 共享：食品列表行与状态胶囊 */
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 12rpx;
+  border-radius: 22rpx;
+  background: var(--grad-card);
+  box-shadow: var(--shadow-1);
+}
+
+.list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-main, #253730);
+}
+
+.list-meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-sub, #5c6a62);
+}
+
+.tag-inline {
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.tag-inline.normal {
+  color: var(--brand-mint-deep, #087a49);
+  background: var(--brand-mint-soft, #eaf8ee);
+}
+
+.tag-inline.expiring {
+  color: var(--honey-deep, #9a5a0e);
+  background: var(--honey-bg, #fff5dc);
+}
+
+.tag-inline.overdue {
+  color: var(--coral-deep, #b3392f);
+  background: var(--coral-bg, #ffece6);
+}
+
+.row-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64rpx;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--neutral-ink, #4d5a52);
+  background: var(--neutral-soft, #eef0ec);
+}
+
+.row-btn.danger {
+  color: var(--coral-deep, #b3392f);
+  background: var(--coral-bg, #ffece6);
+}
+
+/* 共享：通用底部抽屉面板 */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(37, 55, 48, 0.38);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  position: relative;
+  width: 100%;
+  max-height: 78vh;
+  padding: 32rpx 28rpx 48rpx;
+  border-radius: 40rpx 40rpx 0 0;
+  background: var(--cream-bg-2, #fffaf0);
+  box-shadow: var(--shadow-2);
+}
+
+.sheet::before {
+  content: '';
+  position: absolute;
+  top: 14rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: rgba(37, 55, 48, 0.16);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 12rpx 0 20rpx;
+}
+
+.sheet-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main, #253730);
+}
+
+.sheet-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--text-sub, #5c6a62);
+}
+
+.sheet-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64rpx;
+  padding: 0 26rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: var(--text-sub, #5c6a62);
+  background: #ffffff;
+  box-shadow: var(--shadow-1);
+}
+
+.sheet-body {
+  max-height: 62vh;
 }

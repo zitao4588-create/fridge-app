@@ -96,26 +96,9 @@ const HOME_ZONE_DEFINITIONS = [
   },
 ]
 
-const DEFAULT_HOME_ZONE_CONFIG = HOME_ZONE_DEFINITIONS.map((zone) => ({
-  key: zone.key,
-  enabled: true,
-}))
-
-const UNIT_OPTIONS = ['个', '盒', '瓶', '袋', '包', '斤', '克', '毫升', '份']
-
-const SOURCE_LABELS = {
-  manual: '手动录入',
-  photo: '拍食品识别',
-  package: '包装说明识别',
-  receipt: '小票批量识别',
-}
-
 module.exports = {
   CATEGORY_OPTIONS,
-  DEFAULT_HOME_ZONE_CONFIG,
   HOME_ZONE_DEFINITIONS,
   normalizeStorageLocation,
   STORAGE_LOCATION_OPTIONS,
-  UNIT_OPTIONS,
-  SOURCE_LABELS,
 }

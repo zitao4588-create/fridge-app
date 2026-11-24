@@ -89,7 +89,7 @@
     </view>
   </view>
 
-  <view class="meal-radar-card card">
+  <view class="meal-radar-card">
     <image class="meal-radar-decor sparkle" src="/images/decor/sparkle.png" mode="aspectFit" aria-hidden="true" />
 
     <view class="meal-radar-head">
@@ -115,7 +115,7 @@
       </view>
 
       <view class="meal-radar-explain">
-        <text class="meal-radar-verdict {{radar.levelClass}}">{{radar.levelTitle}}</text>
+        <text class="meal-radar-verdict {{radar.verdictClass || radar.levelClass}}">{{radar.levelTitle}}</text>
         <view class="meal-radar-ranges">
           <text class="{{radar.levelClass === 'high' ? 'on' : ''}}">高 80-99：适合开饭</text>
           <text class="{{radar.levelClass === 'medium' ? 'on' : ''}}">中 50-79：建议补 1-2 样</text>

@@ -67,10 +67,8 @@ Page({
     stats: { total: 0, expiring: 0, overdue: 0 },
     radar: {
       score: 0,
-      scoreText: '0%',
       levelTitle: '先处理风险或补货',
       levelClass: 'low',
-      explanation: '基于库存、临期和过期风险计算',
       priorityItems: [],
     },
     listPanelVisible: false,

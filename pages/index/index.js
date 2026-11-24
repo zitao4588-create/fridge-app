@@ -16,11 +16,10 @@ const { getExpiryStatus } = require('../../utils/status')
 const { getIngredientVisual } = require('../../utils/visualAssets')
 
 const ITEM_FORM_URL = '/pkg-add/item-form/item-form'
-const QUICK_CAPTURE_URL = '/pkg-add/quick-capture/quick-capture'
 const SHARE_TITLE = '冰箱小雷达｜微信里的冰箱食材库存管理小程序'
 const SHARE_PATH = '/pages/index/index'
 const SHARE_IMAGE = '/images/mascot/fridge-happy.png'
-const STARTER_FOOD_LIMIT = 36
+const STARTER_FOOD_LIMIT = 12
 
 function getZoneDefinition(key) {
   return HOME_ZONE_DEFINITIONS.find((zone) => zone.key === key)
@@ -434,25 +433,9 @@ Page({
   },
 
   handleZoneAdd(event) {
-    const location = event.currentTarget.dataset.location
-    const encodedLocation = encodeURIComponent(location)
-
-    wx.showActionSheet({
-      itemList: ['手动填写', '拍照或从相册选择'],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          wx.navigateTo({
-            url: `${ITEM_FORM_URL}?storageLocation=${encodedLocation}&smartRecommend=1`,
-          })
-          return
-        }
-
-        if (res.tapIndex === 1) {
-          wx.navigateTo({
-            url: `${QUICK_CAPTURE_URL}?storageLocation=${encodedLocation}`,
-          })
-        }
-      },
+    const location = encodeURIComponent(event.currentTarget.dataset.location || '')
+    wx.navigateTo({
+      url: `${ITEM_FORM_URL}?storageLocation=${location}&smartRecommend=1`,
     })
   },
 

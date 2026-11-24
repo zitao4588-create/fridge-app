@@ -1,10 +1,9 @@
-const { getTodayString, addDays } = require('../utils/date')
+const backend = require('./backendService')
 const { normalizeStorageLocation } = require('../utils/constants')
-const { getConsumptionType, normalizeQuantityState } = require('../utils/inventory')
+const { normalizeQuantityState } = require('../utils/inventory')
 const familyService = require('./familyService')
 
-const COLLECTION_NAME = 'items'
-const PAGE_SIZE = 20
+const PAGE_SIZE = 100
 // 库存轻缓存：覆盖首页/日历等多页 onShow 的重复全量读取，降低云数据库读次数。
 // 所有写操作（增/改/删/清空）都会立即失效缓存，TTL 仅用于兜底跨设备改动。
 const ITEMS_CACHE_TTL = 10 * 1000
@@ -25,12 +24,11 @@ function invalidateItemsCache() {
   itemsCacheScope = ''
 }
 
-function getDb() {
-  if (!wx.cloud) {
-    throw new Error('当前环境不支持云开发')
-  }
-
-  return wx.cloud.database()
+function writePersonal(action, payload) {
+  return backend.personal(action, payload).then((result) => {
+    invalidateItemsCache()
+    return result
+  })
 }
 
 function isFamilyMode() {
@@ -129,15 +127,7 @@ function createItem(payload) {
     })
   }
 
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .add({
-      data,
-    })
-    .then((res) => {
-      invalidateItemsCache()
-      return res
-    })
+  return writePersonal('createItem', { item: data })
 }
 
 function updateItem(id, payload) {
@@ -151,22 +141,13 @@ function updateItem(id, payload) {
   }
 
   if (isFamilyMode()) {
-    return callFamilyInventory('updateItem', { itemId: id, item: data }).then((res) => {
+    return callFamilyInventory('updateItem', { itemId: id, item: data, expectedUpdatedAt: payload.updatedAt ?? null }).then((res) => {
       invalidateItemsCache()
       return res
     })
   }
 
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .doc(id)
-    .update({
-      data,
-    })
-    .then((res) => {
-      invalidateItemsCache()
-      return res
-    })
+  return writePersonal('updateItem', { id, item: data, expectedUpdatedAt: payload.updatedAt ?? null })
 }
 
 function deleteItem(id) {
@@ -177,49 +158,14 @@ function deleteItem(id) {
     })
   }
 
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .doc(id)
-    .remove()
-    .then((res) => {
-      invalidateItemsCache()
-      return res
-    })
+  return writePersonal('deleteItem', { id })
 }
 
 function consumeItem(id) {
-  if (isFamilyMode()) {
-    return callFamilyInventory('consumeItem', { itemId: id }).then((res) => {
-      invalidateItemsCache()
-      return res
-    })
-  }
-
-  return getItemById(id).then((item) => {
-    if (!item) {
-      throw new Error('食材不存在或已被移出库存')
-    }
-
-    const quantity = normalizeQuantityState(item).quantity
-    const shouldDecrease = getConsumptionType(item) === 'decrease'
-
-    if (shouldDecrease) {
-      return getDb()
-        .collection(COLLECTION_NAME)
-        .doc(id)
-        .update({
-          data: {
-            quantity: quantity - 1,
-            updatedAt: Date.now(),
-          },
-        })
-        .then(() => {
-          invalidateItemsCache()
-          return { type: 'decrease', item }
-        })
-    }
-
-    return deleteItem(id).then(() => ({ type: 'remove', item }))
+  if (!isFamilyMode()) return writePersonal('consumeItem', { id })
+  return callFamilyInventory('consumeItem', { itemId: id }).then((res) => {
+    invalidateItemsCache()
+    return res
   })
 }
 
@@ -232,42 +178,10 @@ function undoConsume(consumption) {
       return res
     })
   }
-
-  const item = consumption && consumption.item
-
-  if (!item || !item._id) {
-    return Promise.reject(new Error('没有可撤销的库存操作'))
+  if (consumption && consumption.personalUndoToken) {
+    return writePersonal('undoConsume', { token: consumption.personalUndoToken })
   }
-
-  if (consumption.type === 'decrease') {
-    return getDb()
-      .collection(COLLECTION_NAME)
-      .doc(item._id)
-      .update({
-        data: {
-          quantity: item.quantity,
-          updatedAt: Date.now(),
-        },
-      })
-      .then((res) => {
-        invalidateItemsCache()
-        return res
-      })
-  }
-
-  const restored = { ...item }
-  delete restored._id
-  delete restored._openid
-  restored.updatedAt = Date.now()
-
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .doc(item._id)
-    .set({ data: restored })
-    .then((res) => {
-      invalidateItemsCache()
-      return res
-    })
+  return Promise.reject(new Error('没有可撤销的库存操作'))
 }
 
 function getItemById(id) {
@@ -275,34 +189,25 @@ function getItemById(id) {
     return callFamilyInventory('getItem', { itemId: id })
       .then((item) => (item ? stripSensitiveLegacyFields(item) : item))
   }
-
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .doc(id)
-    .get()
-    .then((res) => {
-      if (res.data && (res.data.familyId || res.data.accessMode === 'family')) {
-        throw new Error('没有访问该家庭食材的权限')
-      }
-      return res.data ? stripSensitiveLegacyFields(res.data) : res.data
-    })
+  return backend.personal('getItem', { id })
+    .then((result) => (result.data ? stripSensitiveLegacyFields(result.data) : result.data))
 }
 
-function fetchItemsPage(offset, collected) {
-  return getDb()
-    .collection(COLLECTION_NAME)
-    .skip(offset)
-    .limit(PAGE_SIZE)
-    .get()
+function fetchItemsPage(offset, collected, revision, canRetry = true) {
+  return backend.personal('listItems', { offset, pageSize: PAGE_SIZE, revision })
     .then((res) => {
       const items = res.data || []
       const nextItems = collected.concat(items)
 
-      if (items.length < PAGE_SIZE) {
+      if (res.hasMore === false || items.length < PAGE_SIZE) {
         return nextItems
       }
 
-      return fetchItemsPage(offset + PAGE_SIZE, nextItems)
+      return fetchItemsPage(offset + PAGE_SIZE, nextItems, res.revision, false)
+    })
+    .catch(error => {
+      if (canRetry && error.code === 'LIST_CHANGED') return fetchItemsPage(0, [], undefined, false)
+      throw error
     })
 }
 
@@ -437,35 +342,6 @@ function getItemsWithFamilyAccessCheck(options = {}) {
   )
 }
 
-function getExpiringItems(days) {
-  const today = getTodayString()
-  const endDate = addDays(today, days)
-
-  return getItems().then((items) =>
-    items.filter(
-      (item) => item.expireDate >= today && item.expireDate <= endDate,
-    ),
-  )
-}
-
-function searchItems(keyword, filters) {
-  return getItems().then((items) => {
-    const safeKeyword = String(keyword || '').trim().toLowerCase()
-    const category = filters && filters.category
-    const storageLocation = filters && filters.storageLocation
-
-    return items.filter((item) => {
-      const matchedKeyword =
-        !safeKeyword || item.name.toLowerCase().includes(safeKeyword)
-      const matchedCategory = !category || item.category === category
-      const matchedLocation =
-        !storageLocation || item.storageLocation === storageLocation
-
-      return matchedKeyword && matchedCategory && matchedLocation
-    })
-  })
-}
-
 function clearItems() {
   if (isFamilyMode()) {
     return callFamilyInventory('clearItems').then((res) => {
@@ -474,16 +350,7 @@ function clearItems() {
     })
   }
 
-  return getItems({ forceRefresh: true })
-    .then((items) => {
-      return items.reduce((task, item) => {
-        return task.then(() => deleteItem(item._id))
-      }, Promise.resolve())
-    })
-    .then((res) => {
-      invalidateItemsCache()
-      return res
-    })
+  return writePersonal('clearItems')
 }
 
 module.exports = {
@@ -491,14 +358,12 @@ module.exports = {
   consumeItem,
   createItem,
   deleteItem,
-  getExpiringItems,
   getItemById,
   getItems,
   getItemsLoadResult,
   getItemsWithFamilyAccessCheck,
   getItemsWithFamilyAccessCheckResult,
   invalidateItemsCache,
-  searchItems,
   undoConsume,
   updateItem,
 }

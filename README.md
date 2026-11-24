@@ -1,6 +1,6 @@
 # 冰箱小雷达 · Fridge Radar（微信小程序）
 
-> 日常开发使用 `fridge-app` 的 `main` 分支。微信开发者工具打开项目根目录，工程配置会加载 `.release/v2.3.0/`。2.3.0 开发版源码标签是 `v2.3.0-rc.1`，使用 VPS 接口，拍照识别关闭。修改源码后请按[构建与验收说明](docs/V23_DELIVERY.md#重建与校验)重新生成预览包。下文的 CloudBase、V2 和 V3 记录按原日期阅读。
+> 日常开发使用 `fridge-app` 的 `main` 分支（单一根目录源码，`miniprogramRoot: "./"`）。2.3.0 开发版使用 VPS 后端（`backend/`）与纯原生组件（零 npm / TDesign 依赖），拍照识别关闭；V3 OCR 与历史 CloudBase 实现保留在分支 `feat/v3-ocr` 与标签 `v2.3.0-rc.1`。下文的 CloudBase、V2 和 V3 记录按原日期阅读。
 
 冰箱小雷达是一个**家庭冰箱库存管理**微信小程序：记录食材、按 6 个分区存放、跟踪保质期、提醒临期与过期，并支持家庭成员共同维护私有库存。
 
@@ -124,21 +124,8 @@ English name: Fridge Radar. 本项目为微信小程序原生开发，早期的 
 本项目无构建步骤，提交前用 Node 语法检查关键脚本，并在微信开发者工具中编译运行 / 预览：
 
 ```bash
-node --check app.js
-node --check services/itemService.js
-node --check services/familyService.js
-node --check services/parseService.js
-node --check services/reminderService.js
-node --check utils/visualAssets.js
-node --check utils/constants.js
-node --check pages/index/index.js
-node --check pages/calendar/calendar.js
-node --check pages/recipes/recipes.js
-node --check pages/family/family.js
-node --check pkg-add/item-form/item-form.js
-node --check cloudfunctions/familyInventory/index.js
-node tests/inventory-domain.test.js
-node tests/family-domain.test.js
+npm test
+npm run verify:release
 ```
 
 ## 当前不做

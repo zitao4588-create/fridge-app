@@ -3,8 +3,10 @@ const {
   classifySendError,
   getAuthorizationState,
   hasDailySummaryRecord,
-} = require('../cloudfunctions/sendExpiryReminders/domain')
-const reminderService = require('../services/reminderService')
+} = require('../backend/reminders/domain')
+
+const backendServicePath = require.resolve('../services/backendService')
+const reminderServicePath = require.resolve('../services/reminderService')
 
 assert.deepStrictEqual(getAuthorizationState([]), {
   available: false,
@@ -75,73 +77,72 @@ assert.strictEqual(
   classifySendError(new Error('request timeout')).retryable,
   false,
 )
-assert.strictEqual(
-  reminderService.getSubscribeDecisionStatus({ authorized: true }),
-  'accepted',
-)
-assert.strictEqual(
-  reminderService.getSubscribeDecisionStatus({ supported: true, setting: 'reject' }),
-  'rejected',
-)
 
 async function testAuthorizationRecording() {
   const originalWx = global.wx
   const writes = []
+  let failWrite = false
 
   try {
     global.wx = {
+      login({ success }) {
+        success({ code: 'synthetic-code' })
+      },
+      request({ url, data, success }) {
+        if (url.endsWith('/session')) {
+          success({ statusCode: 200, data: { ok: true, data: { token: 'synthetic-token' } } })
+          return
+        }
+        if (failWrite) {
+          success({ statusCode: 500, data: { ok: false, error: 'WRITE_FAILED', message: 'record failed' } })
+          return
+        }
+        writes.push(data)
+        success({ statusCode: 200, data: { ok: true, data: { _id: 'authorization_event' } } })
+      },
       requestSubscribeMessage({ tmplIds, success }) {
         success({
           [tmplIds[0]]: 'accept',
           errMsg: 'requestSubscribeMessage:ok',
         })
       },
-      cloud: {
-        database() {
-          return {
-            collection(name) {
-              assert.strictEqual(name, 'reminders')
-              return {
-                add(payload) {
-                  writes.push(payload.data)
-                  return Promise.resolve({ _id: 'authorization_event' })
-                },
-              }
-            },
-          }
-        },
-      },
     }
 
-    const result = await reminderService.requestAndRecordSubscribeMessage()
+    delete require.cache[backendServicePath]
+    delete require.cache[reminderServicePath]
+    const reminderService = require('../services/reminderService')
 
+    assert.strictEqual(
+      reminderService.getSubscribeDecisionStatus({ authorized: true }),
+      'accepted',
+    )
+    assert.strictEqual(
+      reminderService.getSubscribeDecisionStatus({ supported: true, setting: 'reject' }),
+      'rejected',
+    )
+
+    const result = await reminderService.requestAndRecordSubscribeMessage()
     assert.strictEqual(result.authorized, true)
     assert.strictEqual(result.recorded, true)
     assert.strictEqual(writes.length, 1)
-    assert.strictEqual(writes[0].type, 'subscriptionAuthorization')
-    assert.strictEqual(writes[0].status, 'accepted')
-    assert.strictEqual(writes[0].subscribeMessageAuthorized, true)
+    assert.strictEqual(writes[0].action, 'createReminder')
+    assert.strictEqual(writes[0].data.type, 'subscriptionAuthorization')
+    assert.strictEqual(writes[0].data.status, 'accepted')
+    assert.strictEqual(writes[0].data.subscribeMessageAuthorized, true)
 
-    global.wx.cloud.database = () => ({
-      collection() {
-        return {
-          add() {
-            return Promise.reject(new Error('record failed'))
-          },
-        }
-      },
-    })
-
+    failWrite = true
     const unrecorded = await reminderService.requestAndRecordSubscribeMessage()
     assert.strictEqual(unrecorded.recorded, false)
   } finally {
+    delete require.cache[backendServicePath]
+    delete require.cache[reminderServicePath]
     global.wx = originalWx
   }
 }
 
 testAuthorizationRecording()
   .then(() => {
-    console.log('reminder-domain: 19 assertions passed')
+    console.log('reminder-domain: 20 assertions passed')
   })
   .catch((error) => {
     console.error(error)

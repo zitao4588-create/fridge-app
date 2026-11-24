@@ -1,79 +1,43 @@
 .form-page {
-  padding: 24rpx 28rpx 64rpx;
+  padding: 20rpx 26rpx 40rpx;
 }
 
 .form-card {
-  padding: 30rpx 24rpx 34rpx;
-  border-radius: 34rpx;
+  padding: 24rpx 22rpx 28rpx;
+  border-radius: 32rpx;
   background: var(--grad-card);
   box-shadow: var(--shadow-1), var(--hi-inset);
 }
 
-.entry-notice {
-  margin-bottom: 26rpx;
-  padding: 20rpx;
-  border: 2rpx solid rgba(201, 126, 32, 0.24);
-  border-radius: 22rpx;
-  color: #75470d;
-  background: #fff7df;
-}
-
-.entry-notice-title,
-.entry-notice-copy {
-  display: block;
-}
-
-.entry-notice-title {
-  font-size: 26rpx;
-  font-weight: 800;
-}
-
-.entry-notice-copy {
-  margin-top: 8rpx;
-  font-size: 23rpx;
-  line-height: 1.6;
-}
-
 .field {
-  margin-bottom: 30rpx;
+  margin-bottom: 18rpx;
 }
 
 .field-label {
   display: block;
-  margin-bottom: 14rpx;
-  font-size: 26rpx;
+  margin-bottom: 10rpx;
+  font-size: 25rpx;
   font-weight: 700;
   color: var(--text-main, #253730);
 }
 
 .field-error {
   display: block;
-  margin-top: 10rpx;
-  font-size: 24rpx;
-  color: var(--coral-deep, #c94238);
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: var(--coral-deep, #b3392f);
 }
 
-.native-input,
-.native-textarea {
+.native-input {
   box-sizing: border-box;
   width: 100%;
   border: 2rpx solid rgba(234, 219, 196, 0.9);
   border-radius: 20rpx;
   color: var(--text-main, #253730);
   background: rgba(255, 255, 255, 0.92);
-}
-
-.native-input {
-  min-height: 88rpx;
-  padding: 0 24rpx;
-  font-size: 28rpx;
-}
-
-.native-textarea {
-  min-height: 180rpx;
-  padding: 22rpx 24rpx;
-  font-size: 28rpx;
-  line-height: 1.6;
+  min-height: 76rpx;
+  padding: 0 22rpx;
+  font-size: 27rpx;
 }
 
 .native-button {
@@ -192,17 +156,17 @@
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 64rpx;
-  padding: 0 28rpx;
+  min-height: 58rpx;
+  padding: 0 22rpx;
   border-radius: 999rpx;
-  font-size: 26rpx;
+  font-size: 25rpx;
   color: var(--text-sub, #5c6a62);
   background: var(--cream-bg, #fff6e8);
   border: 2rpx solid var(--cream-line, #eadbc4);
@@ -214,6 +178,12 @@
   border-color: transparent;
   font-weight: 700;
   box-shadow: var(--shadow-mint), var(--hi-inset);
+}
+
+.chip-more {
+  border-style: dashed;
+  color: var(--brand-mint-deep, #087a49);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .seg {
@@ -249,8 +219,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 88rpx;
-  padding: 0 24rpx;
+  min-height: 76rpx;
+  padding: 0 22rpx;
   border: 2rpx solid rgba(234, 219, 196, 0.9);
   border-radius: 20rpx;
   background: rgba(255, 255, 255, 0.92);
@@ -306,7 +276,7 @@
 }
 
 .quantity-field {
-  padding: 22rpx;
+  padding: 16rpx 20rpx;
   border: 2rpx solid rgba(40, 185, 120, 0.16);
   border-radius: 22rpx;
   background: rgba(255, 255, 255, 0.72);
@@ -355,5 +325,6 @@
 }
 
 .submit-btn {
+  width: 100% !important;
   margin-top: 16rpx;
 }

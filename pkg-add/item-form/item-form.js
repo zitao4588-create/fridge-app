@@ -1,6 +1,5 @@
 const itemService = require('../../services/itemService')
 const reminderService = require('../../services/reminderService')
-const captureImageService = require('../../services/captureImageService')
 const {
   CATEGORY_OPTIONS,
   normalizeStorageLocation,
@@ -12,9 +11,8 @@ const {
   isValidDateString,
 } = require('../../utils/date')
 const { getFoodSuggestion, getRecommendedStorageLocation } = require('../../utils/foodLexicon')
-const {
-  validateConfirmationForm,
-} = require('../../utils/captureConfirmation')
+
+const PRIMARY_CATEGORIES = ['蔬菜', '水果', '肉类', '蛋', '乳制品', '其他']
 
 const emptyForm = {
   name: '',
@@ -64,6 +62,14 @@ function decodeOptionValue(value) {
     return decodeURIComponent(value || '')
   } catch (error) {
     return ''
+  }
+}
+
+function buildCategoryView(category, showAll) {
+  const expanded = Boolean(showAll) || (Boolean(category) && !PRIMARY_CATEGORIES.includes(category))
+  return {
+    showAllCategories: expanded,
+    visibleCategories: expanded ? CATEGORY_OPTIONS : PRIMARY_CATEGORIES,
   }
 }
 
@@ -330,6 +336,8 @@ Page({
     form: { ...emptyForm },
     errors: { ...emptyErrors },
     categoryOptions: CATEGORY_OPTIONS,
+    visibleCategories: PRIMARY_CATEGORIES,
+    showAllCategories: false,
     locationOptions: STORAGE_LOCATION_OPTIONS,
     smartRecommendEnabled: false,
     hasPresetStorageLocation: false,
@@ -340,19 +348,10 @@ Page({
     dateMode: 'production',
     expireModeDate: '',
     manualFields: { ...emptyManualFields },
-    datePickerVisible: false,
-    datePickerTarget: 'production',
-    datePickerValue: getTodayString(),
     today: getTodayString(),
-    entryNotice: '',
-    captureId: '',
-    retainImageRequested: false,
-    attachmentFinalized: false,
   },
 
   onLoad(options) {
-    this.recognizedEntry = options.entry === 'recognizedPhoto'
-    this.bindRecognitionPreset()
     if (options.id) {
       this.setData({ id: options.id, isEdit: true, smartRecommendEnabled: false })
       wx.setNavigationBarTitle({ title: '编辑食品' })
@@ -363,7 +362,6 @@ Page({
     const storageLocation = getDefaultStorageLocation(options)
     const name = decodeOptionValue(options.name)
     const category = getDefaultCategory(options)
-    const isPhotoFallback = options.entry === 'photoFallback'
     let form = {
       ...this.data.form,
       ...(storageLocation ? { storageLocation } : {}),
@@ -393,83 +391,10 @@ Page({
       dateMode: lexiconState.dateMode,
       smartRecommendEnabled,
       hasPresetStorageLocation: Boolean(storageLocation),
-      entryNotice: isPhotoFallback
-        ? '照片没有上传或保存，识别也没有伪装成功。请手动填写并确认食材信息。'
-        : '',
       lexiconHint: lexiconState.lexiconHint,
       recentFoods: getRecentFoodList(),
+      ...buildCategoryView(form.category, this.data.showAllCategories),
       ...buildRecommendationState(form, smartRecommendEnabled, this.data.locationOptions),
-    })
-
-    if (isPhotoFallback) {
-      wx.setNavigationBarTitle({ title: '手动补录食品' })
-    }
-  },
-
-  onUnload() {
-    if (
-      this.data.captureId &&
-      this.data.retainImageRequested &&
-      !this.data.attachmentFinalized
-    ) {
-      captureImageService
-        .cleanupCaptureSession(this.data.captureId, {
-          reason: 'cancel',
-        })
-        .catch(() => null)
-    }
-  },
-
-  bindRecognitionPreset() {
-    const channel =
-      typeof this.getOpenerEventChannel === 'function'
-        ? this.getOpenerEventChannel()
-        : null
-    if (!channel || typeof channel.on !== 'function') return
-    channel.on('recognizedPreset', (payload = {}) => {
-      this.recognizedEntry = true
-      const validation = validateConfirmationForm(payload.preset)
-      if (!validation.valid) {
-        this.setData({
-          entryNotice:
-            '识别候选已失效，请继续手动填写并确认所有字段。',
-        })
-        return
-      }
-      const form = {
-        ...this.data.form,
-        ...validation.preset,
-        source: 'photo',
-      }
-      // 识别候选通常只给到期日：能由生产日 + 保质期精确算出时才用 production 模式，
-      // 否则切到「直接选过期日」，确保候选到期日原样可见、可保存。
-      const dateMode = getInitialDateMode(form)
-      this.setData({
-        form,
-        dateMode,
-        expireModeDate: form.expireDate || '',
-        manualFields: {
-          ...allManualFields,
-          category: form.category !== '其他',
-          productionDate: Boolean(form.productionDate),
-          shelfLifeDays: Boolean(form.shelfLifeDays),
-        },
-        lexiconHint: '',
-        errors: { ...emptyErrors },
-        smartRecommendEnabled: false,
-        captureId: String(payload.captureId || ''),
-        retainImageRequested:
-          payload.retainImage === true &&
-          Boolean(String(payload.captureId || '')),
-        entryNotice:
-          '以下内容来自不可信识别候选。请再次确认，保存前不会自动写入库存。',
-        ...buildRecommendationState(
-          form,
-          false,
-          this.data.locationOptions,
-        ),
-      })
-      wx.setNavigationBarTitle({ title: '确认并保存食品' })
     })
   },
 
@@ -510,9 +435,9 @@ Page({
         this.setData({
           form,
           dateMode,
-          datePickerTarget: dateMode,
           expireModeDate: form.expireDate || '',
           manualFields: { ...allManualFields },
+          ...buildCategoryView(form.category, this.data.showAllCategories),
         })
         this.applyRecommendation(form)
       })
@@ -561,6 +486,7 @@ Page({
       errors,
       lexiconHint: lexiconState.lexiconHint,
       ...(lexiconState.matched ? { dateMode: lexiconState.dateMode } : {}),
+      ...buildCategoryView(nextForm.category, this.data.showAllCategories),
       ...buildRecommendationState(
         nextForm,
         this.data.smartRecommendEnabled,
@@ -591,6 +517,7 @@ Page({
         storageLocation: true,
         shelfLifeDays: Boolean(form.shelfLifeDays),
       },
+      ...buildCategoryView(form.category, this.data.showAllCategories),
       ...buildRecommendationState(
         form,
         this.data.smartRecommendEnabled,
@@ -622,18 +549,26 @@ Page({
   },
 
   handleCategoryTap(event) {
-    const category = this.data.categoryOptions[Number(event.currentTarget.dataset.index)]
+    const { category: byName, index } = event.currentTarget.dataset
+    const category = byName || this.data.categoryOptions[Number(index)]
+    if (!category) return
     const form = { ...this.data.form, category }
 
     this.setData({
       form,
       manualFields: { ...this.data.manualFields, category: true },
+      ...buildCategoryView(category, this.data.showAllCategories),
       ...buildRecommendationState(
         form,
         this.data.smartRecommendEnabled,
         this.data.locationOptions,
       ),
     })
+  },
+
+  handleToggleCategories() {
+    const nextShowAll = !this.data.showAllCategories
+    this.setData(buildCategoryView(nextShowAll ? '' : this.data.form.category, nextShowAll))
   },
 
   handleLocationTap(event) {
@@ -713,26 +648,11 @@ Page({
     })
   },
 
-  openDatePicker(event) {
-    const datePickerTarget = event.currentTarget.dataset.target
-    const current =
-      datePickerTarget === 'production'
-        ? this.data.form.productionDate
-        : this.data.form.expireDate
-
-    this.setData({
-      datePickerTarget,
-      datePickerValue: current || this.data.today,
-      datePickerVisible: true,
-    })
-  },
-
   handleDateConfirm(event) {
     const value = event.detail.value
-    const datePickerTarget =
-      event.currentTarget.dataset.target || this.data.datePickerTarget
+    const target = event.currentTarget.dataset.target
 
-    if (datePickerTarget === 'production') {
+    if (target === 'production') {
       const form = { ...this.data.form, productionDate: value }
 
       if (this.data.dateMode !== 'expire') {
@@ -747,7 +667,6 @@ Page({
           productionDate: '',
           expireDate: form.expireDate ? '' : this.data.errors.expireDate,
         },
-        datePickerVisible: false,
       })
       return
     }
@@ -757,12 +676,7 @@ Page({
       expireModeDate: value,
       manualFields: { ...this.data.manualFields, expireDate: true },
       errors: { ...this.data.errors, expireDate: '' },
-      datePickerVisible: false,
     })
-  },
-
-  handleDateCancel() {
-    this.setData({ datePickerVisible: false })
   },
 
   validateForm() {
@@ -831,7 +745,6 @@ Page({
     }
 
     const formToSave = buildFormToSave(this.data.form, this.data.dateMode)
-    let itemSaved = false
 
     this.setData({ saving: true })
 
@@ -844,82 +757,23 @@ Page({
           ? itemService.updateItem(this.data.id, formToSave)
           : itemService.createItem(formToSave)
       })
-      .then((result) => {
-        itemSaved = true
+      .then(() => {
         this.saved = true
         if (!this.data.isEdit) {
           rememberRecentFood(formToSave)
         }
-
-        const itemId = String(
-          result && (result._id || result.id || result.itemId) || '',
-        )
-        if (
-          !this.data.isEdit &&
-          this.data.retainImageRequested &&
-          this.data.captureId
-        ) {
-          if (!itemId) {
-            return captureImageService
-              .cleanupCaptureSession(this.data.captureId, {
-                reason: 'save_failed',
-              })
-              .then(() => ({ imageDiscarded: true }))
-              .catch(() => ({ imageStatusUncertain: true }))
-          }
-          return captureImageService
-            .attachCaptureToItem(this.data.captureId, itemId)
-            .then(() => ({ imageAttached: true }))
-            .catch(() =>
-              captureImageService
-                .cleanupCaptureSession(this.data.captureId, {
-                  reason: 'save_failed',
-                })
-                .then(() => ({ imageDiscarded: true }))
-                .catch(() => ({ imageStatusUncertain: true })),
-            )
-        }
-        return { imageAttached: false }
-      })
-      .then((outcome) => {
-        const afterSave = this.recognizedEntry ? () => wx.switchTab({ url: '/pages/index/index' }) : () => wx.navigateBack()
-        wx.hideLoading()
-        this.setData({
-          saving: false,
-          attachmentFinalized: true,
-          captureId: '',
-        })
-
-        if (outcome.imageStatusUncertain) {
-          wx.showModal({
-            title: '食材已保存',
-            content:
-              '照片保留状态暂时无法确认，服务端会话仍可继续核对和清理。',
-            showCancel: false,
-            complete: afterSave,
-          })
-          return
-        }
-
-        wx.showToast({
-          title: outcome.imageDiscarded
-            ? '已保存，照片未保留'
-            : '已保存',
-          icon: 'success',
-        })
-        setTimeout(afterSave, 400)
-      })
-      .catch(() => {
-        if (!itemSaved && this.data.captureId) {
-          captureImageService
-            .cleanupCaptureSession(this.data.captureId, {
-              reason: 'save_failed',
-            })
-            .catch(() => null)
-        }
         wx.hideLoading()
         this.setData({ saving: false })
-        wx.showToast({ title: '保存失败', icon: 'none' })
+        wx.showToast({ title: '已保存', icon: 'success' })
+        setTimeout(() => wx.navigateBack(), 400)
+      })
+      .catch((error) => {
+        wx.hideLoading()
+        this.setData({ saving: false })
+        wx.showToast({
+          title: error && error.code === 'ITEM_CHANGED' ? '库存已变动，请重新打开核对' : '保存失败',
+          icon: 'none',
+        })
       })
   },
 })

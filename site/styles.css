@@ -9,8 +9,8 @@
   --muted: #5a6a62;
   --line: #e1e8e4;
   --line-strong: #ccd8d1;
-  --mint: #15915a;
-  --mint-deep: #0c7444;
+  --mint: #107c4b;
+  --mint-deep: #0a633b;
   --danger: #c23a30;
   --focus: #1e7d4d;
   --radius: 14px;
@@ -120,6 +120,12 @@ img {
 .nav-links a:hover {
   color: var(--ink);
   background: var(--surface-soft);
+}
+
+.nav-links a[aria-current="page"] {
+  color: var(--mint-deep);
+  font-weight: 700;
+  background: var(--accent-soft);
 }
 
 .nav-links a.nav-cta {
@@ -352,20 +358,6 @@ img {
 
 .usage-steps li {
   margin: 3px 0;
-}
-
-.qr-note {
-  margin: 10px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-.qr-note code {
-  font-size: 11px;
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: var(--surface-soft);
 }
 
 /* ---------- Sections ---------- */
@@ -637,12 +629,36 @@ img {
 @media (max-width: 720px) {
   .nav {
     flex-wrap: wrap;
-    padding: 10px 0;
+    gap: 6px 12px;
+    width: calc(100% - 28px);
+    padding: 8px 0;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
   }
 
   .nav-links {
     width: 100%;
-    margin-left: -8px;
+    margin-left: -6px;
+    gap: 2px;
+    font-size: 13.5px;
+  }
+
+  .nav-links a {
+    padding: 5px 8px;
+  }
+
+  .nav-links a.nav-cta {
+    margin-left: auto;
+    padding: 5px 11px;
+    font-size: 13px;
   }
 }
 

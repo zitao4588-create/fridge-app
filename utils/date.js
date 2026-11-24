@@ -90,9 +90,12 @@ function getMonthTitle(year, monthIndex) {
 function buildMonthDays(year, monthIndex, eventMap, selectedDate) {
   const firstDate = new Date(year, monthIndex, 1)
   const startDate = new Date(year, monthIndex, 1 - firstDate.getDay())
+  const rowSixStart = new Date(startDate)
+  rowSixStart.setDate(startDate.getDate() + 35)
+  const totalCells = rowSixStart.getMonth() === monthIndex ? 42 : 35
   const days = []
 
-  for (let index = 0; index < 42; index += 1) {
+  for (let index = 0; index < totalCells; index += 1) {
     const date = new Date(startDate)
     date.setDate(startDate.getDate() + index)
 

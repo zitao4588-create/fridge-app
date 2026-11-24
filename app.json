@@ -13,9 +13,7 @@
     {
       "root": "pkg-add",
       "pages": [
-        "item-form/item-form",
-        "quick-capture/quick-capture",
-        "capture-confirm/capture-confirm"
+        "item-form/item-form"
       ]
     }
   ],

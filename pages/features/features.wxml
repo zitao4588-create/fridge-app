@@ -29,7 +29,7 @@
     <text class="feature-label">是什么</text>
     <text class="feature-text">创建者通过微信邀请家庭成员，共同查看和修改同一个家庭库存。</text>
     <text class="feature-label">怎么用</text>
-    <text class="feature-text">首页 → 家庭库存 → 创建家庭 → 右上角转发邀请成员。受邀者直接在微信内打开，无需下载 App；创建者可以撤回邀请和移除成员。</text>
+    <text class="feature-text">首页 → 家庭库存 → 创建家庭 → 生成并分享家庭邀请。受邀者直接在微信内打开，无需下载 App；创建者可以撤回邀请和移除成员。</text>
     <text class="feature-label">不会做什么</text>
     <text class="feature-text">不会公开家庭内容，不提供动态、评论、聊天、陌生人发现或社区。</text>
   </view>
@@ -61,7 +61,7 @@
     <text class="feature-label">怎么用</text>
     <text class="feature-text">你可以随时编辑、删除单条食材，也可以在「菜谱 → 关于冰箱小雷达 → 数据管理」清空当前库存。</text>
     <text class="feature-label">不会做什么</text>
-    <text class="feature-text">可主动拍照或选一张图片生成文字候选，需手动核对。未开放登录页、支付会员、UGC 社区或 AI 菜谱。</text>
+    <text class="feature-text">当前提供手动录入，拍照识别关闭。未开放登录页、支付会员、UGC 社区或 AI 菜谱。</text>
   </view>
 
 

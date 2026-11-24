@@ -7,7 +7,7 @@
         "type": "folder"
       },
       {
-        "value": "node_modules",
+        "value": "backend",
         "type": "folder"
       },
       {
@@ -15,28 +15,8 @@
         "type": "file"
       },
       {
-        "value": "package-lock.json",
-        "type": "file"
-      },
-      {
         "value": "pkg-add/package.json",
         "type": "file"
-      },
-      {
-        "value": "pkg-add/package-lock.json",
-        "type": "file"
-      },
-      {
-        "value": "pkg-add/node_modules",
-        "type": "folder"
-      },
-      {
-        "value": "pkg-add/miniprogram_npm",
-        "type": "folder"
-      },
-      {
-        "value": "cloudfunctions",
-        "type": "folder"
       },
       {
         "value": "tests",
@@ -64,6 +44,10 @@
       },
       {
         "value": ".claude",
+        "type": "folder"
+      },
+      {
+        "value": ".codex",
         "type": "folder"
       },
       {
@@ -99,10 +83,6 @@
         "type": "file"
       },
       {
-        "value": ".env.local",
-        "type": "file"
-      },
-      {
         "value": ".env.development.local",
         "type": "file"
       },
@@ -120,10 +100,6 @@
       },
       {
         "value": "README.md",
-        "type": "file"
-      },
-      {
-        "value": "PROJECT.md",
         "type": "file"
       },
       {
@@ -195,13 +171,8 @@
     "compileWorklet": false,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
-    "packNpmManually": true,
-    "packNpmRelationList": [
-      {
-        "packageJsonPath": "./pkg-add/package.json",
-        "miniprogramNpmDistDir": "./pkg-add"
-      }
-    ],
+    "packNpmManually": false,
+    "packNpmRelationList": [],
     "minifyWXSS": true,
     "minifyWXML": true,
     "localPlugins": false,
@@ -220,8 +191,7 @@
   "libVersion": "3.15.2",
   "appid": "wx328e2b87665508e7",
   "projectname": "fridge-miniapp",
-  "miniprogramRoot": ".release/v2.3.0/",
-  "cloudfunctionRoot": "cloudfunctions/",
+  "miniprogramRoot": "./",
   "condition": {},
   "simulatorPluginLibVersion": {},
   "editorSetting": {}

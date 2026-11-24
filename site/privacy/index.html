@@ -14,9 +14,10 @@
         <a class="brand" href="../"><span class="brand-mark">冷</span><span>冰箱小雷达</span></a>
         <div class="nav-links">
           <a href="../features/">功能</a>
-          <a href="../privacy/">隐私</a>
+          <a href="../privacy/" aria-current="page">隐私</a>
           <a href="../faq/">FAQ</a>
           <a href="../geo-case/">GEO 案例</a>
+          <a class="nav-cta" href="../#mini-program">打开小程序</a>
         </div>
       </nav>
     </header>
@@ -28,7 +29,7 @@
         <div class="policy-meta">
           <span><strong>适用产品：</strong>冰箱小雷达微信小程序</span>
           <span><strong>当前状态：</strong>公开说明页已上线</span>
-          <span><strong>数据存储：</strong>微信云开发 CloudBase</span>
+          <span><strong>数据存储：</strong>服务端按微信账号隔离存储</span>
         </div>
       </section>
       <section class="section policy">
@@ -62,7 +63,7 @@
         </div>
         <div class="policy-section" id="storage">
           <h2><span class="num">4.</span>数据存储</h2>
-          <p>食材数据存储在微信云开发 CloudBase 云数据库中。个人库存按当前微信用户隔离；家庭库存仅向受邀家庭成员开放，并由云函数校验成员身份。成员端不会显示其他成员的 openid。</p>
+          <p>食材数据按当前微信账号隔离存储在服务端。家庭库存仅向受邀家庭成员开放，并由服务端接口校验成员身份。成员端不会显示其他成员的 openid。</p>
         </div>
         <div class="policy-section" id="rights">
           <h2><span class="num">5.</span>用户权利</h2>

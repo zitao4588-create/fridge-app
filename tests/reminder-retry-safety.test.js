@@ -1,36 +1,103 @@
 const assert = require('assert')
-const fs = require('fs')
-const vm = require('vm')
-const path = require('path')
-const { createRequire } = require('module')
-const { classifySendError, hasDailySummaryRecord } = require('../cloudfunctions/sendExpiryReminders/domain')
-const filename = path.resolve(__dirname, '../cloudfunctions/sendExpiryReminders/index.js')
-const realRequire = createRequire(filename)
-function load({ responses = [], writeFails = false } = {}) {
+const { classifySendError, hasDailySummaryRecord } = require('../backend/reminders/domain')
+const { sendReminders } = require('../backend/reminders/sender.cjs')
+
+function createMockStore({ writeFails = false } = {}) {
   const writes = []
+  const docs = {
+    items: {
+      food: { _id: 'food', _openid: 'user', name: '蛋', expireDate: '2026-09-10' },
+    },
+    reminders: {
+      auth1: {
+        _id: 'auth1',
+        _openid: 'user',
+        type: 'subscriptionAuthorization',
+        status: 'accepted',
+        createdAt: 1,
+      },
+    },
+    families: {},
+    familyMembers: {},
+  }
+
+  function collection(name) {
+    const store = docs[name] || (docs[name] = {})
+    const query = (criteria = {}, offset = 0, limit = Infinity) => ({
+      where: (next) => query(next, offset, limit),
+      skip: (next) => query(criteria, next, limit),
+      limit: (next) => query(criteria, offset, next),
+      get() {
+        const list = Object.values(store)
+          .filter((doc) => Object.entries(criteria).every(([k, v]) => (typeof v === 'function' ? v(doc[k]) : doc[k] === v)))
+          .slice(offset, offset + limit)
+        return { data: list }
+      },
+    })
+    return {
+      ...query(),
+      add({ data }) {
+        writes.push(data)
+        if (writeFails) throw new Error('write failed')
+        const id = `rec_${writes.length}`
+        store[id] = { ...data, _id: id }
+        return { _id: id }
+      },
+      doc(id) {
+        return {
+          get() { return { data: store[id] || null } },
+          set({ data }) {
+            writes.push({ ...data, _id: id })
+            if (writeFails && store[id]) throw new Error('write failed')
+            store[id] = { ...data, _id: id }
+          },
+          update({ data }) {
+            writes.push({ ...data, _id: id })
+            if (writeFails) throw new Error('write failed')
+            store[id] = { ...(store[id] || {}), ...data, _id: id }
+          },
+          remove() { delete store[id] },
+        }
+      },
+    }
+  }
+
+  return {
+    writes,
+    store: {
+      collection,
+      runRequest(fn) {
+        return fn()
+      },
+      command: {
+        in: (values) => (val) => values.includes(val),
+        gte: (min) => Object.assign((val) => val >= min, { and: (other) => (val) => val >= min && other(val) }),
+        lte: (max) => (val) => val <= max,
+      },
+    },
+  }
+}
+
+async function runScenario({ responses = [], writeFails = false } = {}) {
+  const { store, writes } = createMockStore({ writeFails })
   let sends = 0
-  const item = { _id: 'food', _openid: 'user', name: '蛋', expireDate: '2026-09-10' }
-  const db = { command: {}, collection() { return {
-    doc() { return { async get() { return { data: item } } } },
-    where() { return this }, skip() { return this }, limit() { return this },
-    async get() { return { data: [{ type: 'subscriptionAuthorization', status: 'accepted', createdAt: 1 }] } },
-    async add({ data }) { writes.push(data); if (writeFails) throw new Error('write failed'); return { _id: 'record' } },
-  } } }
-  const cloud = { init() {}, database: () => db, getWXContext: () => ({ OPENID: 'user' }) }
-  const output = {}
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8') + '\nrequestJson = mockRequest; exports.sendForTest = sendReminder;', {
-    exports: output, require: name => name === 'wx-server-sdk' ? cloud : realRequire(name),
-    process: { env: { WX_APPSECRET: 'synthetic', EXPIRY_REMINDER_TEMPLATE_ID: 'synthetic' } },
-    Buffer, console: { log() {} },
-    mockRequest: async options => {
-      if (options.method === 'POST') sends++
+  const result = await sendReminders({
+    store,
+    env: { WX_APPSECRET: 'synthetic', EXPIRY_REMINDER_TEMPLATE_ID: 'synthetic' },
+    event: { itemId: 'food' },
+    openid: 'user',
+    today: '2026-09-09',
+    logger: { log() {}, error() {} },
+    requestJson: async (options) => {
+      if (options.path && options.path.includes('/message/subscribe/send')) sends++
       const next = responses.shift()
       if (next instanceof Error) throw next
       return next
     },
   })
-  return { output, writes, sends: () => sends, item }
+  return { result, writes, sends }
 }
+
 async function main() {
   for (const outcome of ['NOT_SENT', 'API_REJECTED']) {
     const failure = classifySendError(Object.assign(new Error('rejected'), { deliveryOutcome: outcome }))
@@ -44,27 +111,23 @@ async function main() {
     { status: 'refused', deliveryOutcome: 'API_REJECTED' },
   ]) assert.strictEqual(hasDailySummaryRecord([{ type: 'expirySummary', remindDate: 'today', ...record }], 'today'), true)
 
-  let runtime = load({ responses: [new Error('token timeout')] })
-  await runtime.output.main({ itemId: 'food' })
-  assert.strictEqual(runtime.sends(), 0)
-  assert.strictEqual(runtime.writes[0].deliveryOutcome, 'NOT_SENT')
-  assert.strictEqual(runtime.writes[0].retryable, true)
+  let run = await runScenario({ responses: [new Error('token timeout')] })
+  assert.strictEqual(run.sends, 0)
+  assert.strictEqual(run.writes.at(-1).deliveryOutcome, 'NOT_SENT')
+  assert.strictEqual(run.writes.at(-1).retryable, true)
 
-  runtime = load({ responses: [{ access_token: 'synthetic' }, { errcode: 40001, errmsg: 'invalid token' }] })
-  await runtime.output.main({ itemId: 'food' })
-  assert.strictEqual(runtime.writes[0].deliveryOutcome, 'API_REJECTED')
-  assert.strictEqual(runtime.writes[0].retryable, true)
+  run = await runScenario({ responses: [{ access_token: 'synthetic' }, { errcode: 40001, errmsg: 'invalid token' }] })
+  assert.strictEqual(run.writes.at(-1).deliveryOutcome, 'API_REJECTED')
+  assert.strictEqual(run.writes.at(-1).retryable, true)
 
-  runtime = load({ responses: [{ access_token: 'synthetic' }, new Error('request timeout')] })
-  await runtime.output.main({ itemId: 'food' })
-  assert.strictEqual(runtime.writes[0].deliveryOutcome, 'UNKNOWN')
-  assert.strictEqual(runtime.writes[0].retryable, false)
+  run = await runScenario({ responses: [{ access_token: 'synthetic' }, new Error('request timeout')] })
+  assert.strictEqual(run.writes.at(-1).deliveryOutcome, 'UNKNOWN')
+  assert.strictEqual(run.writes.at(-1).retryable, false)
 
-  runtime = load({ responses: [{ access_token: 'synthetic' }, { errcode: 0 }], writeFails: true })
-  await assert.rejects(runtime.output.main({ itemId: 'food' }), /write failed/)
-  assert.strictEqual(runtime.sends(), 1)
-  assert.strictEqual(runtime.writes.length, 1)
-  assert.strictEqual(runtime.writes[0].status, 'sent')
+  run = await runScenario({ responses: [{ access_token: 'synthetic' }, { errcode: 0 }], writeFails: true })
+  assert.strictEqual(run.sends, 1)
+  assert.strictEqual(run.result.recordWriteFailures, 1)
+  assert.strictEqual(run.result.sentUnrecorded, 1)
   console.log('reminder retry safety: domain and 4 handler scenarios passed')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

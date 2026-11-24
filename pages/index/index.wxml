@@ -1,7 +1,7 @@
 <page-meta page-style="overflow: {{draggingFoodVisible ? 'hidden' : 'visible'}};" />
 
 <view class="page index-page">
-  <view wx:if="{{inventoryView.showCard}}" class="inventory-state-card {{inventoryView.tone}}">
+  <view wx:if="{{inventoryView.showCard && inventoryView.key !== 'empty'}}" class="inventory-state-card {{inventoryView.tone}}">
     <view class="inventory-state-copy">
       <text class="inventory-state-title">{{inventoryView.title}}</text>
       <text class="inventory-state-detail">{{inventoryView.detail}}</text>
@@ -69,7 +69,7 @@
     </view>
   </view>
 
-  <view wx:if="{{inventoryHasSnapshot}}" class="search-bar">
+  <view wx:if="{{inventoryHasSnapshot && itemCount > 0}}" class="search-bar">
     <text class="search-ic" bindtap="handleSearchConfirm" aria-role="button" aria-label="搜索">🔍</text>
     <input
       class="search-input"

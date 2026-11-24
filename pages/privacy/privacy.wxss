@@ -1,5 +1,5 @@
 .privacy-page {
-  padding: 32rpx 28rpx calc(152rpx + env(safe-area-inset-bottom));
+  padding: 28rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
 }
 
 .privacy-hero,
@@ -10,7 +10,7 @@
 }
 
 .privacy-hero {
-  padding: 34rpx 28rpx;
+  padding: 32rpx 28rpx;
   background: var(--grad-hero);
 }
 
@@ -25,38 +25,38 @@
 .privacy-desc,
 .card-text {
   display: block;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   font-size: 24rpx;
-  line-height: 1.75;
-  color: var(--text-sub, #6f7c74);
+  line-height: 1.72;
+  color: var(--text-sub, #5c6a62);
 }
 
 .privacy-card {
-  margin-top: 22rpx;
-  padding: 28rpx 24rpx;
+  margin-top: 20rpx;
+  padding: 26rpx 24rpx;
 }
 
 .privacy-actions {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12rpx;
-  margin-top: 22rpx;
+  margin-top: 20rpx;
 }
 
 .privacy-btn {
-  min-height: 66rpx;
+  min-height: 68rpx;
   border-radius: 18rpx;
-  line-height: 66rpx;
+  line-height: 68rpx;
   text-align: center;
   font-size: 25rpx;
   font-weight: 800;
   color: var(--brand-mint-deep, #087a49);
-  background: rgba(255, 255, 255, 0.72);
-  border: 2rpx solid rgba(40, 185, 120, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  border: 2rpx solid rgba(8, 122, 73, 0.18);
 }
 
 .privacy-btn.primary {
   color: #ffffff;
-  background: var(--brand-mint, #28b978);
+  background: var(--brand-mint-deep, #087a49);
   border-color: transparent;
 }

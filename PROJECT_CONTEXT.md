@@ -4,7 +4,7 @@
 
 ## 当前开发与发布状态
 
-日常开发只打开 `fridge-app` 的 `main`。微信开发者工具选择 `fridge-miniapp`，加载 `.release/v2.3.0/`。标签 `v2.3.0-rc.1` 对应 11 月 23 日上传的 2.3.0 开发版。11 月 24 日复核通过 69 项本地测试，90 个前端文件与 11 个后端运行文件均与候选清单一致。
+日常开发只打开 `fridge-app` 的 `main`（`miniprogramRoot: "./"` 直接指向根目录单一源码，纯原生组件、零 npm 依赖，接入 `backend/` VPS 接口）。原未发布 V3 OCR 与历史 CloudBase 代码已安全归档至 Git 分支 `feat/v3-ocr`（开发版上传快照标签 `v2.3.0-rc.1`），`main` 已移除 `release/`、`.release/v2.3.0/`、`cloudfunctions/` 与闲置前端依赖。本地全量验证统一使用 `npm test` 与 `npm run verify:release`。
 
 最近一次有微信后台截图佐证的正式发布为 9 月 10 日的 2.1.0。2.3 的提审、正式发布和生产流量切换仍待取得各自回执。详见[版本验收记录](docs/V23_DELIVERY.md)和[当前待办](TODO.md)。
 

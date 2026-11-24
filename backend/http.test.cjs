@@ -33,14 +33,17 @@ test('frontend services use authenticated HTTP and maintain private state', asyn
       }
     },
   }
-  const path = require('node:path')
-  const destination = path.join(require('node:fs').mkdtempSync(path.join(require('node:os').tmpdir(), 'fridge-release-')), 'candidate')
-  require('node:child_process').execFileSync(process.execPath, [
-    path.resolve(__dirname, '../scripts/prepare-v21-release.js'), destination, '--v2.3',
-  ])
-  const items = require(path.join(destination, 'services/itemService'))
-  const family = require(path.join(destination, 'services/familyService'))
-  const reminders = require(path.join(destination, 'services/reminderService'))
+  for (const mod of [
+    '../services/backendService',
+    '../services/itemService',
+    '../services/familyService',
+    '../services/reminderService',
+  ]) {
+    delete require.cache[require.resolve(mod)]
+  }
+  const items = require('../services/itemService')
+  const family = require('../services/familyService')
+  const reminders = require('../services/reminderService')
   const fixture = { name: '仅用于测试', expireDate: '2026-11-24',
     quantityTracked: true, quantity: 2 }
   assert.deepEqual(await items.getItemsWithFamilyAccessCheck(), [])

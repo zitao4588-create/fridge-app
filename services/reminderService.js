@@ -1,35 +1,9 @@
+const backend = require('./backendService')
 const EXPIRY_REMINDER_TEMPLATE_ID = 'rxGJi_mQR7J7n0PiEq0MfZkn0-DEP7O9wXbtCDqzWQ4'
 const SUBSCRIPTION_AUTH_RECORD_TYPE = 'subscriptionAuthorization'
 
 function createReminder(data) {
-  if (!wx.cloud) {
-    return Promise.resolve(null)
-  }
-
-  const now = Date.now()
-
-  return wx.cloud.database().collection('reminders').add({
-    data: {
-      ...data,
-      status: data.status || 'pending',
-      subscribeMessageAuthorized: Boolean(data.subscribeMessageAuthorized),
-      createdAt: now,
-      updatedAt: now,
-    },
-  })
-}
-
-function cancelReminder(id) {
-  if (!wx.cloud || !id) {
-    return Promise.resolve(null)
-  }
-
-  return wx.cloud.database().collection('reminders').doc(id).update({
-    data: {
-      status: 'cancelled',
-      updatedAt: Date.now(),
-    },
-  })
+  return backend.personal('createReminder', { data })
 }
 
 function getCalendarEvents(items) {
@@ -127,7 +101,6 @@ function requestAndRecordSubscribeMessage() {
 }
 
 module.exports = {
-  cancelReminder,
   createReminder,
   getCalendarEvents,
   requestSubscribeMessage,

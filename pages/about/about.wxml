@@ -19,7 +19,7 @@
 
   <view class="info-card">
     <text class="card-title">当前阶段不做</text>
-    <text class="card-text">当前只提供一图一件的非生成式文字候选，所有结果都要由你确认后才能保存。暂不开放生成式视觉、AI 菜谱、条形码扫描、支付会员、登录页或社区功能；后续新增能力会先确认主体资质、微信类目和隐私边界。</text>
+    <text class="card-text">v2.3 提供手动录入、临期查看和私有家庭共享，重点完善库存权限、加载恢复与问题反馈。拍照识别、AI 菜谱、条形码扫描、支付会员、登录页和社区功能尚未开放。</text>
   </view>
 
   <view class="feedback-card">

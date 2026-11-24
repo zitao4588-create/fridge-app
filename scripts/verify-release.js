@@ -1,12 +1,11 @@
-// Validate the generated release, using synthetic data and no WeChat/cloud access.
+// Validate the unified Mini Program release in root (or a target directory), with synthetic data and no live network/WeChat calls.
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const { createRequire } = require('node:module')
 
-const root = path.resolve(process.argv[2] || '')
-if (!process.argv[2]) throw new Error('Provide the generated v2.1 directory')
+const root = path.resolve(process.argv[2] || path.resolve(__dirname, '..'))
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
 const app = JSON.parse(read('app.json'))
 const routes = app.pages.concat(app.subPackages.flatMap(pkg => pkg.pages.map(page => `${pkg.root}/${page}`)))
@@ -15,18 +14,44 @@ assert.deepEqual(app.subPackages, [{ root: 'pkg-add', pages: ['item-form/item-fo
 for (const route of routes) {
   for (const ext of ['js', 'json', 'wxml', 'wxss']) assert.ok(fs.existsSync(path.join(root, `${route}.${ext}`)), `${route}.${ext}`)
 }
-const files = fs.readdirSync(root, { recursive: true }).filter(file => fs.statSync(path.join(root, file)).isFile())
+
+const RUNTIME_ENTRIES = [
+  'app.js',
+  'app.json',
+  'app.wxss',
+  'sitemap.json',
+  'project.config.json',
+  'custom-tab-bar',
+  'images',
+  'pages',
+  'pkg-add',
+  'services',
+  'styles',
+  'utils',
+]
+
+function collectFiles(entry) {
+  const full = path.join(root, entry)
+  if (!fs.existsSync(full)) return []
+  const stat = fs.statSync(full)
+  if (stat.isFile()) return [entry]
+  return fs.readdirSync(full, { recursive: true })
+    .map(rel => path.join(entry, rel))
+    .filter(rel => fs.statSync(path.join(root, rel)).isFile())
+}
+
+const files = RUNTIME_ENTRIES.flatMap(collectFiles)
 let frontBytes = 0
 let javascriptCount = 0
 for (const file of files) {
-  if (file.startsWith('cloudfunctions/') || file === 'RELEASE_NOTES.md') continue
+  if (file.endsWith('.DS_Store')) continue
   frontBytes += fs.statSync(path.join(root, file)).size
   if (!/\.(js|json|wxml|wxss)$/.test(file)) continue
   const source = read(file)
   if (file.endsWith('.js')) {
     new vm.Script(source, { filename: file })
     javascriptCount++
-    assert.doesNotMatch(source, /captureImageService|recognitionService|captureConfirmation|quick-capture|capture-confirm|chooseMedia|chooseImage/, file)
+    assert.doesNotMatch(source, /captureImageService|recognitionService|captureConfirmation|quick-capture|capture-confirm|chooseMedia|chooseImage|wx\.cloud/, file)
     for (const [, reference] of source.matchAll(/require\(['"]([^'"]+)['"]\)/g)) {
       assert.ok(reference.startsWith('.'), `Unexpected frontend dependency: ${file}: ${reference}`)
       createRequire(path.join(root, file)).resolve(reference)
@@ -39,12 +64,11 @@ for (const file of files) {
     }
   }
 }
-if (JSON.parse(read('project.config.json')).projectname === 'fridge-v2.3-release') {
-  assert.equal(fs.existsSync(path.join(root, 'cloudfunctions')), false)
-  assert.ok(read('services/backendService.js').includes('https://fridge.playgamelab.cn/fridge-api/v2'))
-} else {
-  assert.deepEqual(fs.readdirSync(path.join(root, 'cloudfunctions')), ['familyInventory'])
-}
+
+const config = JSON.parse(read('project.config.json'))
+assert.equal(config.miniprogramRoot, './')
+assert.equal(Object.hasOwn(config, 'cloudfunctionRoot'), false)
+assert.ok(read('services/backendService.js').includes('https://fridge.playgamelab.cn/fridge-api/v2'))
 assert.match(read('pages/about/about.wxml'), /open-type="feedback"/)
 assert.match(read('pages/about/about.wxml'), /提交问题反馈/)
 assert.match(read('pages/recipes/recipes.wxml'), /bindtap="handleOpenAbout"/)
@@ -88,7 +112,7 @@ async function run() {
   assert.equal(saves[0].quantityTracked, false)
   assert.equal(saves[0].source, 'manual')
   assert.equal(page.data.saving, false)
-  page.saved = false // Reopen as a new edit form.
+  page.saved = false
   page.data.isEdit = true
   page.data.id = 'synthetic-edit'
   page.data.form.quantityTracked = true
@@ -110,6 +134,6 @@ async function run() {
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(failed.page.data.saving, false)
   assert.equal(failed.messages.at(-1), '保存失败')
-  console.log(JSON.stringify({ directory: root, routes: routes.length, frontendJavascript: javascriptCount, frontendFileBytes: frontBytes, checks: 'syntax, dependencies, routes, no OCR, add/edit/failure/date: PASS', note: 'Local source size, not the official compiled package size; no live cloud calls.' }, null, 2))
+  console.log(JSON.stringify({ directory: root, routes: routes.length, frontendJavascript: javascriptCount, frontendFileBytes: frontBytes, checks: 'syntax, dependencies, routes, no OCR/wx.cloud, add/edit/failure/date: PASS' }, null, 2))
 }
 run().catch(error => { console.error(error); process.exitCode = 1 })

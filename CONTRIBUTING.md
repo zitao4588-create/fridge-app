@@ -48,20 +48,17 @@ Before opening a pull request, please check:
 Recommended local checks:
 
 ```bash
+npm test
+npm run verify:release
 node --check app.js
 node --check services/itemService.js
-node --check services/parseService.js
-node --check services/recipeService.js
+node --check services/familyService.js
+node --check services/reminderService.js
 node --check pages/index/index.js
-node --check pages/item-form/item-form.js
-node --check pages/quick-add/quick-add.js
-node --check pages/parse-confirm/parse-confirm.js
-node --check pages/batch-parse-confirm/batch-parse-confirm.js
 node --check pages/calendar/calendar.js
 node --check pages/recipes/recipes.js
-node --check cloudfunctions/generateRecipes/index.js
-npm run lint
-npm run build
+node --check pages/family/family.js
+node --check pkg-add/item-form/item-form.js
 ```
 
 ## Issue Reports
